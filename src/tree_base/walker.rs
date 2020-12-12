@@ -6,8 +6,9 @@ use std::ops::DerefMut;
 // a struct that takes a mutable reference of the tree, and allows you to walk on it.
 // doesn't work for empty trees.
 // TODO: make it work for empty trees? maybe?
+// maybe switch to Telescope<'a, Box<Tree<D>>>
 // should automatically go back up the tree when dropped
-struct TreeWalker<'a, D : Data> {
+pub struct TreeWalker<'a, D : Data> {
 	tel : Telescope<'a, Node<D>>,
 	// this array holds for every node, whether its left son is inside the walker
 	// and not the right one.
@@ -84,6 +85,15 @@ impl<'a, D : Data> TreeWalker<'a, D> {
 		else {
 			Some(self.is_left[self.is_left.len() - 1])
 		}
+	}
+
+	// the convention is, the root is at depth zero
+	pub fn depth(&self) -> usize {
+		self.is_left.len()
+	}
+
+	pub fn is_root(&self) -> bool {
+		self.is_left.len() == 0
 	}
 
 	// if successful, returns whether or not the previous current value was the left son.

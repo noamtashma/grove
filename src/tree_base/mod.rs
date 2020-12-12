@@ -1,19 +1,19 @@
-mod walker;
+pub mod walker;
 
-enum Tree<D> {
+pub enum Tree<D> {
 	Empty, Root(Box<Node<D>>)
 }
 
 use Tree::*;
 
 impl<D> Tree<D> {
-	fn data_mut(&mut self) -> Option<&mut D> {
+	pub fn data_mut(&mut self) -> Option<&mut D> {
 		match self {
 			Empty => None,
 			Root(node) => Some(&mut node.data),
 		}
 	}
-	fn data(&self) -> Option<&D> {
+	pub fn data(&self) -> Option<&D> {
 		match self {
 			Empty => None,
 			Root(node) => Some(&node.data),
@@ -22,14 +22,14 @@ impl<D> Tree<D> {
 }
 impl<D : Data> Tree<D> {
 
-	fn rebuild(&mut self) {
+	pub fn rebuild(&mut self) {
 		match self {
 			Root(node) => node.rebuild(),
 			_ => (),
 		}
 	}
 	
-	fn access(&mut self) {
+	pub fn access(&mut self) {
 		match self {
 			Root(node) => node.access(),
 			_ => (),
@@ -37,7 +37,7 @@ impl<D : Data> Tree<D> {
 	}
 }
 
-struct Node<D> {
+pub struct Node<D> {
 	data : D,
 	left : Tree<D>,
 	right : Tree<D>
@@ -57,16 +57,16 @@ pub trait Data {
 // need to consider the design
 
 impl<D : Data> Node<D> {
-	fn rebuild(&mut self) {
+	pub fn rebuild(&mut self) {
 		Data::rebuild_data(&mut self.data, self.left.data(), self.right.data()); 
 	}
 	
-	fn access(&mut self) {
+	pub fn access(&mut self) {
 		Data::access(&mut self.data, self.left.data_mut(), self.right.data_mut());
 		// TODO - reversing
 	}
 	
-	fn new(mut data : D, left : Tree<D>, right : Tree<D>) -> Node<D> {
+	pub fn new(mut data : D, left : Tree<D>, right : Tree<D>) -> Node<D> {
 		// this must be written first because later the values are moved into the result
 		data.rebuild_data(left.data(), right.data());
 		Node {
@@ -78,3 +78,15 @@ impl<D : Data> Node<D> {
 }
 
 
+impl<D : Data> std::ops::Deref for Node<D> {
+	type Target = D;
+	fn deref(&self) -> &D {
+		&self.data
+	}
+}
+
+impl<D : Data> std::ops::DerefMut for Node<D> {
+	fn deref_mut(&mut self) -> &mut D {
+		&mut self.data
+	}
+}
