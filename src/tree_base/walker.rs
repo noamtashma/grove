@@ -9,7 +9,7 @@ use std::ops::DerefMut;
 // maybe switch to Telescope<'a, Box<Tree<D>>>
 // should automatically go back up the tree when dropped
 pub struct TreeWalker<'a, D : Data> {
-	tel : Telescope<'a, Node<D>>,
+	tel : Telescope<'a, Tree<D>>,
 	// this array holds for every node, whether its left son is inside the walker
 	// and not the right one.
 	// this array is always one shorter than the telescope,
@@ -19,33 +19,40 @@ pub struct TreeWalker<'a, D : Data> {
 }
 
 impl<'a, D : Data> Deref for TreeWalker<'a, D> {
-	type Target = Node<D>;
-	fn deref(&self) -> &Node<D> {
+	type Target = Tree<D>;
+	fn deref(&self) -> &Tree<D> {
 		&*self.tel
 	}
 }
 
 impl<'a, D : Data> DerefMut for TreeWalker<'a, D> {
-	fn deref_mut(&mut self) -> &mut Node<D> {
+	fn deref_mut(&mut self) -> &mut Tree<D> {
 		&mut *self.tel
 	}
 }
 
 impl<'a, D : Data> TreeWalker<'a, D> {
-	pub fn new(tree : &'a mut Node<D>) -> TreeWalker<'a, D> {
+	pub fn new(tree : &'a mut Tree<D>) -> TreeWalker<'a, D> {
 		TreeWalker{ tel : Telescope::new(tree),
 					is_left : vec![] }
+	}
+
+	pub fn is_empty(&self) -> bool {
+		match &*self.tel {
+			Tree::Empty => true,
+			_ => false,
+		}
 	}
 	
 	// returns Err if it's impossible to go left
 	// otherwise returns Ok
 	pub fn go_left(&mut self) -> Result<(), ()> {
-		let res = self.tel.reborrow_result( &mut |node| {
-				match &mut node.left {
+		let res = self.tel.reborrow_result( &mut |tree| {
+				match &mut tree {
 					Empty => return Err(()),
-					Root(left) => {
-						left.access();
-						return Ok(left)},
+					Root(node) => {
+						node.access();
+						return Ok(&mut node.left)},
 				}
 			}
 		);
@@ -59,12 +66,12 @@ impl<'a, D : Data> TreeWalker<'a, D> {
 	// returns Err if it's impossible to go right
 	// otherwise returns Ok
 	pub fn go_right(&mut self) -> Result<(), ()> {
-		let res = self.tel.reborrow_result( &mut |node| {
-			match &mut node.right {
+		let res = self.tel.reborrow_result( &mut |tree| {
+			match &mut tree {
 				Empty => return Err(()),
-				Root(right) => {
-					right.access();
-					return Ok(right)},
+				Root(node) => {
+					node.access();
+					return Ok(&mut node.right)},
 				}
 			}
 		);
@@ -92,8 +99,10 @@ impl<'a, D : Data> TreeWalker<'a, D> {
 		self.is_left.len()
 	}
 
+	// note: if the tree is empty, this returns false, even though the position is the root position.
+	// TODO: rethink this decision in the future
 	pub fn is_root(&self) -> bool {
-		self.is_left.len() == 0
+		self.is_left.len() == 0 && !self.is_empty()
 	}
 
 	// if successful, returns whether or not the previous current value was the left son.
@@ -108,57 +117,55 @@ impl<'a, D : Data> TreeWalker<'a, D> {
 		}
 	}
 
-	// returns Err(()) if this node has no right son.
+	// returns Err(()) if this is an empty tree or if it has no right son.
 	pub fn rot_left(&mut self) -> Result<(), ()> {
-		let n1 : &mut Node<D> = &mut self.tel;
-		n1.right.access();
-		let right = std::mem::replace(&mut n1.right, Empty /* temporary */);
-		let mut n2 : Box<Node<D>> = match right {
-			Empty => return Err(()),
-			Root(n2) => n2,
+		let owned_tree = std::mem::replace(&mut *self.tel, Tree::Empty);
+
+		let bn1 : Box<Node<D>> = match owned_tree {
+			Tree::Empty => return Err(()),
+			Root(bn) => bn,
 		};
 
-		n1.right = n2.left;
-		n2.left = Empty; // temporary
+		bn1.right.access();
 
-		 // this performs a potentially-heavy swap
-		 // in the case that D is large
-		 // TODO: figure out if there is a better way
-		 // might require switching from Telescope<'a, Node>
-		 // to Telescope<'a, Box<Node>>
-		 // which is probably fine?
-		std::mem::swap(n1, &mut n2);
-		n2.rebuild();
-		n1.left = Root(n2);
-		n1.rebuild();
-		n1.access(); // TODO: is this useless?
+		let bn2 : Box<Node<D>> = match bn1.right {
+			Tree::Empty => return Err(()),
+			Root(bn) => bn,
+		};
+
+		bn1.right = bn2.left;
+		bn1.rebuild();
+		bn2.left = Root(bn1);
+		bn2.rebuild();
+		//bn2.access(); // is this necessary? this seems useless
+
+		*self.tel = Root(bn2); // restore the node back
 		return Ok(());
 	}
 
 	// returns Err(()) if this node has no left son.
 	pub fn rot_right(&mut self) -> Result<(), ()> {
-		let n1 : &mut Node<D> = &mut self.tel;
-		n1.left.access();
-		let left = std::mem::replace(&mut n1.left, Empty /* temporary */);
-		let mut n2 : Box<Node<D>> = match left {
-			Empty => return Err(()),
-			Root(n2) => n2,
+		let owned_tree = std::mem::replace(&mut *self.tel, Tree::Empty);
+
+		let bn1 : Box<Node<D>> = match owned_tree {
+			Tree::Empty => return Err(()),
+			Root(bn) => bn,
 		};
 
-		n1.left = n2.right;
-		n2.right = Empty; // temporary
+		bn1.left.access();
 
-		 // this performs a potentially-heavy swap
-		 // in the case that D is large
-		 // TODO: figure out if there is a better way
-		 // might require switching from Telescope<'a, Node>
-		 // to Telescope<'a, Box<Node>>
-		 // which is probably fine?
-		std::mem::swap(n1, &mut n2);
-		n2.rebuild();
-		n1.right = Root(n2);
-		n1.rebuild();
-		n1.access(); // TODO: is this useless?
+		let bn2 : Box<Node<D>> = match bn1.left {
+			Tree::Empty => return Err(()),
+			Root(bn) => bn,
+		};
+
+		bn1.left = bn2.right;
+		bn1.rebuild();
+		bn2.right = Root(bn1);
+		bn2.rebuild();
+		//bn2.access(); // is this necessary? this seems useless
+
+		*self.tel = Root(bn2); // restore the node back
 		return Ok(());
 	}
 

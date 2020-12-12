@@ -5,7 +5,7 @@ use super::super::tree_base::walker::*;
 
 
 pub struct SplayTree<D : Data> {
-    tree : tree_base::Tree<D>,
+    tree : Tree<D>,
 }
 
 impl<D : Data> SplayTree<D> {
@@ -21,21 +21,14 @@ impl<D : Data> SplayTree<D> {
         SplayTree { tree }
     }
 
-    // TODO: this would be better if we used &mut Box<Tree> instead of &mut Node in our data structures.
-    // consider the change
-    // this would require us to store trees in a box
-
     // note: using this directly may cause the tree to lose its properties as a splay tree
-    pub fn basic_walker<'a>(&'a mut self) -> Option<TreeWalker<'a, D>> {
-        match &mut self.tree {
-            Tree::Empty => None,
-            Tree::Root(node) => Some(TreeWalker::new(node)),
-        }
+    pub fn basic_walker<'a>(&'a mut self) -> TreeWalker<'a, D> {
+        TreeWalker::new(&mut self.tree)
     }
 
-    pub fn walker<'a>(&'a mut self) -> Option<SplayWalker<'a, D>> {
-        let basic_walker = self.basic_walker()?;
-        return Some( SplayWalker { walker : basic_walker } );
+    pub fn walker<'a>(&'a mut self) -> SplayWalker<'a, D> {
+        let basic_walker = self.basic_walker();
+        return SplayWalker { walker : basic_walker };
     }
 }
 
@@ -44,58 +37,33 @@ impl<D : crate::data::basic_data::Keyed > SplayTree<D> {
     // returns an error if the node was not found
     // in that case, another node will be splayed to the root
     pub fn search(&mut self, key : &<D as crate::data::basic_data::Keyed>::Key) -> Result<(), ()> {
-        let mut walker = match self.walker() {
-            None => return Err(()),
-            Some(w) => w,
-        };
-        loop {
-            let nkey = walker.get_key();
-            let res = if nkey == key {
+        let mut walker = self.walker();
+        while let Tree::Root(node) = &mut *walker {
+            let nkey = node.get_key();
+            if nkey == key {
                 return Ok(()); // we still splay because the SplayWalker destructor does it for us
             } else if nkey < key {
-                walker.go_left()
+                walker.go_left().unwrap() // the empty case is unreachable
             } else {
-                walker.go_right()
-            };
-
-            if let Err(()) = res {
-                return Err(());
-                // our key isn't in the tree. we'll end up splaying another node instead.
-                // we still end up splaying because the destructor of the SplayWalker does it for us.
+                walker.go_right().unwrap() // the empty case is unreachable
             }
         }
+        return Err(());
     }
 
     pub fn insert(&mut self, data : D) {
-        let mut walker = match &self.tree {
-            Tree::Empty => {
-                self.tree = Tree::Root(Box::new(Node::new(data, Tree::Empty, Tree::Empty)));
-                return;
-            },
-            _ => self.walker().unwrap(),
-        };
+        let mut walker = self.walker();
 
         let key = data.get_key();
-        loop {
-            let nkey = walker.get_key();
+        while let Tree::Root(node) = &mut *walker {
+            let nkey = node.get_key();
             if nkey < key {
-                match walker.go_left() {
-                    Err(()) => {
-                        walker.left = Tree::Root(Box::new(Node::new(data, Tree::Empty, Tree::Empty)));
-                        return
-                    },
-                    Ok(()) => (),
-                }
+                walker.go_left().unwrap(); // the empty case is unreachable
             } else {
-                match walker.go_right() {
-                    Err(()) => {
-                        walker.right = Tree::Root(Box::new(Node::new(data, Tree::Empty, Tree::Empty)));
-                        return
-                    },
-                    Ok(()) => (),
-                }
+                walker.go_right().unwrap(); // the empty case is unreachable
             };
         }
+        *walker = Tree::Root(Box::new(Node::new(data, Tree::Empty, Tree::Empty)));
     }
 }
 
@@ -163,14 +131,14 @@ impl<'a, D : Data> Drop for SplayWalker<'a, D> {
 }
 
 impl<'a, D : Data> std::ops::Deref for SplayWalker<'a, D> {
-    type Target = Node<D>;
-    fn deref(&self) -> &Node<D> {
+    type Target = Tree<D>;
+    fn deref(&self) -> &Tree<D> {
         &*self.walker
     }
 }
 
 impl<'a, D : Data> std::ops::DerefMut for SplayWalker<'a, D> {
-    fn deref_mut(&mut self) -> &mut Node<D> {
+    fn deref_mut(&mut self) -> &mut Tree<D> {
         &mut *self.walker
     }
 }
