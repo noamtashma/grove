@@ -41,8 +41,8 @@ impl<D : Data> Tree<D> {
 
 pub struct Node<D> {
 	data : D,
-	left : Tree<D>,
-	right : Tree<D>
+	pub(crate) left : Tree<D>,
+	pub(crate) right : Tree<D>
 }
 
 impl<D : Data> Node<D> {

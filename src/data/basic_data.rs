@@ -2,7 +2,7 @@ use super::*;
 
 // straight values. no bookkeeping needed.
 struct Value<T> {
-    val : T,
+    pub val : T,
 }
 
 impl<T> Data for Value<T> {
@@ -14,7 +14,7 @@ impl<T> Data for Value<T> {
 // assumes that storing the size of the structure in a usize is enough.
 // if it's enough for all the addresses in the computers... it must always be enough, right? right?
 struct Size {
-    size : usize
+    pub size : usize
 }
 
 impl Data for Size {
@@ -36,7 +36,7 @@ impl Data for Size {
 
 // the height of a subtree
 struct Height {
-    height : usize
+    pub height : usize
 }
 
 impl Data for Height {
@@ -58,8 +58,8 @@ impl Data for Height {
 // ordering keys
 // similar to Value<K>, but implements the keying trait. TODO
 
-struct Key<K> {
-    key : K,
+pub struct Key<K> {
+    pub key : K,
 }
 
 impl<K : std::cmp::Ord> Data for Key<K> {
@@ -67,7 +67,7 @@ impl<K : std::cmp::Ord> Data for Key<K> {
     fn access<'a>(&'a mut self, _ : Option<&'a mut Self>, _ : Option<&'a mut Self>) {}
 }
 
-trait Keyed : Data where {
+pub trait Keyed : Data where {
     type Key : std::cmp::Ord;
     fn get_key(&self) -> &<Self as Keyed>::Key;
 }

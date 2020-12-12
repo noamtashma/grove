@@ -39,29 +39,62 @@ impl<D : Data> SplayTree<D> {
     }
 }
 
-{
-    use super::super::data::basic_data::Keyed;
-    impl<D :Keyed > SplayTree<D> {
-        // moves the wanted node to the root, if found
-        // returns an error if the node was not found
-        // in that case, another node will be splayed to the root
-        pub fn search(&mut self, &key : <D as Keyed>::Key) -> Res<(), ()> {
-            walker = self.walker();
-            while let nkey = walker.as_key() {
-                let res = if nkey == key {
-                    return Ok(()); // we still splay because the SplayWalker destructor does it for us
-                } else if nkey < key {
-                    walker.go_left()
-                } else {
-                    walker.go_right()
-                };
+impl<D : crate::data::basic_data::Keyed > SplayTree<D> {
+    // moves the wanted node to the root, if found
+    // returns an error if the node was not found
+    // in that case, another node will be splayed to the root
+    pub fn search(&mut self, key : &<D as crate::data::basic_data::Keyed>::Key) -> Result<(), ()> {
+        let mut walker = match self.walker() {
+            None => return Err(()),
+            Some(w) => w,
+        };
+        loop {
+            let nkey = walker.get_key();
+            let res = if nkey == key {
+                return Ok(()); // we still splay because the SplayWalker destructor does it for us
+            } else if nkey < key {
+                walker.go_left()
+            } else {
+                walker.go_right()
+            };
 
-                if let Err(()) = res {
-                    return Err(()),
-                    // our key isn't in the tree. we'll end up splaying another node instead.
-                    // we still end up splaying because the destructor of the SplayWalker does it for us.
-                }
+            if let Err(()) = res {
+                return Err(());
+                // our key isn't in the tree. we'll end up splaying another node instead.
+                // we still end up splaying because the destructor of the SplayWalker does it for us.
             }
+        }
+    }
+
+    pub fn insert(&mut self, data : D) {
+        let mut walker = match &self.tree {
+            Tree::Empty => {
+                self.tree = Tree::Root(Box::new(Node::new(data, Tree::Empty, Tree::Empty)));
+                return;
+            },
+            _ => self.walker().unwrap(),
+        };
+
+        let key = data.get_key();
+        loop {
+            let nkey = walker.get_key();
+            if nkey < key {
+                match walker.go_left() {
+                    Err(()) => {
+                        walker.left = Tree::Root(Box::new(Node::new(data, Tree::Empty, Tree::Empty)));
+                        return
+                    },
+                    Ok(()) => (),
+                }
+            } else {
+                match walker.go_right() {
+                    Err(()) => {
+                        walker.right = Tree::Root(Box::new(Node::new(data, Tree::Empty, Tree::Empty)));
+                        return
+                    },
+                    Ok(()) => (),
+                }
+            };
         }
     }
 }
