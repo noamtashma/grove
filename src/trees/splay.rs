@@ -39,11 +39,45 @@ impl<D : Data> SplayTree<D> {
     }
 }
 
+{
+    use super::super::data::basic_data::Keyed;
+    impl<D :Keyed > SplayTree<D> {
+        // moves the wanted node to the root, if found
+        // returns an error if the node was not found
+        // in that case, another node will be splayed to the root
+        pub fn search(&mut self, &key : <D as Keyed>::Key) -> Res<(), ()> {
+            walker = self.walker();
+            while let nkey = walker.as_key() {
+                let res = if nkey == key {
+                    return Ok(()); // we still splay because the SplayWalker destructor does it for us
+                } else if nkey < key {
+                    walker.go_left()
+                } else {
+                    walker.go_right()
+                };
+
+                if let Err(()) = res {
+                    return Err(()),
+                    // our key isn't in the tree. we'll end up splaying another node instead.
+                    // we still end up splaying because the destructor of the SplayWalker does it for us.
+                }
+            }
+        }
+    }
+}
+
 pub struct SplayWalker<'a, D : Data> {
     walker : TreeWalker<'a, D>,
 }
 
 impl <'a, D : Data> SplayWalker<'a, D> {
+    // TODO - add an into_inner method
+    // it was annoying because rust doesn't allow consuming values that implement Drop
+
+    pub fn new(walker : TreeWalker<'a, D>) -> Self {
+        SplayWalker { walker }
+    }
+
     pub fn go_left(&mut self) -> Result<(), ()> {
         self.walker.go_left()
     }
@@ -53,9 +87,32 @@ impl <'a, D : Data> SplayWalker<'a, D> {
     }
 
     // if at the root, do nothing.
-    // otherwise, do a splay step upwards
+    // otherwise, do a splay step upwards.
+
+    // about the amortized computational complexity of using splay steps:
+    // the amortized cost of any splay step, except the zig step near the root, is at most
+    // log(new_node.size) - log(old_node.size) - 1
+    // the -1 covers the complexity of going down the tree in the first place,
+    // and therefore you pay for at most log the size of the node where you stop splaying
+
     pub fn splay_step(&mut self) {
-        unimplemented!()
+        let b1 = match self.walker.go_up() {
+            Err(()) => return, // already the root
+            Ok(b1) => b1,
+        };
+
+        let b2 = match self.walker.is_left_son() {
+            None => { self.walker.rot_side(!b1).unwrap(); return }, // became the root - zig step
+            Some(b2) => b2,
+        };
+
+        if b1 == b2 { // zig-zig case
+            self.walker.rot_up().unwrap();
+            self.walker.rot_side(!b1).unwrap();
+        } else { // zig-zag case
+            self.walker.rot_side(!b1).unwrap();
+            self.walker.rot_up().unwrap();
+        }
     }
 
     // splay the current node to the top of the tree
