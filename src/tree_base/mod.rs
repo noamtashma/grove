@@ -1,12 +1,12 @@
+mod walker;
 
-
-enum Tree<K, V, D> {
-	Empty, Root(Box<Node<K, V, D>>)
+enum Tree<D> {
+	Empty, Root(Box<Node<D>>)
 }
 
 use Tree::*;
 
-impl<K, V, D> Tree<K, V, D> {
+impl<D> Tree<D> {
 	fn data_mut(&mut self) -> Option<&mut D> {
 		match self {
 			Empty => None,
@@ -20,43 +20,56 @@ impl<K, V, D> Tree<K, V, D> {
 		}
 	}
 }
+impl<D : Data> Tree<D> {
 
-struct Node<K, V, D> {
-	key : K,
-	value : V,
-	data : D,
-	left : Tree<K, V, D>,
-	right : Tree<K, V, D>
+	fn rebuild(&mut self) {
+		match self {
+			Root(node) => node.rebuild(),
+			_ => (),
+		}
+	}
+	
+	fn access(&mut self) {
+		match self {
+			Root(node) => node.access(),
+			_ => (),
+		}
+	}
 }
 
-pub trait Data<K, V> {
-	// create the appropriate data given the node and its two sons
-	fn rebuild_data<'a>(key : &'a K, value : &'a V, left : Option<&'a Self>, right : Option<&'a Self>) -> Self;
-	// the same, and then put the result into current
-	fn rebuild_data_inplace<'a>(current : &'a mut Self, key : &'a K, value : &'a V, left : Option<&'a Self>, right : Option<&'a Self>);
+struct Node<D> {
+	data : D,
+	left : Tree<D>,
+	right : Tree<D>
+}
+
+// this trait represents the data that will be stored inside the tree.
+// the data can include: keys, values, indices, heights, sizes, sums maximums and minimums of subtrees, actions to be performed on the subtrees,
+// and whatever your heart desires for your data structure needs.
+pub trait Data {
+	// rebuild the associated data from the previous data and the sons.
+	fn rebuild_data<'a>(&'a mut self, left : Option<&'a Self>, right : Option<&'a Self>);
 	// clear the current actions in order for the user to access the node safely
-	fn access<'a>(current : &'a mut Self, key : &'a mut K, value : &'a mut V, left : Option<&'a mut Self>, right : Option<&'a mut Self>); 
+	fn access<'a>(&'a mut self, left : Option<&'a mut Self>, right : Option<&'a mut Self>);
 }
 
 // TODO - trait RevData
 // need to consider the design
 
-impl<K, V, D : Data<K, V>> Node<K, V, D> {
+impl<D : Data> Node<D> {
 	fn rebuild(&mut self) {
-		Data::rebuild_data_inplace(&mut self.data, &self.key, &self.value, self.left.data(), self.right.data()); 
+		Data::rebuild_data(&mut self.data, self.left.data(), self.right.data()); 
 	}
 	
 	fn access(&mut self) {
-		Data::access(&mut self.data, &mut self.key, &mut self.value, self.left.data_mut(), self.right.data_mut());
+		Data::access(&mut self.data, self.left.data_mut(), self.right.data_mut());
 		// TODO - reversing
 	}
 	
-	fn new(key : K, value : V, left : Tree<K, V, D>, right : Tree<K, V, D>) -> Node<K, V, D> {
+	fn new(mut data : D, left : Tree<D>, right : Tree<D>) -> Node<D> {
 		// this must be written first because later the values are moved into the result
-		let data = Data::rebuild_data(&key, &value, left.data(), right.data());
+		data.rebuild_data(left.data(), right.data());
 		Node {
-			key,
-			value,
 			data,
 			left,
 			right,

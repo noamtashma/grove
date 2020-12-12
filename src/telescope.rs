@@ -2,48 +2,75 @@ use std::marker::PhantomData;
 use std::ops::Deref;
 use std::ops::DerefMut;
 
-struct Telescope<'a, T> {
+pub struct Telescope<'a, T> {
 	vec : Vec<*mut T>,
 	phantom : PhantomData<&'a mut T>,
 }
 
-const no_value_error : &'static str = "invariant violated: telescope can't be empty";
-const null_ptr_error : &'static str = "error! somehow got null pointer";
+const NO_VALUE_ERROR : &'static str = "invariant violated: telescope can't be empty";
+const NULL_POINTER_ERROR : &'static str = "error! somehow got null pointer";
 
 impl<'a, T> Telescope<'a, T> {
-	fn new(r : &'a mut T) -> Self {
+	pub fn new(r : &'a mut T) -> Self {
 		Telescope{ vec: vec![r as *mut T], phantom : PhantomData}
 	}
-	
-	fn reborrow<F : FnMut(&'a mut T) -> &'a mut T>(&mut self, func : &mut F) {
-		let len = self.vec.len();
-		if len == 0 {
-			panic!(no_value_error);
-		}
-		unsafe {
-			let r = self.vec[len-1].as_mut().expect(no_value_error);
-			self.vec.push(func(r) as *mut T);
-		}
+
+	pub fn size(&self) -> usize {
+		self.vec.len()
 	}
 	
-	fn push(&mut self, r : &'a mut T) {
+	// if the type was just
+	// (&mut self, func : &mut dyn FnMut(&'a mut T) -> &'a mut T)
+	// then this function would be unsafe
+	// because on the call, we could leak the reference outside,
+	// and then immediately pop the telescope to get another reference to it.
+
+	// however, this type ensures no leaking is possible, since the function that leaks
+	// can't guarantee that the reference given to it will live for any length of time.
+	pub fn reborrow<F : for<'b> FnMut(&'b mut T) -> &'b mut T>(&mut self, func : &mut F) {
+		match self.reborrow_result::<(), _>(&mut |r| Ok(func(r))) {
+			Ok(()) => (),
+			Err(()) => panic!("unexpected error in error-less reborrow"),
+		}
+	}
+
+	pub fn reborrow_result
+		<E,
+		F : for<'b> FnMut(&'b mut T) -> Result<&'b mut T, E>>
+			(&mut self, func : &mut F) -> Result<(),E> {
+
+		let len = self.vec.len();
+		if len == 0 {
+			panic!(NO_VALUE_ERROR);
+		}
+		unsafe {
+			let r = self.vec[len-1].as_mut().expect(NO_VALUE_ERROR);
+			match func(r) {
+				Ok(p) => self.vec.push(p as *mut T),
+				Err(e) => return Err(e),
+			}
+		}
+		return Ok(());
+	}
+	
+	pub fn push(&mut self, r : &'a mut T) {
 		self.vec.push(r as *mut T);
 	}
 	
 	// lets the user use the last reference for some time, and discards it completely.
 	// after the user uses it, the next time they inspect the telescope, it won't be there.
-	fn pop(&mut self) -> Option<&mut T> {
+	pub fn pop(&mut self) -> Option<&mut T> {
 		let len = self.vec.len();
 		if len == 0 {
-			panic!(no_value_error);
+			panic!(NO_VALUE_ERROR);
 		}
 		if len == 1 {
 			return None;
 		}
 		else {
 			unsafe {
-				let r : *mut T = self.vec.pop().expect(no_value_error);
-				return Some(r.as_mut().expect(null_ptr_error));
+				let r : *mut T = self.vec.pop().expect(NO_VALUE_ERROR);
+				return Some(r.as_mut().expect(NULL_POINTER_ERROR));
 			}
 		}
 	}
@@ -54,10 +81,10 @@ impl<'a, T> Deref for Telescope<'a, T> {
 	fn deref(&self) -> &T {
 		let len = self.vec.len();
 		if len == 0 {
-			panic!(no_value_error);
+			panic!(NO_VALUE_ERROR);
 		}
 		unsafe {
-			return self.vec[len-1].as_ref().expect(null_ptr_error);
+			return self.vec[len-1].as_ref().expect(NULL_POINTER_ERROR);
 		}
 	}
 }
@@ -66,10 +93,10 @@ impl<'a, T> DerefMut for Telescope<'a, T> {
 	fn deref_mut(&mut self) -> &mut T {
 		let len = self.vec.len();
 		if len == 0 {
-			panic!(no_value_error);
+			panic!(NO_VALUE_ERROR);
 		}
 		unsafe {
-			return self.vec[len-1].as_mut().expect(null_ptr_error);
+			return self.vec[len-1].as_mut().expect(NULL_POINTER_ERROR);
 		}
 	}
 }
