@@ -1,5 +1,4 @@
 // an implementation of a splay tree
-use super::super::tree_base;
 use super::super::tree_base::*;
 use super::super::tree_base::walker::*;
 
@@ -21,14 +20,27 @@ impl<D : Data> SplayTree<D> {
         SplayTree { tree }
     }
 
+    pub fn data(&self) -> Option<&D> {
+        self.tree.data()
+    }
+
+    pub fn data_mut(&mut self) -> Option<&mut D> {
+        self.tree.data_mut()
+    }
+
     // note: using this directly may cause the tree to lose its properties as a splay tree
-    pub fn basic_walker<'a>(&'a mut self) -> TreeWalker<'a, D> {
+    pub fn basic_walker(&mut self) -> TreeWalker<'_, D> {
         TreeWalker::new(&mut self.tree)
     }
 
-    pub fn walker<'a>(&'a mut self) -> SplayWalker<'a, D> {
-        let basic_walker = self.basic_walker();
-        return SplayWalker { walker : basic_walker };
+    pub fn walker(&mut self) -> SplayWalker<'_, D> {
+        SplayWalker { walker : self.basic_walker() }
+    }
+}
+
+impl<D : Data> std::default::Default for SplayTree<D> {
+    fn default() -> Self {
+        SplayTree::new()
     }
 }
 
@@ -37,18 +49,20 @@ impl<D : crate::data::basic_data::Keyed > SplayTree<D> {
     // returns an error if the node was not found
     // in that case, another node will be splayed to the root
     pub fn search(&mut self, key : &<D as crate::data::basic_data::Keyed>::Key) -> Result<(), ()> {
+        use std::cmp::Ordering::*;
+
         let mut walker = self.walker();
+        // when we leave the function the walker's destructor will
+        // automatically splay a node to the root for us.
         while let Tree::Root(node) = &mut *walker {
-            let nkey = node.get_key();
-            if nkey == key {
-                return Ok(()); // we still splay because the SplayWalker destructor does it for us
-            } else if nkey < key {
-                walker.go_left().unwrap() // the empty case is unreachable
-            } else {
-                walker.go_right().unwrap() // the empty case is unreachable
-            }
+            let nodekey = node.get_key();
+            match key.cmp(nodekey) {
+                Equal   => return Ok(()),
+                Less    => walker.go_left().unwrap(), // the empty case is unreachable
+                Greater => walker.go_right().unwrap(), // the empty case is unreachable
+            };
         }
-        return Err(());
+        return Err(()); // splay some other node instead
     }
 
     pub fn insert(&mut self, data : D) {
@@ -56,8 +70,7 @@ impl<D : crate::data::basic_data::Keyed > SplayTree<D> {
 
         let key = data.get_key();
         while let Tree::Root(node) = &mut *walker {
-            let nkey = node.get_key();
-            if nkey < key {
+            if key < node.get_key() {
                 walker.go_left().unwrap(); // the empty case is unreachable
             } else {
                 walker.go_right().unwrap(); // the empty case is unreachable
@@ -97,6 +110,15 @@ impl <'a, D : Data> SplayWalker<'a, D> {
     // and therefore you pay for at most log the size of the node where you stop splaying
 
     pub fn splay_step(&mut self) {
+
+        // if the walker points to an empty position,
+        // we can't splay it, just go upwards once.
+        if self.walker.is_empty() {
+            if let Err(()) = self.walker.go_up() { // if already the root, exit. otherwise, go up
+                return
+            };
+        }
+
         let b1 = match self.walker.go_up() {
             Err(()) => return, // already the root
             Ok(b1) => b1,

@@ -16,6 +16,9 @@ fn main() {
 
     for x in 1..30 {
         tree.search(&x);
-        println!("{}", tree.walker().unwrap().key);
+        println!("{}", tree.data().unwrap().key);
+        if x % 5 == 0 && x != tree.data().unwrap().key {
+            panic!();
+        }
     }
 }

@@ -7,8 +7,8 @@ pub struct Telescope<'a, T> {
 	phantom : PhantomData<&'a mut T>,
 }
 
-const NO_VALUE_ERROR : &'static str = "invariant violated: telescope can't be empty";
-const NULL_POINTER_ERROR : &'static str = "error! somehow got null pointer";
+const NO_VALUE_ERROR : &str = "invariant violated: telescope can't be empty";
+const NULL_POINTER_ERROR : &str = "error! somehow got null pointer";
 
 impl<'a, T> Telescope<'a, T> {
 	pub fn new(r : &'a mut T) -> Self {
@@ -27,14 +27,14 @@ impl<'a, T> Telescope<'a, T> {
 
 	// however, this type ensures no leaking is possible, since the function that leaks
 	// can't guarantee that the reference given to it will live for any length of time.
-	pub fn reborrow<F : for<'b> FnMut(&'b mut T) -> &'b mut T>(&mut self, func : &mut F) {
-		match self.reborrow_result::<(), _>(&mut |r| Ok(func(r))) {
+	pub fn extend<F : for<'b> FnMut(&'b mut T) -> &'b mut T>(&mut self, func : &mut F) {
+		match self.extend_result::<(), _>(&mut |r| Ok(func(r))) {
 			Ok(()) => (),
 			Err(()) => panic!("unexpected error in error-less reborrow"),
 		}
 	}
 
-	pub fn reborrow_result
+	pub fn extend_result
 		<E,
 		F : for<'b> FnMut(&'b mut T) -> Result<&'b mut T, E>>
 			(&mut self, func : &mut F) -> Result<(),E> {

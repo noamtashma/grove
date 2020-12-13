@@ -38,47 +38,42 @@ impl<'a, D : Data> TreeWalker<'a, D> {
 	}
 
 	pub fn is_empty(&self) -> bool {
-		match &*self.tel {
-			Tree::Empty => true,
-			_ => false,
-		}
+		matches!(&*self.tel, Tree::Empty)
 	}
 	
 	// returns Err if it's impossible to go left
 	// otherwise returns Ok
 	pub fn go_left(&mut self) -> Result<(), ()> {
-		let res = self.tel.reborrow_result( &mut |tree| {
-				match &mut tree {
-					Empty => return Err(()),
+		let res = self.tel.extend_result( &mut |tree| {
+				match tree {
+					Empty => Err(()),
 					Root(node) => {
 						node.access();
-						return Ok(&mut node.left)},
+						Ok(&mut node.left)},
 				}
 			}
 		);
-		match res {
-			Ok (()) => self.is_left.push(true), // went left
-			Err(_) => (),
-		};
+		if res.is_ok() {
+			self.is_left.push(true); // went left
+		}
 		return res;
 	}
 	
 	// returns Err if it's impossible to go right
 	// otherwise returns Ok
 	pub fn go_right(&mut self) -> Result<(), ()> {
-		let res = self.tel.reborrow_result( &mut |tree| {
-			match &mut tree {
-				Empty => return Err(()),
+		let res = self.tel.extend_result( &mut |tree| {
+			match tree {
+				Empty => Err(()),
 				Root(node) => {
 					node.access();
-					return Ok(&mut node.right)},
+					Ok(&mut node.right)},
 				}
 			}
 		);
-		match res {
-			Ok (()) => self.is_left.push(false), // went right
-			Err(_) => (),
-		};
+		if res.is_ok() {
+			self.is_left.push(false); // went right
+		}
 		return res;
 	}
 	
@@ -86,7 +81,7 @@ impl<'a, D : Data> TreeWalker<'a, D> {
 	// otherwise returns Some(true) is the current position is a left son
 	// Some(falsE) if the current position is a right son
 	pub fn is_left_son(&self) -> Option<bool> {
-		if self.is_left.len() == 0 {
+		if self.is_left.is_empty() {
 			None
 		}
 		else {
@@ -99,20 +94,20 @@ impl<'a, D : Data> TreeWalker<'a, D> {
 		self.is_left.len()
 	}
 
-	// note: if the tree is empty, this returns false, even though the position is the root position.
-	// TODO: rethink this decision in the future
+	// note: even if you are the root, the root might still be empty,
+	// if this is the empty tree
 	pub fn is_root(&self) -> bool {
-		self.is_left.len() == 0 && !self.is_empty()
+		self.is_left.is_empty()
 	}
 
 	// if successful, returns whether or not the previous current value was the left son.
 	pub fn go_up(&mut self) -> Result<bool, ()> {
 		match self.is_left.pop() {
-			None => return Err(()),
+			None => Err(()),
 			Some(b) => { 
 				self.tel.pop().expect("missing element from telescope");
 				self.tel.rebuild();
-				return Ok(b);
+				Ok(b)
 			},
 		}
 	}
@@ -121,14 +116,14 @@ impl<'a, D : Data> TreeWalker<'a, D> {
 	pub fn rot_left(&mut self) -> Result<(), ()> {
 		let owned_tree = std::mem::replace(&mut *self.tel, Tree::Empty);
 
-		let bn1 : Box<Node<D>> = match owned_tree {
+		let mut bn1 : Box<Node<D>> = match owned_tree {
 			Tree::Empty => return Err(()),
 			Root(bn) => bn,
 		};
 
 		bn1.right.access();
 
-		let bn2 : Box<Node<D>> = match bn1.right {
+		let mut bn2 : Box<Node<D>> = match bn1.right {
 			Tree::Empty => return Err(()),
 			Root(bn) => bn,
 		};
@@ -140,21 +135,21 @@ impl<'a, D : Data> TreeWalker<'a, D> {
 		//bn2.access(); // is this necessary? this seems useless
 
 		*self.tel = Root(bn2); // restore the node back
-		return Ok(());
+		Ok(())
 	}
 
 	// returns Err(()) if this node has no left son.
 	pub fn rot_right(&mut self) -> Result<(), ()> {
 		let owned_tree = std::mem::replace(&mut *self.tel, Tree::Empty);
 
-		let bn1 : Box<Node<D>> = match owned_tree {
+		let mut bn1 : Box<Node<D>> = match owned_tree {
 			Tree::Empty => return Err(()),
 			Root(bn) => bn,
 		};
 
 		bn1.left.access();
 
-		let bn2 : Box<Node<D>> = match bn1.left {
+		let mut bn2 : Box<Node<D>> = match bn1.left {
 			Tree::Empty => return Err(()),
 			Root(bn) => bn,
 		};
@@ -166,7 +161,7 @@ impl<'a, D : Data> TreeWalker<'a, D> {
 		//bn2.access(); // is this necessary? this seems useless
 
 		*self.tel = Root(bn2); // restore the node back
-		return Ok(());
+		Ok(())
 	}
 
 	// performs rot_left if b is true
@@ -185,12 +180,12 @@ impl<'a, D : Data> TreeWalker<'a, D> {
 	pub fn rot_up(&mut self) -> Result<(), ()> {
 		let b = self.go_up()?;
 		self.rot_side(!b).expect("original node went missing?");
-		return Ok(());
+		Ok(())
 	}
 }
 
 impl<'a, D : Data> Drop for TreeWalker<'a, D> {
 	fn drop(&mut self) {
-		while let Ok(_) = self.go_up() {} // in order to rebuild the nodes
+		while self.go_up().is_ok() {} // in order to rebuild the nodes
 	}
 }
