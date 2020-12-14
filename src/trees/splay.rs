@@ -1,7 +1,7 @@
 // an implementation of a splay tree
 use super::*;
-use super::super::tree_base::*;
-use super::super::tree_base::walker::*;
+use crate::basic_tree::*;
+use crate::basic_tree::walker::*;
 
 
 
@@ -20,8 +20,8 @@ impl<D : Data> SplayTree<D> {
     }
 
     // note: using this directly may cause the tree to lose its properties as a splay tree
-    pub fn basic_walker(&mut self) -> TreeWalker<'_, D> {
-        TreeWalker::new(&mut self.tree)
+    pub fn basic_walker(&mut self) -> BasicWalker<'_, D> {
+        BasicWalker::new(&mut self.tree)
     }
 
 }
@@ -42,7 +42,7 @@ impl<D : crate::data::basic_data::Keyed > SplayTree<D> {
         let mut walker = self.walker();
         // when we leave the function the walker's destructor will
         // automatically splay a node to the root for us.
-        while let Tree::Root(node) = &mut *walker {
+        while let Tree::Root(node) = &mut *walker.walker {
             let nodekey = node.get_key();
             match key.cmp(nodekey) {
                 Equal   => return Ok(()),
@@ -54,30 +54,40 @@ impl<D : crate::data::basic_data::Keyed > SplayTree<D> {
     }
 
     pub fn insert(&mut self, data : D) {
-        let mut walker = self.walker();
+        let mut walker: SplayWalker<'_, D> = self.walker();
 
         let key = data.get_key();
-        while let Tree::Root(node) = &mut *walker {
+        while let Tree::Root(node) = &mut *walker.walker {
             if key < node.get_key() {
                 walker.go_left().unwrap(); // the empty case is unreachable
             } else {
                 walker.go_right().unwrap(); // the empty case is unreachable
             };
         }
-        *walker = Tree::Root(Box::new(Node::new(data, Tree::Empty, Tree::Empty)));
+        *walker.walker = Tree::Root(Box::new(Node::new(data, Tree::Empty, Tree::Empty)));
     }
 }
 
 #[derive(destructure)]
 pub struct SplayWalker<'a, D : Data> {
-    walker : TreeWalker<'a, D>,
+    walker : BasicWalker<'a, D>,
 }
 
 impl<'a, D : Data> SplayWalker<'a, D> {
-    // TODO - add an into_inner method
-    // it was annoying because rust doesn't allow consuming values that implement Drop
 
-    pub fn into_inner(self) -> TreeWalker<'a, D> {
+    pub fn inner(&self) -> &Tree<D> {
+        &*self.walker
+    }
+
+    // using this function can really mess up the structure
+    // use wisely
+    // this function shouldn't really be public
+    // TODO: should this function exist?
+    pub fn inner_mut(&mut self) -> &mut Tree<D> {
+        &mut *self.walker
+    }
+
+    pub fn into_inner(self) -> BasicWalker<'a, D> {
         // this is a workaround for the problem that, 
         // we can't move out of a type implementing Drop
 
@@ -85,7 +95,7 @@ impl<'a, D : Data> SplayWalker<'a, D> {
         walker
     }
 
-    pub fn new(walker : TreeWalker<'a, D>) -> Self {
+    pub fn new(walker : BasicWalker<'a, D>) -> Self {
         SplayWalker { walker }
     }
     
@@ -141,19 +151,6 @@ impl<'a, D : Data> Drop for SplayWalker<'a, D> {
     }
 }
 
-impl<'a, D : Data> std::ops::Deref for SplayWalker<'a, D> {
-    type Target = Tree<D>;
-    fn deref(&self) -> &Tree<D> {
-        &*self.walker
-    }
-}
-
-impl<'a, D : Data> std::ops::DerefMut for SplayWalker<'a, D> {
-    fn deref_mut(&mut self) -> &mut Tree<D> {
-        &mut *self.walker
-    }
-}
-
 impl<D : Data> SomeTree<D> for SplayTree<D> {
     fn into_inner(self) -> Tree<D> {
         self.tree
@@ -176,8 +173,6 @@ impl<'a, D : Data> SomeTreeRef<D> for &'a mut SplayTree<D> {
 }
 
 impl<'a, D : Data> SomeWalker<D> for SplayWalker<'a, D> {
-    type Entry = SplayEntry<'a, D>;
-
     fn go_left(&mut self) -> Result<(), ()> {
         self.walker.go_left()
     }
@@ -186,19 +181,33 @@ impl<'a, D : Data> SomeWalker<D> for SplayWalker<'a, D> {
         self.walker.go_right()
     }
 
-    fn inner_mut(&mut self) -> &mut tree_base::Tree<D> {
+    fn inner_mut(&mut self) -> &mut basic_tree::Tree<D> {
         &mut *self.walker
     }
-    fn inner(&self) -> &tree_base::Tree<D> {
+    fn inner(&self) -> &basic_tree::Tree<D> {
         &* self.walker
     }
+}
 
-    fn into_entry(mut self) -> Self::Entry {
-        self.splay();
-        let r = self.into_inner().root_into_ref();
-        SplayEntry { r : r }
+impl<'a, D : Data> SomeEntry<D> for SplayWalker<'a, D> {
+    fn data_mut(&mut self) -> Option<&mut D> {
+        self.walker.data_mut()
+    }
+
+    fn data(&self) -> Option<&D> {
+        self.walker.data()
+    }
+
+    fn write(&mut self, data : D) -> Option<D> {
+        self.walker.write(data)
+    }
+
+    fn insert_new(&mut self, data : D) -> Result<(), ()> {
+        self.walker.insert_new(data)
     }
 }
+
+/*
 
 impl<'a , 'b, D : Data> SomeWalkerRef<D> for &'b mut SplayWalker<'a, D> {
     type Entry = SplayEntry<'b, D>;
@@ -207,8 +216,10 @@ impl<'a , 'b, D : Data> SomeWalkerRef<D> for &'b mut SplayWalker<'a, D> {
     }
 }
 
+
 pub struct SplayEntry<'a, D : Data> {
     r : &'a mut Tree<D>,
 }
 
 impl<'a, D : Data> SomeEntry<D> for SplayEntry<'a, D> {}
+*/

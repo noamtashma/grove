@@ -1,26 +1,16 @@
 pub mod walker;
-pub use super::data::*;
+pub mod implementations;
+
+pub use implementations::*;
+pub use crate::data::Data; // because everyone will need to specify Data for the generic parameters
+
+use crate::trees::SomeEntry;
+pub use implementations::*;
 
 pub enum Tree<D> {
-	Empty, Root(Box<Node<D>>)
+	Empty, Root(Box<Node<D>>) // TODO: rename Root
 }
-
 use Tree::*;
-
-impl<D> Tree<D> {
-	pub fn data_mut(&mut self) -> Option<&mut D> {
-		match self {
-			Empty => None,
-			Root(node) => Some(&mut node.data),
-		}
-	}
-	pub fn data(&self) -> Option<&D> {
-		match self {
-			Empty => None,
-			Root(node) => Some(&node.data),
-		}
-	}
-}
 
 impl<D : Data> Tree<D> {
 
@@ -38,6 +28,8 @@ impl<D : Data> Tree<D> {
 		}
 	}
 }
+
+
 
 pub struct Node<D> {
 	data : D,

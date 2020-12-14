@@ -1,7 +1,9 @@
 use super::*;
-use super::super::telescope::*;
+use crate::telescope::*;
 use std::ops::Deref;
 use std::ops::DerefMut;
+
+use crate::trees::SomeWalkerUp;
 
 // a struct that takes a mutable reference of the tree, and allows you to walk on it.
 // doesn't work for empty trees.
@@ -11,73 +13,37 @@ use std::ops::DerefMut;
 
 
 #[derive(destructure)]
-pub struct TreeWalker<'a, D : Data> {
-	tel : Telescope<'a, Tree<D>>,
+pub struct BasicWalker<'a, D : Data> {
+	pub(super) tel : Telescope<'a, Tree<D>>,
 	// this array holds for every node, whether its left son is inside the walker
 	// and not the right one.
 	// this array is always one shorter than the telescope,
 	// because the last node has no son in the structure.
-	is_left : Vec<bool>,
+	pub(super) is_left : Vec<bool>,
 	// TODO - deal with this array
 }
 
-impl<'a, D : Data> Deref for TreeWalker<'a, D> {
+impl<'a, D : Data> Deref for BasicWalker<'a, D> {
 	type Target = Tree<D>;
 	fn deref(&self) -> &Tree<D> {
 		&*self.tel
 	}
 }
 
-impl<'a, D : Data> DerefMut for TreeWalker<'a, D> {
+impl<'a, D : Data> DerefMut for BasicWalker<'a, D> {
 	fn deref_mut(&mut self) -> &mut Tree<D> {
 		&mut *self.tel
 	}
 }
 
-impl<'a, D : Data> TreeWalker<'a, D> {
-	pub fn new(tree : &'a mut Tree<D>) -> TreeWalker<'a, D> {
-		TreeWalker{ tel : Telescope::new(tree),
+impl<'a, D : Data> BasicWalker<'a, D> {
+	pub fn new(tree : &'a mut Tree<D>) -> BasicWalker<'a, D> {
+		BasicWalker{ tel : Telescope::new(tree),
 					is_left : vec![] }
 	}
 
 	pub fn is_empty(&self) -> bool {
 		matches!(&*self.tel, Tree::Empty)
-	}
-	
-	// returns Err if it's impossible to go left
-	// otherwise returns Ok
-	pub fn go_left(&mut self) -> Result<(), ()> {
-		let res = self.tel.extend_result( &mut |tree| {
-				match tree {
-					Empty => Err(()),
-					Root(node) => {
-						node.access();
-						Ok(&mut node.left)},
-				}
-			}
-		);
-		if res.is_ok() {
-			self.is_left.push(true); // went left
-		}
-		return res;
-	}
-	
-	// returns Err if it's impossible to go right
-	// otherwise returns Ok
-	pub fn go_right(&mut self) -> Result<(), ()> {
-		let res = self.tel.extend_result( &mut |tree| {
-			match tree {
-				Empty => Err(()),
-				Root(node) => {
-					node.access();
-					Ok(&mut node.right)},
-				}
-			}
-		);
-		if res.is_ok() {
-			self.is_left.push(false); // went right
-		}
-		return res;
 	}
 	
 	// if there is only the root, returns None
@@ -101,18 +67,6 @@ impl<'a, D : Data> TreeWalker<'a, D> {
 	// if this is the empty tree
 	pub fn is_root(&self) -> bool {
 		self.is_left.is_empty()
-	}
-
-	// if successful, returns whether or not the previous current value was the left son.
-	pub fn go_up(&mut self) -> Result<bool, ()> {
-		match self.is_left.pop() {
-			None => Err(()),
-			Some(b) => { 
-				self.tel.pop().expect("missing element from telescope");
-				self.tel.rebuild();
-				Ok(b)
-			},
-		}
 	}
 
 	// returns Err(()) if this is an empty tree or if it has no right son.
@@ -199,10 +153,12 @@ impl<'a, D : Data> TreeWalker<'a, D> {
 
 // this implementation exists in order to rebuild the nodes
 // when the walker goes out of scope
-impl<'a, D : Data> Drop for TreeWalker<'a, D> {
+impl<'a, D : Data> Drop for BasicWalker<'a, D> {
 	fn drop(&mut self) {
 		while !self.is_root() {
 			self.go_up();
 		}
 	}
 }
+
+

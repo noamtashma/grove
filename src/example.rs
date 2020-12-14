@@ -1,6 +1,6 @@
 use super::trees::splay::*;
-use super::data::basic_data::*;
 use super::trees::SomeTree;
+use super::data::basic_data::*;
 
 // an example:
 pub fn main() {
