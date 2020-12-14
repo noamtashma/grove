@@ -6,9 +6,6 @@ use std::ops::DerefMut;
 use crate::trees::SomeWalkerUp;
 
 // a struct that takes a mutable reference of the tree, and allows you to walk on it.
-// doesn't work for empty trees.
-// TODO: make it work for empty trees? maybe?
-// maybe switch to Telescope<'a, Box<Tree<D>>>
 // should automatically go back up the tree when dropped
 
 
