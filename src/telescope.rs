@@ -63,7 +63,7 @@ impl<'a, T> Telescope<'a, T> {
 		let len = self.vec.len();
 		if len == 0 {
 			panic!(NO_VALUE_ERROR);
-		}
+		};
 		if len == 1 {
 			return None;
 		}
@@ -72,6 +72,21 @@ impl<'a, T> Telescope<'a, T> {
 				let r : *mut T = self.vec.pop().expect(NO_VALUE_ERROR);
 				return Some(r.as_mut().expect(NULL_POINTER_ERROR));
 			}
+		}
+	}
+
+	// discards the telescope and returns the last reference
+	// the difference between this and using pop() are:
+	// this will consume the telescope
+	// you can use this to remove the original reference
+	pub fn into_ref(mut self) -> &'a mut T {
+		let len = self.vec.len();
+		if len == 0 {
+			panic!(NO_VALUE_ERROR);
+		};
+		unsafe {
+			let r : *mut T = self.vec.pop().expect(NO_VALUE_ERROR);
+			return r.as_mut().expect(NULL_POINTER_ERROR);
 		}
 	}
 }

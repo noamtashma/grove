@@ -8,6 +8,9 @@ use std::ops::DerefMut;
 // TODO: make it work for empty trees? maybe?
 // maybe switch to Telescope<'a, Box<Tree<D>>>
 // should automatically go back up the tree when dropped
+
+
+#[derive(destructure)]
 pub struct TreeWalker<'a, D : Data> {
 	tel : Telescope<'a, Tree<D>>,
 	// this array holds for every node, whether its left son is inside the walker
@@ -182,10 +185,24 @@ impl<'a, D : Data> TreeWalker<'a, D> {
 		self.rot_side(!b).expect("original node went missing?");
 		Ok(())
 	}
+
+	// this takes the walker and turns it into a reference to the root
+	pub fn root_into_ref(mut self) -> &'a mut Tree<D> {
+		// go to the root
+		while !self.is_root() {
+			self.go_up();
+		}
+		let (tel, _) = self.destructure();
+		tel.into_ref()
+	}
 }
 
+// this implementation exists in order to rebuild the nodes
+// when the walker goes out of scope
 impl<'a, D : Data> Drop for TreeWalker<'a, D> {
 	fn drop(&mut self) {
-		while self.go_up().is_ok() {} // in order to rebuild the nodes
+		while !self.is_root() {
+			self.go_up();
+		}
 	}
 }
