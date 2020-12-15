@@ -61,14 +61,6 @@ impl<'a, D : Data> SomeWalker<D> for BasicWalker<'a, D> {
 		}
 		return res;
 	}
-
-    fn inner_mut(&mut self) -> &mut Tree<D> {
-        &mut self.tel
-    }
-
-    fn inner(&self) -> &Tree<D> {
-        &self.tel
-    }
 }
 
 impl<'a, D : Data> SomeWalkerUp<D> for BasicWalker<'a, D> {

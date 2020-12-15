@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 use std::ops::Deref;
 use std::ops::DerefMut;
 
-pub struct Telescope<'a, T> {
+pub struct Telescope<'a, T : ?Sized> {
 	vec : Vec<*mut T>,
 	phantom : PhantomData<&'a mut T>,
 }
@@ -10,7 +10,7 @@ pub struct Telescope<'a, T> {
 const NO_VALUE_ERROR : &str = "invariant violated: telescope can't be empty";
 const NULL_POINTER_ERROR : &str = "error! somehow got null pointer";
 
-impl<'a, T> Telescope<'a, T> {
+impl<'a, T : ?Sized> Telescope<'a, T> {
 	pub fn new(r : &'a mut T) -> Self {
 		Telescope{ vec: vec![r as *mut T], phantom : PhantomData}
 	}
@@ -78,7 +78,7 @@ impl<'a, T> Telescope<'a, T> {
 	// discards the telescope and returns the last reference
 	// the difference between this and using pop() are:
 	// this will consume the telescope
-	// you can use this to remove the original reference
+	// you can use this to take the original reference. therefore, there is no None case.
 	pub fn into_ref(mut self) -> &'a mut T {
 		let len = self.vec.len();
 		if len == 0 {
@@ -91,7 +91,7 @@ impl<'a, T> Telescope<'a, T> {
 	}
 }
 
-impl<'a, T> Deref for Telescope<'a, T> {
+impl<'a, T : ?Sized> Deref for Telescope<'a, T> {
 	type Target = T;
 	fn deref(&self) -> &T {
 		let len = self.vec.len();
@@ -104,7 +104,7 @@ impl<'a, T> Deref for Telescope<'a, T> {
 	}
 }
 
-impl<'a, T> DerefMut for Telescope<'a, T> {
+impl<'a, T : ?Sized> DerefMut for Telescope<'a, T> {
 	fn deref_mut(&mut self) -> &mut T {
 		let len = self.vec.len();
 		if len == 0 {

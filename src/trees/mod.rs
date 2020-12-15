@@ -33,8 +33,26 @@ pub trait SomeWalker<D> : SomeEntry<D> {
     // these functions are here instead of Deref and DerefMut
     // using these functions directly might mess up the internal structure of the tree.
     // be warned!
-    fn inner_mut(&mut self) -> &mut basic_tree::Tree<D>;
-    fn inner(&self) -> &basic_tree::Tree<D>;
+    //fn inner_mut(&mut self) -> &mut basic_tree::Tree<D>;
+    //fn inner(&self) -> &basic_tree::Tree<D>;
+}
+// things that act like entries - allow access to a maybe-missing value, as if it is an Option<D>
+pub trait SomeEntry<D> {
+    fn data_mut(&mut self) -> Option<&mut D>;
+    fn data(&self) -> Option<&D>;
+
+    fn is_empty(&self) -> bool {
+        self.data().is_none()
+    }
+
+    // runs rebuild() after the write
+    // returns the previous data value if there was any
+    // if the place was empty, creates new empty nodes
+    fn write(&mut self, data : D) -> Option<D>;
+
+    // only writes if it is in an empty position. if the positions isn't empty,
+    // return Err(()). runs rebuild() after the write.
+    fn insert_new(&mut self, data : D) -> Result<(), ()>;
 }
 
 pub trait SomeWalkerUp<D> : SomeWalker<D> {
@@ -45,7 +63,7 @@ pub trait SomeWalkerUp<D> : SomeWalker<D> {
 // this should become a method. should we push our general methods inside a trait so that they can be
 // methods?
 
-pub fn insert<D : crate::data::basic_data::Keyed, TR>(tree : TR, data : D) where
+pub fn insert<D : crate::data::example_data::Keyed, TR>(tree : TR, data : D) where
     TR : SomeTreeRef<D>,
 {
     let mut walker = tree.walker();
@@ -60,24 +78,4 @@ pub fn insert<D : crate::data::basic_data::Keyed, TR>(tree : TR, data : D) where
     }
     
     walker.insert_new(data).unwrap();
-}
-
-// things that act like entries
-pub trait SomeEntry<D> {
-    fn data_mut(&mut self) -> Option<&mut D>;
-    fn data(&self) -> Option<&D>;
-
-    fn is_empty(&self) -> bool {
-        self.data().is_none()
-    }
-
-
-    // runs rebuild() after the write
-    // returns the previous data value if there was any
-    // if the place was empty, creates new empty nodes
-    fn write(&mut self, data : D) -> Option<D>;
-
-    // only writes if it is in an empty position. if the positions isn't empty,
-    // return Err(()). runs rebuild() after the write.
-    fn insert_new(&mut self, data : D) -> Result<(), ()>;
 }

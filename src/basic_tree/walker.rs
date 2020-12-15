@@ -17,7 +17,6 @@ pub struct BasicWalker<'a, D : Data> {
 	// this array is always one shorter than the telescope,
 	// because the last node has no son in the structure.
 	pub(super) is_left : Vec<bool>,
-	// TODO - deal with this array
 }
 
 impl<'a, D : Data> Deref for BasicWalker<'a, D> {

@@ -32,11 +32,11 @@ impl<D : Data> std::default::Default for SplayTree<D> {
     }
 }
 
-impl<D : crate::data::basic_data::Keyed > SplayTree<D> {
+impl<D : crate::data::example_data::Keyed > SplayTree<D> {
     // moves the wanted node to the root, if found
     // returns an error if the node was not found
     // in that case, another node will be splayed to the root
-    pub fn search(&mut self, key : &<D as crate::data::basic_data::Keyed>::Key) -> Result<(), ()> {
+    pub fn search(&mut self, key : &<D as crate::data::example_data::Keyed>::Key) -> Result<(), ()> {
         use std::cmp::Ordering::*;
 
         let mut walker = self.walker();
@@ -179,13 +179,6 @@ impl<'a, D : Data> SomeWalker<D> for SplayWalker<'a, D> {
 
     fn go_right(&mut self) -> Result<(), ()> {
         self.walker.go_right()
-    }
-
-    fn inner_mut(&mut self) -> &mut basic_tree::Tree<D> {
-        &mut *self.walker
-    }
-    fn inner(&self) -> &basic_tree::Tree<D> {
-        &* self.walker
     }
 }
 

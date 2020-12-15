@@ -1,8 +1,11 @@
 use super::trees::splay::*;
 use super::trees::SomeTree;
-use super::data::basic_data::*;
+use super::data::example_data::*;
 
 // an example:
+
+
+
 pub fn main() {
     println!("Hello, world!");
 

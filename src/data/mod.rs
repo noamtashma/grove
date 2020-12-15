@@ -1,4 +1,4 @@
-pub mod basic_data;
+pub mod example_data;
 
 // this trait represents the data that will be stored inside the tree.
 // the data can include: keys, values, indices, heights, sizes, sums maximums and minimums of subtrees, actions to be performed on the subtrees,
