@@ -1,7 +1,6 @@
 // an implementation of a splay tree
 use super::*;
-use crate::basic_tree::*;
-use crate::basic_tree::walker::*;
+use super::basic_tree::*;
 
 
 
@@ -179,6 +178,16 @@ impl<'a, D : Data> SomeWalker<D> for SplayWalker<'a, D> {
 
     fn go_right(&mut self) -> Result<(), ()> {
         self.walker.go_right()
+    }
+
+    // you shouldn't use this too much, or you would lose the SplayTree's complexity properties.
+    // basically, when you are going down the tree,
+    // you should only stray from your path by a constant amount,
+    // and you should remember to splay if you want to re-use your walker, instead of
+    // using this fuctionn to get back up.
+    // (when dropped the walker will splay by itself)
+    fn go_up(&mut self) -> Result<bool, ()> {
+        self.walker.go_up()
     }
 }
 

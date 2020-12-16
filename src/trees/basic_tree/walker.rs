@@ -3,7 +3,7 @@ use crate::telescope::*;
 use std::ops::Deref;
 use std::ops::DerefMut;
 
-use crate::trees::SomeWalkerUp;
+use crate::trees::SomeWalker;
 
 // a struct that takes a mutable reference of the tree, and allows you to walk on it.
 // should automatically go back up the tree when dropped
@@ -136,12 +136,16 @@ impl<'a, D : Data> BasicWalker<'a, D> {
 		Ok(())
 	}
 
+	pub fn go_to_root(&mut self) {
+		while !self.is_root() {
+			self.go_up().unwrap();
+		}
+	}
+
 	// this takes the walker and turns it into a reference to the root
 	pub fn root_into_ref(mut self) -> &'a mut Tree<D> {
 		// go to the root
-		while !self.is_root() {
-			self.go_up();
-		}
+		self.go_to_root();
 		let (tel, _) = self.destructure();
 		tel.into_ref()
 	}
@@ -151,9 +155,7 @@ impl<'a, D : Data> BasicWalker<'a, D> {
 // when the walker goes out of scope
 impl<'a, D : Data> Drop for BasicWalker<'a, D> {
 	fn drop(&mut self) {
-		while !self.is_root() {
-			self.go_up();
-		}
+		self.go_to_root();
 	}
 }
 

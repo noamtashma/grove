@@ -13,26 +13,19 @@ impl<T> Data for Value<T> {
 // storing the size of a subtree
 // assumes that storing the size of the structure in a usize is enough.
 // if it's enough for all the addresses in the computers... it must always be enough, right? right?
-struct Size {
+pub struct Size {
     pub size : usize
 }
 
 impl Data for Size {
     fn rebuild_data<'a>(&'a mut self, left : Option<&'a Self>, right : Option<&'a Self>) {
         self.size = 1;
-        self.size += match left {
-            None => 0,
-            Some(r) => r.size,
-        };
-        self.size += match right {
-            None => 0,
-            Some(r) => r.size,
-        };
+        self.size += left.map_or(0, |r| r.size);
+        self.size += right.map_or(0, |r| r.size);
     }
 
     fn access<'a>(&'a mut self, _ : Option<&'a mut Self>, _ : Option<&'a mut Self>) {}
 }
-
 
 // the height of a subtree
 struct Height {
@@ -41,14 +34,8 @@ struct Height {
 
 impl Data for Height {
     fn rebuild_data<'a>(&'a mut self, left : Option<&'a Self>, right : Option<&'a Self>) {
-        let lh = match left {
-            None => 0,
-            Some(r) => r.height,
-        };
-        let rh = match right {
-            None => 0,
-            Some(r) => r.height,
-        };
+        let lh = left.map_or(0, |r| r.height);
+        let rh = right.map_or(0, |r| r.height);
         self.height = 1 + std::cmp::max(lh, rh);
     }
     fn access<'a>(&'a mut self, _ : Option<&'a mut Self>, _ : Option<&'a mut Self>) {}

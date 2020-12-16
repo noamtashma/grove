@@ -61,10 +61,7 @@ impl<'a, D : Data> SomeWalker<D> for BasicWalker<'a, D> {
 		}
 		return res;
 	}
-}
 
-impl<'a, D : Data> SomeWalkerUp<D> for BasicWalker<'a, D> {
-	
 	// if successful, returns whether or not the previous current value was the left son.
 	fn go_up(&mut self) -> Result<bool, ()> {
 		match self.is_left.pop() {
@@ -77,6 +74,7 @@ impl<'a, D : Data> SomeWalkerUp<D> for BasicWalker<'a, D> {
 		}
 	}
 }
+
 
 impl<D : Data> SomeEntry<D> for Tree<D> {
 	fn data_mut(&mut self) -> Option<&mut D> {
@@ -97,12 +95,12 @@ impl<D : Data> SomeEntry<D> for Tree<D> {
         match self {
 			Empty => {
                 *self = Root(Box::new(Node::new(data, Empty, Empty)));
-                self.rebuild();
+                self.access();
 				None
 			},
 			Root(node) => {
 				let old_data = std::mem::replace(&mut node.data, data);
-				node.rebuild();
+				node.access();
 				Some(old_data)
 			},
 		}
@@ -113,7 +111,7 @@ impl<D : Data> SomeEntry<D> for Tree<D> {
         match self {
 			Empty => {
 				*self = Root(Box::new(Node::new(data, Empty, Empty)));
-				self.rebuild();
+				self.access();
 				Ok(())
 			},
 			Root(_) => Err(()),

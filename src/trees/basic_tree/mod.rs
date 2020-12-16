@@ -2,10 +2,10 @@ pub mod walker;
 pub mod implementations;
 
 pub use implementations::*;
-pub use crate::data::Data; // because everyone will need to specify Data for the generic parameters
+pub use walker::*;
+pub use crate::data::*; // because everyone will need to specify Data for the generic parameters
 
 use crate::trees::SomeEntry;
-pub use implementations::*;
 
 pub enum Tree<D> {
 	Empty, Root(Box<Node<D>>) // TODO: rename Root
@@ -27,6 +27,20 @@ impl<D : Data> Tree<D> {
 			_ => (),
 		}
 	}
+
+	// private function
+	// outer callers should only be able to call this if D : Reverse
+	fn internal_reverse(&mut self) {
+		if let Root(node) = self {
+			node.reverse();
+		}
+	}
+}
+
+impl<D : Reverse> Tree<D> {
+	pub fn reverse(&mut self) {
+		self.internal_reverse();
+	}
 }
 
 
@@ -39,12 +53,19 @@ pub struct Node<D> {
 
 impl<D : Data> Node<D> {
 	pub fn rebuild(&mut self) {
-		Data::rebuild_data(&mut self.data, self.left.data(), self.right.data()); 
+		Data::rebuild_data(&mut self.data, self.left.data(), self.right.data());
 	}
 	
 	pub fn access(&mut self) {
 		Data::access(&mut self.data, self.left.data_mut(), self.right.data_mut());
-		// TODO - reversing
+		// reversing
+		// for data that doesn't implement reversing, this becomes a no-op
+		// and hopefully optimized away
+		if self.data.to_reverse() {
+			std::mem::swap(&mut self.left, &mut self.right);
+			self.left.internal_reverse();
+			self.right.internal_reverse();
+		}
 	}
 	
 	pub fn new(mut data : D, left : Tree<D>, right : Tree<D>) -> Node<D> {

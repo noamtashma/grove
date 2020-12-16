@@ -1,6 +1,6 @@
 // this module contains implementations of specific balances search trees.
-use super::basic_tree;
 
+pub mod basic_tree;
 pub mod splay;
 
 pub trait SomeTree<D> where
@@ -30,6 +30,12 @@ pub trait SomeWalker<D> : SomeEntry<D> {
     fn go_left(&mut self) -> Result<(), ()>;
     fn go_right(&mut self) -> Result<(), ()>;
 
+    // if successful, returns whether or not the previous current value was the left son.
+    // if you have a SplayTree, you shouldn't use this too much, or you would lose the
+    // SplayTree's complexity properties.
+    // see splayTree
+    fn go_up(&mut self) -> Result<bool, ()>;
+
     // these functions are here instead of Deref and DerefMut
     // using these functions directly might mess up the internal structure of the tree.
     // be warned!
@@ -45,19 +51,14 @@ pub trait SomeEntry<D> {
         self.data().is_none()
     }
 
-    // runs rebuild() after the write
+    // runs access() after the write
     // returns the previous data value if there was any
     // if the place was empty, creates new empty nodes
     fn write(&mut self, data : D) -> Option<D>;
 
     // only writes if it is in an empty position. if the positions isn't empty,
-    // return Err(()). runs rebuild() after the write.
+    // return Err(()). runs access() after the write.
     fn insert_new(&mut self, data : D) -> Result<(), ()>;
-}
-
-pub trait SomeWalkerUp<D> : SomeWalker<D> {
-	// if successful, returns whether or not the previous current value was the left son.
-    fn go_up(&mut self) -> Result<bool, ()>;
 }
 
 // this should become a method. should we push our general methods inside a trait so that they can be
