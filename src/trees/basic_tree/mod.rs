@@ -1,5 +1,7 @@
-pub mod walker;
-pub mod implementations;
+// these two should not be public as they are merely separate files
+// for some of the functions of this module
+mod walker;
+mod implementations;
 
 pub use implementations::*;
 pub use walker::*;
@@ -7,12 +9,12 @@ pub use crate::data::*; // because everyone will need to specify Data for the ge
 
 use crate::trees::SomeEntry;
 
-pub enum Tree<D> {
-	Empty, Root(Box<Node<D>>) // TODO: rename Root
+pub enum BasicTree<D> {
+	Empty, Root(Box<BasicNode<D>>) // TODO: rename Root
 }
-use Tree::*;
+use BasicTree::*;
 
-impl<D : Data> Tree<D> {
+impl<D : Data> BasicTree<D> {
 
 	pub fn rebuild(&mut self) {
 		match self {
@@ -37,7 +39,7 @@ impl<D : Data> Tree<D> {
 	}
 }
 
-impl<D : Reverse> Tree<D> {
+impl<D : Reverse> BasicTree<D> {
 	pub fn reverse(&mut self) {
 		self.internal_reverse();
 	}
@@ -45,13 +47,13 @@ impl<D : Reverse> Tree<D> {
 
 
 
-pub struct Node<D> {
+pub struct BasicNode<D> {
 	data : D,
-	pub(crate) left : Tree<D>,
-	pub(crate) right : Tree<D>
+	pub(crate) left : BasicTree<D>,
+	pub(crate) right : BasicTree<D>
 }
 
-impl<D : Data> Node<D> {
+impl<D : Data> BasicNode<D> {
 	pub fn rebuild(&mut self) {
 		Data::rebuild_data(&mut self.data, self.left.data(), self.right.data());
 	}
@@ -68,10 +70,10 @@ impl<D : Data> Node<D> {
 		}
 	}
 	
-	pub fn new(mut data : D, left : Tree<D>, right : Tree<D>) -> Node<D> {
+	pub fn new(mut data : D, left : BasicTree<D>, right : BasicTree<D>) -> BasicNode<D> {
 		// this must be written first because later the values are moved into the result
 		data.rebuild_data(left.data(), right.data());
-		Node {
+		BasicNode {
 			data,
 			left,
 			right,
@@ -80,14 +82,14 @@ impl<D : Data> Node<D> {
 }
 
 
-impl<D : Data> std::ops::Deref for Node<D> {
+impl<D : Data> std::ops::Deref for BasicNode<D> {
 	type Target = D;
 	fn deref(&self) -> &D {
 		&self.data
 	}
 }
 
-impl<D : Data> std::ops::DerefMut for Node<D> {
+impl<D : Data> std::ops::DerefMut for BasicNode<D> {
 	fn deref_mut(&mut self) -> &mut D {
 		&mut self.data
 	}

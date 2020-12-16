@@ -1,10 +1,10 @@
-use super::*;
-use super::walker::*;
-use crate::trees::*;
-use crate::trees::SomeEntry;
+// this file implements the tree traits for the BasicTree and BasicWalker
 
-impl<'a, D : Data> SomeTree<D> for Tree<D> {
-    fn into_inner(self) -> Tree<D> {
+use super::*;
+use super::super::*; // crate::trees::*
+
+impl<'a, D : Data> SomeTree<D> for BasicTree<D> {
+    fn into_inner(self) -> BasicTree<D> {
         self
     }
 
@@ -12,12 +12,12 @@ impl<'a, D : Data> SomeTree<D> for Tree<D> {
         Empty
     }
 
-    fn from_inner(tree : Tree<D>) -> Self {
+    fn from_inner(tree : BasicTree<D>) -> Self {
         tree
     }
 }
 
-impl<'a, D : Data> SomeTreeRef<D> for &'a mut Tree<D> {
+impl<'a, D : Data> SomeTreeRef<D> for &'a mut BasicTree<D> {
     type Walker = BasicWalker<'a, D>;
 
     fn walker(self) -> Self::Walker {
@@ -76,7 +76,7 @@ impl<'a, D : Data> SomeWalker<D> for BasicWalker<'a, D> {
 }
 
 
-impl<D : Data> SomeEntry<D> for Tree<D> {
+impl<D : Data> SomeEntry<D> for BasicTree<D> {
 	fn data_mut(&mut self) -> Option<&mut D> {
 		match self {
 			Empty => None,
@@ -94,13 +94,15 @@ impl<D : Data> SomeEntry<D> for Tree<D> {
 	fn write(&mut self, data : D) -> Option<D> {
         match self {
 			Empty => {
-                *self = Root(Box::new(Node::new(data, Empty, Empty)));
-                self.access();
+                *self = Root(Box::new(BasicNode::new(data, Empty, Empty)));
+				self.access();
+				self.rebuild();
 				None
 			},
 			Root(node) => {
 				let old_data = std::mem::replace(&mut node.data, data);
 				node.access();
+				node.rebuild();
 				Some(old_data)
 			},
 		}
@@ -110,8 +112,7 @@ impl<D : Data> SomeEntry<D> for Tree<D> {
     fn insert_new(&mut self, data : D) -> Result<(), ()> {
         match self {
 			Empty => {
-				*self = Root(Box::new(Node::new(data, Empty, Empty)));
-				self.access();
+				*self = Root(Box::new(BasicNode::new(data, Empty, Empty)));
 				Ok(())
 			},
 			Root(_) => Err(()),

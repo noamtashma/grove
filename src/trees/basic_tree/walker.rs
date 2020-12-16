@@ -3,15 +3,14 @@ use crate::telescope::*;
 use std::ops::Deref;
 use std::ops::DerefMut;
 
-use crate::trees::SomeWalker;
+use crate::trees::SomeWalker; // in order to be able to use our own go_up method
+
 
 // a struct that takes a mutable reference of the tree, and allows you to walk on it.
-// should automatically go back up the tree when dropped
-
-
+// will automatically go back up the tree when dropped, in order to rebuild() all the nodes.
 #[derive(destructure)]
 pub struct BasicWalker<'a, D : Data> {
-	pub(super) tel : Telescope<'a, Tree<D>>,
+	pub(super) tel : Telescope<'a, BasicTree<D>>,
 	// this array holds for every node, whether its left son is inside the walker
 	// and not the right one.
 	// this array is always one shorter than the telescope,
@@ -20,26 +19,26 @@ pub struct BasicWalker<'a, D : Data> {
 }
 
 impl<'a, D : Data> Deref for BasicWalker<'a, D> {
-	type Target = Tree<D>;
-	fn deref(&self) -> &Tree<D> {
+	type Target = BasicTree<D>;
+	fn deref(&self) -> &BasicTree<D> {
 		&*self.tel
 	}
 }
 
 impl<'a, D : Data> DerefMut for BasicWalker<'a, D> {
-	fn deref_mut(&mut self) -> &mut Tree<D> {
+	fn deref_mut(&mut self) -> &mut BasicTree<D> {
 		&mut *self.tel
 	}
 }
 
 impl<'a, D : Data> BasicWalker<'a, D> {
-	pub fn new(tree : &'a mut Tree<D>) -> BasicWalker<'a, D> {
+	pub fn new(tree : &'a mut BasicTree<D>) -> BasicWalker<'a, D> {
 		BasicWalker{ tel : Telescope::new(tree),
 					is_left : vec![] }
 	}
 
 	pub fn is_empty(&self) -> bool {
-		matches!(&*self.tel, Tree::Empty)
+		matches!(&*self.tel, BasicTree::Empty)
 	}
 	
 	// if there is only the root, returns None
@@ -67,17 +66,17 @@ impl<'a, D : Data> BasicWalker<'a, D> {
 
 	// returns Err(()) if this is an empty tree or if it has no right son.
 	pub fn rot_left(&mut self) -> Result<(), ()> {
-		let owned_tree = std::mem::replace(&mut *self.tel, Tree::Empty);
+		let owned_tree = std::mem::replace(&mut *self.tel, BasicTree::Empty);
 
-		let mut bn1 : Box<Node<D>> = match owned_tree {
-			Tree::Empty => return Err(()),
+		let mut bn1 : Box<BasicNode<D>> = match owned_tree {
+			BasicTree::Empty => return Err(()),
 			Root(bn) => bn,
 		};
 
 		bn1.right.access();
 
-		let mut bn2 : Box<Node<D>> = match bn1.right {
-			Tree::Empty => return Err(()),
+		let mut bn2 : Box<BasicNode<D>> = match bn1.right {
+			BasicTree::Empty => return Err(()),
 			Root(bn) => bn,
 		};
 
@@ -93,17 +92,17 @@ impl<'a, D : Data> BasicWalker<'a, D> {
 
 	// returns Err(()) if this node has no left son.
 	pub fn rot_right(&mut self) -> Result<(), ()> {
-		let owned_tree = std::mem::replace(&mut *self.tel, Tree::Empty);
+		let owned_tree = std::mem::replace(&mut *self.tel, BasicTree::Empty);
 
-		let mut bn1 : Box<Node<D>> = match owned_tree {
-			Tree::Empty => return Err(()),
+		let mut bn1 : Box<BasicNode<D>> = match owned_tree {
+			BasicTree::Empty => return Err(()),
 			Root(bn) => bn,
 		};
 
 		bn1.left.access();
 
-		let mut bn2 : Box<Node<D>> = match bn1.left {
-			Tree::Empty => return Err(()),
+		let mut bn2 : Box<BasicNode<D>> = match bn1.left {
+			BasicTree::Empty => return Err(()),
 			Root(bn) => bn,
 		};
 
@@ -143,7 +142,7 @@ impl<'a, D : Data> BasicWalker<'a, D> {
 	}
 
 	// this takes the walker and turns it into a reference to the root
-	pub fn root_into_ref(mut self) -> &'a mut Tree<D> {
+	pub fn root_into_ref(mut self) -> &'a mut BasicTree<D> {
 		// go to the root
 		self.go_to_root();
 		let (tel, _) = self.destructure();
@@ -152,7 +151,7 @@ impl<'a, D : Data> BasicWalker<'a, D> {
 }
 
 // this implementation exists in order to rebuild the nodes
-// when the walker goes out of scope
+// when the walker gets dropped
 impl<'a, D : Data> Drop for BasicWalker<'a, D> {
 	fn drop(&mut self) {
 		self.go_to_root();

@@ -1,7 +1,7 @@
 use super::*;
 
-// straight values. no bookkeeping needed.
-struct Value<T> {
+/// straight values. no bookkeeping needed.
+pub struct Value<T> {
     pub val : T,
 }
 
@@ -10,9 +10,9 @@ impl<T> Data for Value<T> {
     fn access<'a>(&'a mut self, _ : Option<&'a mut Self>, _ : Option<&'a mut Self>) {}
 }
 
-// storing the size of a subtree
-// assumes that storing the size of the structure in a usize is enough.
-// if it's enough for all the addresses in the computers... it must always be enough, right? right?
+/// storing the size of a subtree
+/// assumes that storing the size of the structure in a usize is enough.
+/// if it's enough for all the addresses in the computers... it must always be enough, right? right?
 pub struct Size {
     pub size : usize
 }
@@ -27,8 +27,8 @@ impl Data for Size {
     fn access<'a>(&'a mut self, _ : Option<&'a mut Self>, _ : Option<&'a mut Self>) {}
 }
 
-// the height of a subtree
-struct Height {
+/// the height of a subtree
+pub struct Height {
     pub height : usize
 }
 

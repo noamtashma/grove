@@ -68,7 +68,7 @@ impl SplayTree<RAData> {
     // does not splay by itself
     fn search_split<'a>(&'a mut self, mut index : usize) -> SplayWalker<'a, RAData> {
         let mut walker = self.walker();
-        while let crate::trees::basic_tree::Tree::Root(node) = walker.inner_mut() {
+        while let crate::trees::basic_tree::BasicTree::Root(node) = walker.inner_mut() {
             
             let s = node.left.data_mut().map_or(0, |r| r.size.size);
             if index < s {

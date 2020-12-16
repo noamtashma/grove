@@ -5,7 +5,7 @@ use super::basic_tree::*;
 
 
 pub struct SplayTree<D : Data> {
-    tree : Tree<D>,
+    tree : BasicTree<D>,
 }
 
 impl<D : Data> SplayTree<D> {
@@ -35,13 +35,14 @@ impl<D : crate::data::example_data::Keyed > SplayTree<D> {
     // moves the wanted node to the root, if found
     // returns an error if the node was not found
     // in that case, another node will be splayed to the root
+    // TODO: make into a general tree method
     pub fn search(&mut self, key : &<D as crate::data::example_data::Keyed>::Key) -> Result<(), ()> {
         use std::cmp::Ordering::*;
 
         let mut walker = self.walker();
         // when we leave the function the walker's destructor will
         // automatically splay a node to the root for us.
-        while let Tree::Root(node) = &mut *walker.walker {
+        while let BasicTree::Root(node) = &mut *walker.walker {
             let nodekey = node.get_key();
             match key.cmp(nodekey) {
                 Equal   => return Ok(()),
@@ -56,14 +57,14 @@ impl<D : crate::data::example_data::Keyed > SplayTree<D> {
         let mut walker: SplayWalker<'_, D> = self.walker();
 
         let key = data.get_key();
-        while let Tree::Root(node) = &mut *walker.walker {
+        while let BasicTree::Root(node) = &mut *walker.walker {
             if key < node.get_key() {
                 walker.go_left().unwrap(); // the empty case is unreachable
             } else {
                 walker.go_right().unwrap(); // the empty case is unreachable
             };
         }
-        *walker.walker = Tree::Root(Box::new(Node::new(data, Tree::Empty, Tree::Empty)));
+        *walker.walker = BasicTree::Root(Box::new(BasicNode::new(data, BasicTree::Empty, BasicTree::Empty)));
     }
 }
 
@@ -74,7 +75,7 @@ pub struct SplayWalker<'a, D : Data> {
 
 impl<'a, D : Data> SplayWalker<'a, D> {
 
-    pub fn inner(&self) -> &Tree<D> {
+    pub fn inner(&self) -> &BasicTree<D> {
         &*self.walker
     }
 
@@ -82,7 +83,7 @@ impl<'a, D : Data> SplayWalker<'a, D> {
     // use wisely
     // this function shouldn't really be public
     // TODO: should this function exist?
-    pub fn inner_mut(&mut self) -> &mut Tree<D> {
+    pub fn inner_mut(&mut self) -> &mut BasicTree<D> {
         &mut *self.walker
     }
 
@@ -151,15 +152,15 @@ impl<'a, D : Data> Drop for SplayWalker<'a, D> {
 }
 
 impl<D : Data> SomeTree<D> for SplayTree<D> {
-    fn into_inner(self) -> Tree<D> {
+    fn into_inner(self) -> BasicTree<D> {
         self.tree
     }
 
     fn new() -> Self {
-        SplayTree { tree : Tree::Empty }
+        SplayTree { tree : BasicTree::Empty }
     }
 
-    fn from_inner(tree : Tree<D>) -> Self {
+    fn from_inner(tree : BasicTree<D>) -> Self {
         SplayTree { tree }
     }
 }
@@ -208,20 +209,3 @@ impl<'a, D : Data> SomeEntry<D> for SplayWalker<'a, D> {
         self.walker.insert_new(data)
     }
 }
-
-/*
-
-impl<'a , 'b, D : Data> SomeWalkerRef<D> for &'b mut SplayWalker<'a, D> {
-    type Entry = SplayEntry<'b, D>;
-    fn entry(self : &'b mut SplayWalker<'a, D>) -> SplayEntry<'b, D> {
-        SplayEntry{ r : &mut self.walker }
-    }
-}
-
-
-pub struct SplayEntry<'a, D : Data> {
-    r : &'a mut Tree<D>,
-}
-
-impl<'a, D : Data> SomeEntry<D> for SplayEntry<'a, D> {}
-*/
