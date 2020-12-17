@@ -1,3 +1,5 @@
+use crate::*;
+
 use super::trees::splay::*;
 use super::trees::*;
 use super::data::*;
@@ -64,13 +66,28 @@ impl Data for RAData {
 	}
 }
 
+impl SizedData for RAData {
+    fn size(&self) -> usize {
+        self.size.size()
+    }
+
+    fn width(&self) -> usize {
+        self.interval.size()
+    }
+}
+
 impl SplayTree<RAData> {
     // does not splay by itself
     fn search_split<'a>(&'a mut self, mut index : usize) -> SplayWalker<'a, RAData> {
+
+        // TODO: use this:
+        // let walker = 
+        // search_by_locator(self, &mut locate_by_index(index));
+
         let mut walker = self.walker();
         while let crate::trees::basic_tree::BasicTree::Root(node) = walker.inner_mut() {
             
-            let s = node.left.data_mut().map_or(0, |r| r.size.size);
+            let s = node.left.data().map_or(0, |r| r.size.size);
             if index < s {
                 walker.go_left();
             } else if index >= s + node.interval.size() {
@@ -104,11 +121,11 @@ pub fn main() {
 
     let mut tree = SplayTree::new();
     for x in 1..25 {
-        tree.insert(Key {key : x*5})
+        insert(&mut tree, Key {key : x*5});
     }
 
     for x in 1..30 {
-        tree.search(&x);
+        search(&mut tree, &x);
         println!("{}", tree.root_data().unwrap().key);
         if x % 5 == 0 && x != tree.root_data().unwrap().key {
             panic!();

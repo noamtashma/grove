@@ -27,6 +27,22 @@ impl Data for Size {
     fn access<'a>(&'a mut self, _ : Option<&'a mut Self>, _ : Option<&'a mut Self>) {}
 }
 
+pub trait SizedData : Data {
+    /// The size of the subtree of the current node
+    fn size(&self) -> usize;
+
+    // TODO: should we keep the option of wide values?
+    /// The "width" of the current element alone.
+    /// The default implementation always returns 1.
+    fn width(&self) -> usize {
+        1
+    }
+}
+
+impl SizedData for Size {
+    fn size(&self) -> usize { self.size }
+}
+
 /// the height of a subtree
 pub struct Height {
     pub height : usize

@@ -1,4 +1,7 @@
-// this module contains implementations of specific balances search trees.
+/// this module contains:
+/// * traits that all implementations of trees should implement
+/// (both for the tree and the tree's walker)
+/// * specific implementations of trees
 
 pub mod basic_tree;
 pub mod splay;
@@ -18,26 +21,34 @@ pub trait SomeTreeRef<D> {
 }
 
 
-// walker should only hold a reference to the tree
+
+/// A Walker of the tree is a type that allows you to walk up and down the tree while modifying it.
+/// Under the hood, the walkers use the Telescope type to achieve this.
+/// The walker should be able to walk on any of the existing nodes, or any empty position just near them.
+/// i.e., the walker can also be in the position of a son of an existing node, where there isn't
+/// a node yet.
+/// The method is_empty() can tell whether you are at an empty position. Trying to move downward from an
+/// empty position produces an error value.
 pub trait SomeWalker<D> : SomeEntry<D> {
     /// return `Err(())` if it is in an empty spot.
     fn go_left(&mut self) -> Result<(), ()>;
     /// returns `Err(())` if it is in an empty spot.
     fn go_right(&mut self) -> Result<(), ()>;
 
-    /// if successful, returns whether or not the previous current value was the left son.
-    /// if you have a SplayTree, you shouldn't use this too much, or you might lose the
-    /// SplayTree's complexity properties.
-    /// see splayTree
+    /// If successful, returns whether or not the previous current value was the left son.
+    /// If already at the root of the tree, returns `Err(())`.
+    /// If you have a SplayTree, you shouldn't use this method too much, or you might lose the
+    /// SplayTree's complexity properties - see documentation aboud splay tree.
+    
     fn go_up(&mut self) -> Result<bool, ()>;
 
-    // these functions are here instead of Deref and DerefMut
-    // using these functions directly might mess up the internal structure of the tree.
-    // be warned!
-    //fn inner_mut(&mut self) -> &mut basic_tree::Tree<D>;
-    //fn inner(&self) -> &basic_tree::Tree<D>;
+    // these functions are here instead of Deref and DerefMut. 
+    fn inner_mut(&mut self) -> &mut basic_tree::BasicTree<D>;
+    fn inner(&self) -> &basic_tree::BasicTree<D>;
 }
-/// things that act like entries - allow access to a maybe-missing value, as if it is an Option<D>
+/// Things that allow access to a maybe-missing value, as if it is an Option<D>.
+/// Currently there are no actual Entry types, and the walkers themselves
+/// act as the entries. However, the traits are still separated.
 pub trait SomeEntry<D> {
     fn data_mut(&mut self) -> Option<&mut D>;
     fn data(&self) -> Option<&D>;
@@ -45,12 +56,6 @@ pub trait SomeEntry<D> {
     fn is_empty(&self) -> bool {
         self.data().is_none()
     }
-
-    
-    /// runs access() and rebuild() after writing the value.
-    /// returns the previous data value if there was any
-    /// if the place was empty, creates new empty nodes
-    fn write(&mut self, data : D) -> Option<D>;
 
     // there is no point of running access() or rebuild() qafter writing,
     // because the node can't access any other part of the tree except itself,
@@ -63,22 +68,3 @@ pub trait SomeEntry<D> {
     fn insert_new(&mut self, data : D) -> Result<(), ()>;
 }
 
-// this should become a method. should we push our general methods inside a trait so that they can be
-// methods?
-
-pub fn insert<D : crate::data::example_data::Keyed, TR>(tree : TR, data : D) where
-    TR : SomeTreeRef<D>,
-{
-    let mut walker = tree.walker();
-    let key = data.get_key();
-    
-    while let Some(node) = walker.data_mut() {
-        if key < node.get_key() {
-            walker.go_left().unwrap(); // the empty case is unreachable
-        } else {
-            walker.go_right().unwrap(); // the empty case is unreachable
-        };
-    }
-    
-    walker.insert_new(data).unwrap();
-}

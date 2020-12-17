@@ -36,36 +36,7 @@ impl<D : crate::data::example_data::Keyed > SplayTree<D> {
     // returns an error if the node was not found
     // in that case, another node will be splayed to the root
     // TODO: make into a general tree method
-    pub fn search(&mut self, key : &<D as crate::data::example_data::Keyed>::Key) -> Result<(), ()> {
-        use std::cmp::Ordering::*;
-
-        let mut walker = self.walker();
-        // when we leave the function the walker's destructor will
-        // automatically splay a node to the root for us.
-        while let BasicTree::Root(node) = &mut *walker.walker {
-            let nodekey = node.get_key();
-            match key.cmp(nodekey) {
-                Equal   => return Ok(()),
-                Less    => walker.go_left().unwrap(), // the empty case is unreachable
-                Greater => walker.go_right().unwrap(), // the empty case is unreachable
-            };
-        }
-        return Err(()); // splay some other node instead
-    }
-
-    pub fn insert(&mut self, data : D) {
-        let mut walker: SplayWalker<'_, D> = self.walker();
-
-        let key = data.get_key();
-        while let BasicTree::Root(node) = &mut *walker.walker {
-            if key < node.get_key() {
-                walker.go_left().unwrap(); // the empty case is unreachable
-            } else {
-                walker.go_right().unwrap(); // the empty case is unreachable
-            };
-        }
-        *walker.walker = BasicTree::Root(Box::new(BasicNode::new(data, BasicTree::Empty, BasicTree::Empty)));
-    }
+    
 }
 
 #[derive(destructure)]
@@ -190,6 +161,14 @@ impl<'a, D : Data> SomeWalker<D> for SplayWalker<'a, D> {
     fn go_up(&mut self) -> Result<bool, ()> {
         self.walker.go_up()
     }
+
+    fn inner_mut(&mut self) -> &mut BasicTree<D> {
+        self.walker.inner_mut()
+    }
+
+    fn inner(&self) -> &BasicTree<D> {
+        self.walker.inner()
+    }
 }
 
 impl<'a, D : Data> SomeEntry<D> for SplayWalker<'a, D> {
@@ -201,9 +180,11 @@ impl<'a, D : Data> SomeEntry<D> for SplayWalker<'a, D> {
         self.walker.data()
     }
 
+    /*
     fn write(&mut self, data : D) -> Option<D> {
         self.walker.write(data)
     }
+    */
 
     fn insert_new(&mut self, data : D) -> Result<(), ()> {
         self.walker.insert_new(data)

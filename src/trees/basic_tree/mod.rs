@@ -45,8 +45,6 @@ impl<D : Reverse> BasicTree<D> {
 	}
 }
 
-
-
 pub struct BasicNode<D> {
 	data : D,
 	pub(crate) left : BasicTree<D>,
@@ -54,6 +52,15 @@ pub struct BasicNode<D> {
 }
 
 impl<D : Data> BasicNode<D> {
+
+	pub fn data_mut(&mut self) -> &mut D {
+		&mut self.data
+	}
+
+	pub fn data(&self) -> &D {
+		&self.data
+	}
+
 	pub fn rebuild(&mut self) {
 		Data::rebuild_data(&mut self.data, self.left.data(), self.right.data());
 	}
@@ -70,7 +77,11 @@ impl<D : Data> BasicNode<D> {
 		}
 	}
 	
-	pub fn new(mut data : D, left : BasicTree<D>, right : BasicTree<D>) -> BasicNode<D> {
+	pub fn new(data : D) -> BasicNode<D> {
+		Self::create(data, Empty, Empty)
+	}
+
+	pub fn create(mut data : D, left : BasicTree<D>, right : BasicTree<D>) -> BasicNode<D> {
 		// this must be written first because later the values are moved into the result
 		data.rebuild_data(left.data(), right.data());
 		BasicNode {

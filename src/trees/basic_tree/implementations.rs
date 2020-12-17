@@ -73,6 +73,14 @@ impl<'a, D : Data> SomeWalker<D> for BasicWalker<'a, D> {
 			},
 		}
 	}
+
+	fn inner_mut(&mut self) -> &mut BasicTree<D> {
+        &mut *self.tel
+    }
+
+	fn inner(&self) -> &BasicTree<D> {
+        &*self.tel
+    }
 }
 
 
@@ -91,6 +99,7 @@ impl<D : Data> SomeEntry<D> for BasicTree<D> {
 		}
 	}
 
+	/*
 	fn write(&mut self, data : D) -> Option<D> {
         match self {
 			Empty => {
@@ -107,12 +116,13 @@ impl<D : Data> SomeEntry<D> for BasicTree<D> {
 			},
 		}
 	}
+	*/
 	
 
     fn insert_new(&mut self, data : D) -> Result<(), ()> {
         match self {
 			Empty => {
-				*self = Root(Box::new(BasicNode::new(data, Empty, Empty)));
+				*self = Root(Box::new(BasicNode::create(data, Empty, Empty)));
 				Ok(())
 			},
 			Root(_) => Err(()),
@@ -129,9 +139,11 @@ impl<'a, D : Data> SomeEntry<D> for BasicWalker<'a, D> {
         self.tel.data()
     }
 
+	/*
     fn write(&mut self, data : D) -> Option<D> {
         self.tel.write(data)
-    }
+	}
+	*/
 
     fn insert_new(&mut self, data : D) -> Result<(), ()> {
         self.tel.insert_new(data)
