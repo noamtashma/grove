@@ -129,10 +129,10 @@ impl<'a, D : Data> BasicWalker<'a, D> {
 	// rotates so that the current node moves up.
 	// basically moves up and then calls rot_side.
 	// fails if the current node is the root.
-	pub fn rot_up(&mut self) -> Result<(), ()> {
+	pub fn rot_up(&mut self) -> Result<bool, ()> {
 		let b = self.go_up()?;
 		self.rot_side(!b).expect("original node went missing?");
-		Ok(())
+		Ok(b)
 	}
 
 	pub fn go_to_root(&mut self) {

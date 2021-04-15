@@ -1,3 +1,5 @@
+use void::ResultVoidExt;
+
 use crate::*;
 
 use super::trees::splay::*;
@@ -77,40 +79,33 @@ impl SizedData for RAData {
 }
 
 impl SplayTree<RAData> {
-    // does not splay by itself
-    fn search_split<'a>(&'a mut self, mut index : usize) -> SplayWalker<'a, RAData> {
+    // splits the tree - modifies the first tree and returns the second tree
+    // splits to [0, index) and [index, length)
+    fn search_split<'a>(&'a mut self, mut index : usize) -> SplayTree<RAData> {
 
-        // TODO: use this:
-        // let walker = 
-        // search_by_locator(self, &mut locate_by_index(index));
+        let mut locator = locate_by_index_range(index, index);
+        let mut walker = // using an empty range so that we'll only end up at a node
+            // if we actually need to split that node
+            search_by_locator(self, &mut locator).void_unwrap();
+        index = locator.expose().0;
 
-        let mut walker = self.walker();
-        while let crate::trees::basic_tree::BasicTree::Root(node) = walker.inner_mut() {
-            
-            let s = node.left.data().map_or(0, |r| r.size.size);
-            if index < s {
-                walker.go_left();
-            } else if index >= s + node.interval.size() {
-                index -= s + node.interval.size();
-                walker.go_right();
-            } else { // this node is the right node
-                index -= s;
-                break;
-            }
-        }
-        
-        let data = walker.data_mut().expect("index not found!");
-        let (i1, i2) = data.interval.split_at_index(index);
-        data.interval = i1;
-        // walker.next();
-        walker.go_right(); // TODO - use the results
-        while !walker.is_empty() {
+        if let Some(data) = walker.data_mut() { // if we need to split a node
+            let (i1, i2) = data.interval.split_at_index(index);
+            data.interval = i1;
+            next_empty(&mut walker).unwrap(); // not at an empty node
+            walker.insert_new(RAData::new(i2)).unwrap(); // the position must be empty
             walker.go_left().unwrap();
         }
-        walker.insert_new(RAData::new(i2));
-        return walker;
+        // TODO: call split by ourselves
+        return walker.split().unwrap();
+    }
 
-        // TODO: edgecases
+    // reverse the segment [low, high)
+    fn reverse_degment(&mut self, low : usize, high : usize) {
+        let mut self2 = self.search_split(low);
+        let self3 = self.search_split(high);
+        self2.root_data_mut().map(|r| r.reverse());
+        
     }
 }
 

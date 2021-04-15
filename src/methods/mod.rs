@@ -2,6 +2,29 @@ pub mod locator;
 pub use locator::*;
 
 use crate::*;
+
+
+// TODO - figure out how to make this callable like walker.next_empty()
+/// if the walker is at an empty position, return an error.
+/// goes to the next empty position
+pub fn next_empty<W : SomeWalker<D>, D : Data>(walker : &mut W) -> Result<(), ()> {
+    walker.go_right()?; // if we're at an empty node, return error
+    while !walker.is_empty() {
+        walker.go_left().unwrap();
+    }
+    Ok(())
+}
+
+// if the walker is at an empty position, return an error.
+// goes to the previous empty position
+pub fn previous_empty<W : SomeWalker<D>, D : Data>(walker : &mut W) -> Result<(), ()> {
+    walker.go_left()?; // if we're at an empty node, return error
+    while !walker.is_empty() {
+        walker.go_right().unwrap();
+    }
+    Ok(())
+}
+
 /// Panics if a key was reused.
 /// TODO: make this return an error.
 pub fn insert<D : Data, TR>(tree : TR, data : D)

@@ -45,10 +45,11 @@ impl<D : Reverse> BasicTree<D> {
 	}
 }
 
+// TODO: decide if the fields should really be public
 pub struct BasicNode<D> {
 	data : D,
-	pub(crate) left : BasicTree<D>,
-	pub(crate) right : BasicTree<D>
+	pub left : BasicTree<D>,
+	pub right : BasicTree<D>
 }
 
 impl<D : Data> BasicNode<D> {

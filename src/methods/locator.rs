@@ -58,12 +58,23 @@ pub fn locate_by_key<'a, D>(key : &'a <D as crate::data::example_data::Keyed>::K
     }
 }
 
+// TODO: Splitter. locators that can't `Accept`. used for splitting trees
+// and for insertions.
+
 #[derive(Clone)]
-struct IndexLocator {
+pub struct IndexLocator {
     low : usize,
     high : usize,
 }
 
+impl IndexLocator {
+    pub fn expose(self) -> (usize, usize) {
+        (self.low, self.high)
+    }
+}
+
+// TODO: IndexLocator can't really go to two sides, since when it returns accept, it doesn't
+// mutate its state the right way for it to continue...
 impl<D : example_data::SizedData> Locator<D> for IndexLocator {
     type Error = void::Void;
     fn locate(&mut self, node : &BasicNode<D>) -> Result<LocResult, void::Void> {
@@ -93,12 +104,12 @@ impl<D : example_data::SizedData> Locator<D> for IndexLocator {
 /// Returns the locator corresponding to the interval [a, b).
 /// With regards to wide nodes: a node is considered accepted if its interval intersects
 /// [a, b).
-pub fn locate_index_range<D : crate::data::example_data::SizedData>(a : usize, b : usize) -> 
-    impl Locator<D> + Clone {
-    IndexLocator {low : a, high : b}
+pub fn locate_by_index_range(low : usize, high : usize) -> 
+    IndexLocator {
+    IndexLocator {low, high}
 }
 
-pub fn locate_by_index<D : crate::data::example_data::SizedData>(index : usize) -> 
-impl Locator<D> + Clone {
-    locate_index_range(index, index+1)
+pub fn locate_by_index(index : usize) -> 
+    IndexLocator {
+    locate_by_index_range(index, index+1)
 }

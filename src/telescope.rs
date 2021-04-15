@@ -7,6 +7,8 @@ pub struct Telescope<'a, T : ?Sized> {
 	phantom : PhantomData<&'a mut T>,
 }
 
+// these aren't ever supposed to happen. but since we touch unsafe code, we might as well
+// have clear error message when we `expect()`
 const NO_VALUE_ERROR : &str = "invariant violated: telescope can't be empty";
 const NULL_POINTER_ERROR : &str = "error! somehow got null pointer";
 
@@ -113,5 +115,11 @@ impl<'a, T : ?Sized> DerefMut for Telescope<'a, T> {
 		unsafe {
 			return self.vec[len-1].as_mut().expect(NULL_POINTER_ERROR);
 		}
+	}
+}
+
+impl<'a, T : ?Sized> From<&'a mut T> for Telescope<'a, T> {
+	fn from(r : &'a mut T) -> Self {
+		Self::new(r)
 	}
 }

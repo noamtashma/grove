@@ -114,6 +114,35 @@ impl<'a, D : Data> SplayWalker<'a, D> {
             self.splay_step();
         }
     }
+
+    // TODO: make a trait for splittable trees
+    /// Will only do anything if the current position is empty
+    /// If it is empty, it will split the tree: the elements
+    /// to the left will remain, and the elements to the right
+    /// will be put in the new output tree.
+    /// The walker will be at the root after this operation, if it succeeds.
+    pub fn split(&mut self) -> Option<SplayTree<D>> {
+        if !self.is_empty() { return None }
+        
+        // to know which side we should cut
+        let b = match self.go_up() {
+            Err(()) => { return Some(SplayTree::new()) }, // this is the empty tree
+            Ok(b) => b,
+        };
+        self.splay();
+        let node = match self.inner_mut() {
+            BasicTree::Root(node) => node,
+            _ => panic!(),
+        };
+        if b {
+            let mut tree = std::mem::replace(&mut node.left, BasicTree::Empty);
+            std::mem::swap(self.inner_mut(), &mut tree);
+            return Some(SplayTree{ tree });
+        } else {
+            let tree = std::mem::replace(&mut node.right, BasicTree::Empty);
+            return Some(SplayTree { tree });
+        }
+    }
 }
 
 impl<'a, D : Data> Drop for SplayWalker<'a, D> {
