@@ -20,21 +20,62 @@ impl<D : Action> SplayTree<D> {
         self.tree.segment_value()
     }
 
-    /*
-    pub fn root_data(&self) -> Option<&D> {
-        self.tree.data()
-    }
-
-    pub fn root_data_mut(&mut self) -> Option<&mut D> {
-        self.tree.data_mut()
-    }
-    */
-
-    // note: using this directly may cause the tree to lose its properties as a splay tree
+    /// Note: using this directly may cause the tree to lose its properties as a splay tree
     pub fn basic_walker(&mut self) -> BasicWalker<'_, D> {
         BasicWalker::new(&mut self.tree)
     }
+
+    // TODO: switch to a symmetric view, i.e.,
+    // `tree3 = union(tree1, tree2)`, not
+    // `tree1.concatenate(tree2)`.
+    /// Concatenates the other tree into this tree.
+    pub fn concatenate(&mut self, other : Self) {
+        let mut walker = self.walker();
+        while let Ok(_) = walker.go_right()
+            {}
+        match walker.go_up() {
+            Err(()) => { // the tree is empty; just substiture the other tree.
+                drop(walker);
+                *self = other;
+                return;
+            },
+            Ok(false) => (),
+            Ok(true) => panic!(),
+        };
+        walker.splay();
+        if let crate::basic_tree::BasicTree::Root(node) = walker.inner_mut() {
+            node.right = other.into_inner();
+            node.rebuild();
+            return;
+        }
+        else {
+            panic!();
+        }
+    }
+
+    // TODO: implement
+    /// Gets the tree into a state in which the locator's segment
+    /// is a single subtree, and returns a walker at that subtree.
+    pub fn isolate_segment<'a, L>(&mut self, locator : &L) -> SplayWalker<'a, D> where
+        L : crate::methods::locator::Locator<D>
+    {
+        unimplemented!();
+    }
+
+    pub fn act_segment<'a, L>(&mut self, locator : &L, action : D) where
+        L : crate::methods::locator::Locator<D>
+    {
+        let mut walker = self.isolate_segment(locator);
+        match walker.inner_mut() {
+            crate::basic_tree::BasicTree::Root(node) => {
+                node.act(action);
+                node.access();
+            },
+            _ => (),
+        }
+    }
 }
+
 
 impl<A : Action + Reverse> SplayTree<A> {
     pub fn reverse(&mut self) {
@@ -164,8 +205,8 @@ impl<'a, D : Action> Drop for SplayWalker<'a, D> {
     }
 }
 
-impl<D : Action> SomeTree<D> for SplayTree<D> {
-    fn into_inner(self) -> BasicTree<D> {
+impl<A : Action> SomeTree<A> for SplayTree<A> {
+    fn into_inner(self) -> BasicTree<A> {
         self.tree
     }
 
@@ -173,7 +214,7 @@ impl<D : Action> SomeTree<D> for SplayTree<D> {
         SplayTree { tree : BasicTree::Empty }
     }
 
-    fn from_inner(tree : BasicTree<D>) -> Self {
+    fn from_inner(tree : BasicTree<A>) -> Self {
         SplayTree { tree }
     }
 }

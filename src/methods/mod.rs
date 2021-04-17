@@ -6,6 +6,7 @@ use crate::*;
 
 
 
+// TODO - make this work for both filled and empty starting positions
 // TODO - figure out how to make this callable like walker.next_empty()
 /// if the walker is at an empty position, return an error.
 /// goes to the next empty position
@@ -25,6 +26,57 @@ pub fn previous_empty<W : SomeWalker<D>, D : Action>(walker : &mut W) -> Result<
         walker.go_right().unwrap();
     }
     Ok(())
+}
+
+/// Finds the next filled node.
+/// If there isn't any, moves to root and return Err(()).
+pub fn next_filled<W : SomeWalker<D>, D : Action>(walker : &mut W) -> Result<(), ()> {
+    if !walker.is_empty() {
+        next_empty(walker).unwrap();
+    }
+    loop {
+        match walker.go_up() {
+            Ok(true) => break,
+            Ok(false) => (),
+            Err(_) => return Err(()), // there was no next node
+        }
+    }
+    return Ok(());
+}
+
+
+/// Finds the previous filled node.
+/// If there isn't any, moves to root and return Err(()).
+pub fn previous_filled<W : SomeWalker<D>, D : Action>(walker : &mut W) -> Result<(), ()> {
+    if !walker.is_empty() {
+        previous_empty(walker).unwrap();
+    }
+    loop {
+        match walker.go_up() {
+            Ok(false) => break,
+            Ok(true) => (),
+            Err(_) => return Err(()), // there was no next node
+        }
+    }
+    return Ok(());
+}
+
+/// returns a vector of all the values in the tree.
+pub fn to_array<A : Action, TR>(tree : TR)
+-> Vec<A::Value> where
+TR : SomeTreeRef<A>,
+{
+    let mut walker = tree.walker();
+    let mut res = vec![];
+    while let Ok(_) = walker.go_left()
+        {}
+
+    while let Ok(_) = next_filled(&mut walker) {
+        if let trees::basic_tree::BasicTree::Root(node) = walker.inner() {
+            res.push(node.node_value());
+        } else {panic!()}
+    }
+    res
 }
 
 /// Panics if a key was reused.
@@ -179,3 +231,8 @@ fn accumulate_values_on_prefix<W, L, A : Action>(walker : &mut W, locator : &L) 
 
     Ok(res)
 }
+
+// TODO:
+// apply action on segment,
+// apply action on prefix,
+// apply action on suffix
