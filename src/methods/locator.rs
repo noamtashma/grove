@@ -1,62 +1,68 @@
 /// Module defining a trait for a value that locates a node or group of nodes in a tree.
-/// A locator, given a node, can either reply, `LeftOfInterval`, `RightOfInterval`, `Accept`,
+/// A locator, given a node, can either reply, `GoRight`, `GoLeft`, `Accept`,
 /// or return an error value.
 /// 
-/// Locators are supposed to represent a sub interval of the tree. It is supposed to do this:
-/// * If the current node is to the left of the segment, return `LeftOfInterval`.
-/// * If the current node is to the right of the segment, return `RightOfInterval`
-/// * If the current node is part of the segment, return `Accept`.
-/// 
+/// Locators are supposed to represent a segment of the tree. It is supposed to do this:
+/// * If the current node is to the left of the segment, return `GoRight`.
+/// * If the current node is to the right of the segment, return `GoLeft`
+/// * If the current node is part of the segment, return `Accept`. (note that the whole subtree might not be contained in the segment)
+///
 /// Functions like search, which logically expect only one accepted node, and not a segment,
 /// will use any node that is accepted.
+/// Functions like insertions, will expect a locator that doesn't accept any node,
+/// but leads the locator into a space between nodes, where the node will be inserted.
 /// 
-/// Note that the locator is allowed to mutate a state while being asked questions.
-/// Therefore, in order for a function to go both to the left edge and the right edge
-/// of the interval, the locator has to implement `Clone`. Thus, some functions require the
-/// locator to implement Clone.
+/// The locator receives as input the current node,
+/// the accumulated value left of the subtree of the current node,
+/// and the accumulated value right of the current node.
+///
+/// Locators are immutable, and therefore it is assumed that they can be called in any order,
+/// i.e., earlier calls will not change the result of later calls. This is even though
+/// that might not be the case, using interior mutability.
 /// 
-/// Anonymous functions of the type `FnMut(&D) -> Result<LocResult, Err>` can be used as locators.
+/// Anonymous functions of the type `Fn(...) -> Result<LocResult, Err>` can be used as locators.
 
 use crate::trees::basic_tree::*;
 
 pub enum LocResult {
-    Accept, LeftOfInterval, RightOfInterval,
+    Accept, GoRight, GoLeft,
 }
 use LocResult::*;
 
-pub trait Locator<D> {
+pub trait Locator<A : Action> {
     type Error;
-    fn locate(&mut self, node : &BasicNode<D>) -> Result<LocResult, Self::Error>;
+    fn locate(&self, node : &BasicNode<A>, left : A::Value, right : A::Value) -> Result<LocResult, Self::Error>;
 }
 
 // TODO: immutable locator trait?
 // this might be needed. but might not.
 
-impl<D, E, F : FnMut(&BasicNode<D>) -> Result<LocResult, E>> Locator<D> for F {
+impl<A : Action, E, F : Fn(&BasicNode<A>, A::Value, A::Value) -> Result<LocResult, E>> Locator<A> for F {
     type Error = E;
-    fn locate(&mut self, node : &BasicNode<D>) -> Result<LocResult, E> {
-        self(node)
+    fn locate(&self, node : &BasicNode<A>, left : A::Value, right : A::Value) -> Result<LocResult, E> {
+        self(node, left, right)
     }
 }
 
 
+
 /// Locator for finding an element using a key.
-/// Returns `Fn` instead of `&Fn` because the caller has to own this locator.
-/// We could return a manually-made owned locator instead. however, we don't.
-pub fn locate_by_key<'a, D>(key : &'a <D as crate::data::example_data::Keyed>::Key) -> 
-    impl Fn(&BasicNode<D>) -> Result<LocResult, void::Void> + 'a where
-    D : crate::data::example_data::Keyed,
+pub fn locate_by_key<'a, A>(key : &'a <A as crate::data::example_data::Keyed>::Key) -> 
+    impl Fn(&BasicNode<A>, A::Value, A::Value) -> Result<LocResult, void::Void> + 'a where
+    A : crate::data::example_data::Keyed,
 {
-    move |node : &BasicNode<D>| -> Result<LocResult, void::Void> {
+    move |node : &BasicNode<A>, _, _| -> Result<LocResult, void::Void> {
         use std::cmp::Ordering::*;
-        let res = match node.get_key().cmp(key) {
+        let res = match A::get_key(node.node_value()).cmp(key) {
             Equal => Accept,
-            Less => RightOfInterval,
-            Greater => LeftOfInterval,
+            Less => GoLeft,
+            Greater => GoRight,
         };
         Ok(res)
     }
 }
+
+
 
 // TODO: Splitter. locators that can't `Accept`. used for splitting trees
 // and for insertions.
@@ -67,31 +73,25 @@ pub struct IndexLocator {
     high : usize,
 }
 
+/// represents the segment of indices [low, high)
 impl IndexLocator {
     pub fn expose(self) -> (usize, usize) {
         (self.low, self.high)
     }
 }
 
-// TODO: IndexLocator can't really go to two sides, since when it returns accept, it doesn't
-// mutate its state the right way for it to continue...
-impl<D : example_data::SizedData> Locator<D> for IndexLocator {
-    type Error = void::Void;
-    fn locate(&mut self, node : &BasicNode<D>) -> Result<LocResult, void::Void> {
-        let s = match &node.left {
-            BasicTree::Empty => 0,
-            BasicTree::Root(node) => node.size(),
-        };
 
-        let res = if self.high <= s {
-            RightOfInterval
-        } else if s + node.size() <= self.low {
-            self.low -= s + node.size();
-            self.high -= s + node.size();
-            LeftOfInterval
+impl<A : Action + example_data::SizedAction> Locator<A> for IndexLocator {
+    type Error = void::Void;
+    fn locate(&self, node : &BasicNode<A>, left : A::Value, _right : A::Value) -> Result<LocResult, void::Void> {
+        // find the index of the current node
+        let s = A::size(left) + A::size(node.left.segment_value());
+
+        let res = if s >= self.high {
+            GoLeft
+        } else if s + A::size(node.node_value()) <= self.low {
+            GoRight
         } else {
-            self.low -= s;
-            self.high -= s;
             Accept
         };
         return Ok(res)

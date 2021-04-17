@@ -4,12 +4,19 @@ use super::basic_tree::*;
 
 
 
-pub struct SplayTree<D : Data> {
+pub struct SplayTree<D : Action> {
     tree : BasicTree<D>,
 }
 
-impl<D : Data> SplayTree<D> {
+impl<D : Action> SplayTree<D> {
+    pub fn root_node_value(&self) -> Option<D::Value> {
+        match &self.tree {
+            BasicTree::Root(node) => Some(node.node_value()),
+            _ => None,
+        }
+    }
 
+    /*
     pub fn root_data(&self) -> Option<&D> {
         self.tree.data()
     }
@@ -17,6 +24,7 @@ impl<D : Data> SplayTree<D> {
     pub fn root_data_mut(&mut self) -> Option<&mut D> {
         self.tree.data_mut()
     }
+    */
 
     // note: using this directly may cause the tree to lose its properties as a splay tree
     pub fn basic_walker(&mut self) -> BasicWalker<'_, D> {
@@ -25,26 +33,19 @@ impl<D : Data> SplayTree<D> {
 
 }
 
-impl<D : Data> std::default::Default for SplayTree<D> {
+impl<D : Action> std::default::Default for SplayTree<D> {
     fn default() -> Self {
         SplayTree::new()
     }
 }
 
-impl<D : crate::data::example_data::Keyed > SplayTree<D> {
-    // moves the wanted node to the root, if found
-    // returns an error if the node was not found
-    // in that case, another node will be splayed to the root
-    // TODO: make into a general tree method
-    
-}
 
 #[derive(destructure)]
-pub struct SplayWalker<'a, D : Data> {
+pub struct SplayWalker<'a, D : Action> {
     walker : BasicWalker<'a, D>,
 }
 
-impl<'a, D : Data> SplayWalker<'a, D> {
+impl<'a, D : Action> SplayWalker<'a, D> {
 
     pub fn inner(&self) -> &BasicTree<D> {
         &*self.walker
@@ -145,13 +146,13 @@ impl<'a, D : Data> SplayWalker<'a, D> {
     }
 }
 
-impl<'a, D : Data> Drop for SplayWalker<'a, D> {
+impl<'a, D : Action> Drop for SplayWalker<'a, D> {
     fn drop(&mut self) {
         self.splay();
     }
 }
 
-impl<D : Data> SomeTree<D> for SplayTree<D> {
+impl<D : Action> SomeTree<D> for SplayTree<D> {
     fn into_inner(self) -> BasicTree<D> {
         self.tree
     }
@@ -165,14 +166,14 @@ impl<D : Data> SomeTree<D> for SplayTree<D> {
     }
 }
 
-impl<'a, D : Data> SomeTreeRef<D> for &'a mut SplayTree<D> {
+impl<'a, D : Action> SomeTreeRef<D> for &'a mut SplayTree<D> {
     type Walker = SplayWalker<'a, D>;
     fn walker(self : &'a mut SplayTree<D>) -> SplayWalker<'a, D> {
         SplayWalker { walker : self.basic_walker() }
     }
 }
 
-impl<'a, D : Data> SomeWalker<D> for SplayWalker<'a, D> {
+impl<'a, A : Action> SomeWalker<A> for SplayWalker<'a, A> {
     fn go_left(&mut self) -> Result<(), ()> {
         self.walker.go_left()
     }
@@ -181,32 +182,43 @@ impl<'a, D : Data> SomeWalker<D> for SplayWalker<'a, D> {
         self.walker.go_right()
     }
 
-    // you shouldn't use this too much, or you would lose the SplayTree's complexity properties.
-    // basically, when you are going down the tree,
-    // you should only stray from your path by a constant amount,
-    // and you should remember to splay if you want to re-use your walker, instead of
-    // using this fuctionn to get back up.
-    // (when dropped the walker will splay by itself)
+    /// you shouldn't use this too much, or you would lose the SplayTree's complexity properties.
+    /// basically, when you are going down the tree,
+    /// you should only stray from your path by a constant amount,
+    /// and you should remember to splay if you want to re-use your walker, instead of
+    /// using this fuctionn to get back up.
+    /// (when dropped the walker will splay by itself)
     fn go_up(&mut self) -> Result<bool, ()> {
         self.walker.go_up()
     }
 
-    fn inner_mut(&mut self) -> &mut BasicTree<D> {
+    fn depth(&self) -> usize {
+        self.walker.depth()
+    }
+
+    fn far_left_value(&self) -> A::Value {
+        self.walker.far_left_value()
+    }
+    fn far_right_value(&self) -> A::Value {
+        self.walker.far_right_value()
+    }
+
+    fn inner_mut(&mut self) -> &mut BasicTree<A> {
         self.walker.inner_mut()
     }
 
-    fn inner(&self) -> &BasicTree<D> {
+    fn inner(&self) -> &BasicTree<A> {
         self.walker.inner()
     }
 }
 
-impl<'a, D : Data> SomeEntry<D> for SplayWalker<'a, D> {
-    fn data_mut(&mut self) -> Option<&mut D> {
-        self.walker.data_mut()
+impl<'a, A : Action> SomeEntry<A> for SplayWalker<'a, A> {
+    fn value_mut(&mut self) -> Option<&mut A::Value> {
+        self.walker.value_mut()
     }
 
-    fn data(&self) -> Option<&D> {
-        self.walker.data()
+    fn value(&self) -> Option<&A::Value> {
+        self.walker.value()
     }
 
     /*
@@ -215,7 +227,7 @@ impl<'a, D : Data> SomeEntry<D> for SplayWalker<'a, D> {
     }
     */
 
-    fn insert_new(&mut self, data : D) -> Result<(), ()> {
-        self.walker.insert_new(data)
+    fn insert_new(&mut self, value : A::Value) -> Result<(), ()> {
+        self.walker.insert_new(value)
     }
 }

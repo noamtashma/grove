@@ -7,6 +7,7 @@ pub mod data;
 pub mod methods;
 pub mod example;
 
-pub use data::Data;
+pub use data::Action;
+pub use data::Data; // TODO: remove
 pub use trees::*;
 pub use methods::*;

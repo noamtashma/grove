@@ -6,7 +6,8 @@
 pub mod basic_tree;
 pub mod splay;
 
-pub trait SomeTree<D> where
+use crate::data::*;
+pub trait SomeTree<D : Action> where
     for<'a> &'a mut Self : SomeTreeRef<D> {
 
     fn into_inner(self) -> basic_tree::BasicTree<D>;
@@ -15,7 +16,7 @@ pub trait SomeTree<D> where
 
 }
 
-pub trait SomeTreeRef<D> {
+pub trait SomeTreeRef<D : Action> {
     type Walker : SomeWalker<D>;
     fn walker(self) -> Self::Walker;
 }
@@ -29,7 +30,7 @@ pub trait SomeTreeRef<D> {
 /// a node yet.
 /// The method is_empty() can tell whether you are at an empty position. Trying to move downward from an
 /// empty position produces an error value.
-pub trait SomeWalker<D> : SomeEntry<D> {
+pub trait SomeWalker<A : Action> : SomeEntry<A> {
     /// return `Err(())` if it is in an empty spot.
     fn go_left(&mut self) -> Result<(), ()>;
     /// returns `Err(())` if it is in an empty spot.
@@ -42,19 +43,31 @@ pub trait SomeWalker<D> : SomeEntry<D> {
     
     fn go_up(&mut self) -> Result<bool, ()>;
 
+    /*
+    fn segment_value(&self) -> A::Value {
+        self.inner().segment_value()
+    }
+    */
+
+    fn depth(&self) -> usize;
+
+    fn far_left_value(&self) -> A::Value;
+    fn far_right_value(&self) -> A::Value;
+    
+
     // these functions are here instead of Deref and DerefMut. 
-    fn inner_mut(&mut self) -> &mut basic_tree::BasicTree<D>;
-    fn inner(&self) -> &basic_tree::BasicTree<D>;
+    fn inner_mut(&mut self) -> &mut basic_tree::BasicTree<A>;
+    fn inner(&self) -> &basic_tree::BasicTree<A>;
 }
 /// Things that allow access to a maybe-missing value, as if it is an Option<D>.
 /// Currently there are no actual Entry types, and the walkers themselves
 /// act as the entries. However, the traits are still separated.
-pub trait SomeEntry<D> {
-    fn data_mut(&mut self) -> Option<&mut D>;
-    fn data(&self) -> Option<&D>;
+pub trait SomeEntry<A : Action> {
+    fn value_mut(&mut self) -> Option<&mut A::Value>;
+    fn value(&self) -> Option<&A::Value>;
 
     fn is_empty(&self) -> bool {
-        self.data().is_none()
+        self.value().is_none()
     }
 
     // there is no point of running access() or rebuild() qafter writing,
@@ -65,6 +78,6 @@ pub trait SomeEntry<D> {
 
     /// only writes if it is in an empty position. if the positions isn't empty,
     /// return Err(()).
-    fn insert_new(&mut self, data : D) -> Result<(), ()>;
+    fn insert_new(&mut self, value : A::Value) -> Result<(), ()>;
 }
 

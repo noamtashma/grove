@@ -2,8 +2,9 @@
 
 use super::*;
 use super::super::*; // crate::trees::*
+use crate::telescope::NO_VALUE_ERROR;
 
-impl<'a, D : Data> SomeTree<D> for BasicTree<D> {
+impl<'a, D : Action> SomeTree<D> for BasicTree<D> {
     fn into_inner(self) -> BasicTree<D> {
         self
     }
@@ -17,7 +18,7 @@ impl<'a, D : Data> SomeTree<D> for BasicTree<D> {
     }
 }
 
-impl<'a, D : Data> SomeTreeRef<D> for &'a mut BasicTree<D> {
+impl<'a, D : Action> SomeTreeRef<D> for &'a mut BasicTree<D> {
     type Walker = BasicWalker<'a, D>;
 
     fn walker(self) -> Self::Walker {
@@ -25,21 +26,28 @@ impl<'a, D : Data> SomeTreeRef<D> for &'a mut BasicTree<D> {
     }
 }
 
-impl<'a, D : Data> SomeWalker<D> for BasicWalker<'a, D> {
+impl<'a, A : Action> SomeWalker<A> for BasicWalker<'a, A> {
     // returns Err if it's impossible to go left
 	// otherwise returns Ok
 	fn go_left(&mut self) -> Result<(), ()> {
-		let res = self.tel.extend_result( &mut |tree| {
-				match tree {
-					Empty => Err(()),
-					Root(node) => {
-						node.access();
-						Ok(&mut node.left)},
-				}
+		let mut frame = self.vals.last().expect(crate::telescope::NO_VALUE_ERROR).clone();
+		let res = self.tel.extend_result( |tree| {
+			match tree {
+				Empty => Err(()),
+				Root(node) => {
+					// update values
+					frame.right = A::compose_v(node.right.segment_value(), frame.right);
+					frame.right = A::compose_v(node.node_value(), frame.right);
+					node.left.access();
+					Ok(&mut node.left)
+				},
 			}
+		}
 		);
+		// push side information
 		if res.is_ok() {
 			self.is_left.push(true); // went left
+			self.vals.push(frame);
 		}
 		return res;
 	}
@@ -47,17 +55,25 @@ impl<'a, D : Data> SomeWalker<D> for BasicWalker<'a, D> {
 	// returns Err if it's impossible to go right
 	// otherwise returns Ok
 	fn go_right(&mut self) -> Result<(), ()> {
-		let res = self.tel.extend_result( &mut |tree| {
+		let mut frame = self.vals.last().expect(crate::telescope::NO_VALUE_ERROR).clone();
+		let res = self.tel.extend_result( |tree| {
 			match tree {
 				Empty => Err(()),
 				Root(node) => {
-					node.access();
-					Ok(&mut node.right)},
-				}
+					// update values
+					frame.left = A::compose_v(frame.left, node.left.segment_value());
+					frame.left = A::compose_v(frame.left, node.node_value());
+					
+					node.right.access();
+					Ok(&mut node.right)
+				},
 			}
+		}
 		);
+		// push side information
 		if res.is_ok() {
 			self.is_left.push(false); // went right
+			self.vals.push(frame);
 		}
 		return res;
 	}
@@ -67,35 +83,47 @@ impl<'a, D : Data> SomeWalker<D> for BasicWalker<'a, D> {
 		match self.is_left.pop() {
 			None => Err(()),
 			Some(b) => { 
-				self.tel.pop().expect("missing element from telescope");
+				self.tel.pop().expect(NO_VALUE_ERROR);
+				self.vals.pop().expect(NO_VALUE_ERROR);
 				self.tel.rebuild();
 				Ok(b)
 			},
 		}
 	}
 
-	fn inner_mut(&mut self) -> &mut BasicTree<D> {
+	fn depth(&self) -> usize {
+		self.depth()
+	}
+
+	fn far_left_value(&self) -> A::Value {
+		self.vals.last().expect(NO_VALUE_ERROR).left
+	}
+	fn far_right_value(&self) -> A::Value {
+		self.vals.last().expect(NO_VALUE_ERROR).right
+	}
+
+	fn inner_mut(&mut self) -> &mut BasicTree<A> {
         &mut *self.tel
     }
 
-	fn inner(&self) -> &BasicTree<D> {
+	fn inner(&self) -> &BasicTree<A> {
         &*self.tel
     }
 }
 
 
-impl<D : Data> SomeEntry<D> for BasicTree<D> {
-	fn data_mut(&mut self) -> Option<&mut D> {
+impl<A : Action> SomeEntry<A> for BasicTree<A> {
+	fn value_mut(&mut self) -> Option<&mut A::Value> {
 		match self {
 			Empty => None,
-			Root(node) => Some(&mut node.data),
+			Root(node) => Some(&mut node.node_value),
 		}
 	}
 
-	fn data(&self) -> Option<&D> {
+	fn value(&self) -> Option<&A::Value> {
 		match self {
 			Empty => None,
-			Root(node) => Some(&node.data),
+			Root(node) => Some(&node.node_value),
 		}
 	}
 
@@ -119,10 +147,10 @@ impl<D : Data> SomeEntry<D> for BasicTree<D> {
 	*/
 	
 
-    fn insert_new(&mut self, data : D) -> Result<(), ()> {
+    fn insert_new(&mut self, value : A::Value) -> Result<(), ()> {
         match self {
 			Empty => {
-				*self = Root(Box::new(BasicNode::create(data, Empty, Empty)));
+				*self = Root(Box::new(BasicNode::new(value)));
 				Ok(())
 			},
 			Root(_) => Err(()),
@@ -130,13 +158,13 @@ impl<D : Data> SomeEntry<D> for BasicTree<D> {
     }
 }
 
-impl<'a, D : Data> SomeEntry<D> for BasicWalker<'a, D> {
-    fn data_mut(&mut self) -> Option<&mut D> {
-        self.tel.data_mut()
+impl<'a, A : Action> SomeEntry<A> for BasicWalker<'a, A> {
+    fn value_mut(&mut self) -> Option<&mut A::Value> {
+        self.tel.value_mut()
     }
 
-    fn data(&self) -> Option<&D> {
-        self.tel.data()
+    fn value(&self) -> Option<&A::Value> {
+        self.tel.value()
     }
 
 	/*
@@ -145,7 +173,7 @@ impl<'a, D : Data> SomeEntry<D> for BasicWalker<'a, D> {
 	}
 	*/
 
-    fn insert_new(&mut self, data : D) -> Result<(), ()> {
-        self.tel.insert_new(data)
+    fn insert_new(&mut self, value : A::Value) -> Result<(), ()> {
+        self.tel.insert_new(value)
     }
 }
