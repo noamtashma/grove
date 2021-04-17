@@ -65,12 +65,7 @@ pub trait Action : Copy + Eq {
 /// The `to_reverse` function is part of the `Action` trait and not this trait,
 /// in order that the `access` function can work for both reversible and non reversible
 /// actions uniformly.
-pub trait Reverse {
-	/// This function should flip the bit of whether this action will reverse the data.
-	fn reverse(&mut self);
-
-	// alternative: have a constant action which is just a reversal,
-	// instead of a method which adds a reversal to an existing action.
-	// this is equivalent because we can already combine actions.
-	// const REVERSE : Self;
+pub trait Reverse : Action {
+	/// Mark the action in the node that it should be reversed.
+	fn internal_reverse(node : &mut crate::trees::basic_tree::BasicNode<Self>);
 }

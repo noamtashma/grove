@@ -16,6 +16,10 @@ impl<D : Action> SplayTree<D> {
         }
     }
 
+    pub fn segment_value(&self) -> D::Value {
+        self.tree.segment_value()
+    }
+
     /*
     pub fn root_data(&self) -> Option<&D> {
         self.tree.data()
@@ -30,8 +34,14 @@ impl<D : Action> SplayTree<D> {
     pub fn basic_walker(&mut self) -> BasicWalker<'_, D> {
         BasicWalker::new(&mut self.tree)
     }
-
 }
+
+impl<A : Action + Reverse> SplayTree<A> {
+    pub fn reverse(&mut self) {
+        self.tree.reverse();
+    }
+}
+
 
 impl<D : Action> std::default::Default for SplayTree<D> {
     fn default() -> Self {
@@ -137,10 +147,12 @@ impl<'a, D : Action> SplayWalker<'a, D> {
         };
         if b {
             let mut tree = std::mem::replace(&mut node.left, BasicTree::Empty);
+            node.rebuild();
             std::mem::swap(self.inner_mut(), &mut tree);
             return Some(SplayTree{ tree });
         } else {
             let tree = std::mem::replace(&mut node.right, BasicTree::Empty);
+            node.rebuild();
             return Some(SplayTree { tree });
         }
     }

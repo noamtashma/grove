@@ -47,8 +47,9 @@ impl<A : Action + Reverse> BasicTree<A> {
 }
 
 impl<A : Action + Reverse> BasicNode<A> {
+	/// calls access after calling the reverse action.
 	pub fn reverse(&mut self) {
-		self.action.reverse();
+		Reverse::internal_reverse(self);
 		self.access();
 	}
 }

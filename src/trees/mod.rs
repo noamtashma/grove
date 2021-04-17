@@ -76,7 +76,7 @@ pub trait SomeEntry<A : Action> {
     // ergo, the user can be required to provide a value of data
     // that doesn't need access() or rebuild() to be called
 
-    /// only writes if it is in an empty position. if the positions isn't empty,
+    /// only writes if it is in an empty position. if the position isn't empty,
     /// return Err(()).
     fn insert_new(&mut self, value : A::Value) -> Result<(), ()>;
 }
