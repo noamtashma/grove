@@ -1,4 +1,6 @@
-// this file implements the tree traits for the BasicTree and BasicWalker
+//! This module implements the tree traits for the BasicTree and BasicWalker
+//! It is mostly a separate file from the main module file, since it's a private module, and its
+//! contents are re-exported.
 
 use super::*;
 use super::super::*; // crate::trees::*

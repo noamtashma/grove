@@ -1,11 +1,12 @@
-//! Module defining a trait for a value that locates a node or group of nodes in a tree.
-//! A locator, given a node, can either reply, `GoRight`, `GoLeft`, `Accept`,
-//! or return an error value.
+//! Module defining a trait for a way to locatee a node or group of nodes in a tree.
 //! 
-//! Locators are supposed to represent a segment of the tree. It is supposed to do this:
+//! Locators are supposed to represent a segment of the tree.
+//! When the locator is used, whenever we encounter a node, the locator is queried.
+//! The locator has to reply:
 //! * If the current node is to the left of the segment, return `GoRight`.
 //! * If the current node is to the right of the segment, return `GoLeft`
-//! * If the current node is part of the segment, return `Accept`. (note that the whole subtree might not be contained in the segment)
+//! * If the current node is part of the segment, return `Accept`.
+//! Note that the subtree of the current node is irrelevant: only the current node matters.
 //!
 //! Functions like search, which logically expect only one accepted node, and not a segment,
 //! will use any node that is accepted.
@@ -33,9 +34,6 @@ pub trait Locator<A : Action> {
     type Error;
     fn locate(&self, left : A::Value, node : A::Value, right : A::Value) -> Result<LocResult, Self::Error>;
 }
-
-// TODO: immutable locator trait?
-// this might be needed. but might not.
 
 impl<A : Action, E, F : Fn(A::Value, A::Value, A::Value) -> Result<LocResult, E>> Locator<A> for F {
     type Error = E;

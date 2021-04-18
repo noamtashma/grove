@@ -1,3 +1,6 @@
+//! The basic tree module
+//! This module implements basic unbalanced trees.
+
 // these two should not be public as they are merely separate files
 // for some of the functions of this module
 mod walker;
@@ -9,6 +12,7 @@ pub use crate::data::*; // because everyone will need to specify Data for the ge
 
 // use crate::trees::SomeEntry;
 
+/// A bisc tree. might be empty.
 pub enum BasicTree<A : Action> {
 	Empty, Root(Box<BasicNode<A>>) // TODO: rename Root
 }
@@ -16,6 +20,11 @@ use BasicTree::*;
 
 impl<A : Action> BasicTree<A> {
 
+	/// Remakes the data that is stored in this node, based on its sons.
+	/// This is necessary when the data in the sons might have changed.
+	/// For example, after inserting a new node, all of the nodes from it to the root
+	/// must be rebuilt, in order for the segment values accumulated over the whole
+	/// subtree to be accurate.
 	pub fn rebuild(&mut self) {
 		match self {
 			Root(node) => node.rebuild(),
@@ -23,6 +32,10 @@ impl<A : Action> BasicTree<A> {
 		}
 	}
 	
+	/// Pushes any actions stored in this node to its sons.
+	/// Actions stored in nodes are supposed to be eventually applied to its
+	/// whole subtree. Therefore, in order to access a node cleanly, without
+	/// the still-unapplied-function complicating things, you must `access()` the node.
 	pub fn access(&mut self) {
 		match self {
 			Root(node) => node.access(),
@@ -30,6 +43,7 @@ impl<A : Action> BasicTree<A> {
 		}
 	}
 
+	/// Returns the summary of all values in this node's subtree.
 	pub fn segment_value(&self) -> A::Value {
 		match self {
 			Root(node) => node.segment_value(),
@@ -39,6 +53,7 @@ impl<A : Action> BasicTree<A> {
 }
 
 impl<A : Action + Reverse> BasicTree<A> {
+	/// Reverses the whole tree
 	pub fn reverse(&mut self) {
 		if let Root(node) = self {
 			node.reverse();
@@ -55,6 +70,7 @@ impl<A : Action + Reverse> BasicNode<A> {
 }
 
 // TODO: decide if the fields should really be public
+/// A basic node. can be viewed as a non-empty basic tree: it always has at least one value.
 pub struct BasicNode<A : Action> {
 	action : A,
 	segment_value : A::Value,
@@ -75,14 +91,20 @@ impl<A : Action> BasicNode<A> {
 		}
 	}
 	
+	/// Returns the summary of all values in this node's subtree.
 	pub fn segment_value(&self) -> A::Value {
 		self.action.act(self.segment_value)
 	}
 
+	/// Returns the value stored in this node specifically.
 	pub fn node_value(&self) -> A::Value {
 		self.action.act(self.node_value)
 	}
 
+	/// Pushes any actions stored in this node to its sons.
+	/// Actions stored in nodes are supposed to be eventually applied to its
+	/// whole subtree. Therefore, in order to access a node cleanly, without
+	/// the still-unapplied-function complicating things, you must `access()` the node.
 	pub fn access(&mut self) {
 		// reversing
 		// for data that doesn't implement reversing, this becomes a no-op
@@ -102,6 +124,11 @@ impl<A : Action> BasicNode<A> {
 		self.action = A::IDENTITY;
 	}
 
+	/// Remakes the data that is stored in this node, based on its sons.
+	/// This is necessary when the data in the sons might have changed.
+	/// For example, after inserting a new node, all of the nodes from it to the root
+	/// must be rebuilt, in order for the segment values accumulated over the whole
+	/// subtree to be accurate.
 	pub fn rebuild(&mut self) {
 		assert!(self.action == A::IDENTITY);
 		self.segment_value = self.node_value.clone();
@@ -115,8 +142,10 @@ impl<A : Action> BasicNode<A> {
 		//Data::rebuild_data(&mut self.data, self.left.data(), self.right.data());
 	}
 
-	/// Does not call access
-	/// After calling this you might need to call access again
+	/// This function applies the given action to its whole subtree.
+	///
+	/// This function leaves the `self.action` field "dirty" - after calling
+	/// this you might need to call access, to push the action to this node's sons.
 	pub fn act(&mut self, action : A) {
 		self.action = A::compose_a(action, self.action);
 	}

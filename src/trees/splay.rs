@@ -30,7 +30,7 @@ impl<D : Action> SplayTree<D> {
     }
 
     /// Note: using this directly may cause the tree to lose its properties as a splay tree
-    pub fn basic_walker(&mut self) -> BasicWalker<'_, D> {
+    pub fn basic_walker(&mut self) -> BasicWalker<D> {
         BasicWalker::new(&mut self.tree)
     }
 
@@ -65,13 +65,13 @@ impl<D : Action> SplayTree<D> {
     // TODO: implement
     /// Gets the tree into a state in which the locator's segment
     /// is a single subtree, and returns a walker at that subtree.
-    pub fn isolate_segment<'a, L>(&mut self, locator : &L) -> SplayWalker<'a, D> where
+    pub fn isolate_segment<L>(&mut self, locator : &L) -> SplayWalker<D> where
         L : crate::methods::locator::Locator<D>
     {
         unimplemented!();
     }
 
-    pub fn act_segment<'a, L>(&mut self, locator : &L, action : D) where
+    pub fn act_segment<L>(&mut self, locator : &L, action : D) where
         L : crate::methods::locator::Locator<D>
     {
         let mut walker = self.isolate_segment(locator);

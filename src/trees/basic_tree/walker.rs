@@ -1,3 +1,6 @@
+// This is a private module, so no documentation for it directly.
+// instead look for documentation of the `BasicWalker` struct.
+
 use super::*;
 use crate::telescope::*;
 use std::ops::Deref;
@@ -20,20 +23,37 @@ impl<A : Action> Frame<A> {
 // Invariant: the current node is always already accessed,
 // and only nodes on the path from the root to the current node (exclusive) may have
 // incorrect values.
-/// A struct that has a mutable reference of the tree, and allows you to walk on it.
-/// will automatically go back up the tree when dropped, in order to rebuild() all the nodes.
+
+/// This struct implements a walker for the BasicTree type.
+/// It is struct that has a mutable reference of the tree, and allows you to walk up and down on it.
+/// The walker may also be in a position which is the son of a node, but doesn't contain
+/// a node by itself, and then it is said to be in an empty position.
+///
+/// The walker implements `deref` and `deref_mut` with `BasicTree` as the target type,
+/// as the walker acts as a smart pointer to a subtree of the original tree.
+///
+/// Walkers for other kinds of trees may be built by wrapping around the `BasicWalker` type,
+/// as tree types can be built by wrapping around the `BasicTree` type.
+/// 
+/// The walker will automatically go back up the tree to the root when dropped, in order to rebuild() all the nodes.
+///
+/// Internally, a `Telescope` type is used, in order to be able to dynamically
+/// go up and down the tree without upsetting the borrow checker.
 #[derive(destructure)]
 pub struct BasicWalker<'a, A : Action> {
+	/// The telescope, holding references to all the subtrees from the root to the
+	/// current position.
 	pub(super) tel : Telescope<'a, BasicTree<A>>,
 
-	// this array holds the accumulation of all the values left of the node, and
-	// all of the values right of the node, for every node.
+	/// This array holds the accumulation of all the values left of the subtree, and
+	/// all of the values right of the subtree, for every subtree from the root to
+	/// the current subtree.
 	pub(super) vals : Vec<Frame<A>>,
 
-	// this array holds for every node, whether its left son is inside the walker
-	// and not the right one.
-	// this array is always one shorter than the telescope,
-	// because the last node has no son in the structure.
+	/// This array holds for every node, whether the next subtree in the walker
+	/// is its left son or the right son. (true corresponds to the left son).
+	/// This array is always one shorter than the telescope and the vals array,
+	/// because the last node has no son in the walker.
 	pub(super) is_left : Vec<bool>,
 }
 
@@ -62,9 +82,9 @@ impl<'a, A : Action> BasicWalker<'a, A> {
 		matches!(&*self.tel, BasicTree::Empty)
 	}
 	
-	// if there is only the root, returns None
-	// otherwise returns Some(true) if the current position is a left son
-	// Some(false) if the current position is a right son
+	/// If there is only the root, returns None
+	/// Otherwise returns Some(true) if the current position is a left son
+	/// Some(false) if the current position is a right son
 	pub fn is_left_son(&self) -> Option<bool> {
 		if self.is_left.is_empty() {
 			None
@@ -74,18 +94,19 @@ impl<'a, A : Action> BasicWalker<'a, A> {
 		}
 	}
 
-	// the convention is, the root is at depth zero
+	/// The convention is, the root is at depth zero
 	pub fn depth(&self) -> usize {
 		self.is_left.len()
 	}
 
-	// note: even if you are the root, the root might still be empty,
-	// if this is the empty tree
+	/// Returns if this is the empty tree
+	/// Note: even if you are the root, the root might still be empty,
 	pub fn is_root(&self) -> bool {
 		self.is_left.is_empty()
 	}
 
-	// returns Err(()) if this is an empty tree or if it has no right son.
+	/// Performs a left rotation
+	/// Returns Err(()) if this is an empty tree or if it has no right son.
 	pub fn rot_left(&mut self) -> Result<(), ()> {
 		let owned_tree = std::mem::replace(&mut *self.tel, BasicTree::Empty);
 
@@ -110,7 +131,8 @@ impl<'a, A : Action> BasicWalker<'a, A> {
 		Ok(())
 	}
 
-	// returns Err(()) if this node has no left son.
+	/// Performs a right rotation
+	/// Returns Err(()) if this node has no left son.
 	pub fn rot_right(&mut self) -> Result<(), ()> {
 		let owned_tree = std::mem::replace(&mut *self.tel, BasicTree::Empty);
 

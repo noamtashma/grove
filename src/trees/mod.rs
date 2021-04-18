@@ -1,3 +1,4 @@
+//! The trees module.
 //! This module contains:
 //! * Traits that all implementations of trees should implement
 //! * Specific implementations of trees
