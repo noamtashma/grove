@@ -1,26 +1,26 @@
-/// Module defining a trait for a value that locates a node or group of nodes in a tree.
-/// A locator, given a node, can either reply, `GoRight`, `GoLeft`, `Accept`,
-/// or return an error value.
-/// 
-/// Locators are supposed to represent a segment of the tree. It is supposed to do this:
-/// * If the current node is to the left of the segment, return `GoRight`.
-/// * If the current node is to the right of the segment, return `GoLeft`
-/// * If the current node is part of the segment, return `Accept`. (note that the whole subtree might not be contained in the segment)
-///
-/// Functions like search, which logically expect only one accepted node, and not a segment,
-/// will use any node that is accepted.
-/// Functions like insertions, will expect a locator that doesn't accept any node,
-/// but leads the locator into a space between nodes, where the node will be inserted.
-/// 
-/// The locator receives as input the current node,
-/// the accumulated value left of the subtree of the current node,
-/// and the accumulated value right of the current node.
-///
-/// Locators are immutable, and therefore it is assumed that they can be called in any order,
-/// i.e., earlier calls will not change the result of later calls. This is even though
-/// that might not be the case, using interior mutability.
-/// 
-/// Anonymous functions of the type `Fn(...) -> Result<LocResult, Err>` can be used as locators.
+//! Module defining a trait for a value that locates a node or group of nodes in a tree.
+//! A locator, given a node, can either reply, `GoRight`, `GoLeft`, `Accept`,
+//! or return an error value.
+//! 
+//! Locators are supposed to represent a segment of the tree. It is supposed to do this:
+//! * If the current node is to the left of the segment, return `GoRight`.
+//! * If the current node is to the right of the segment, return `GoLeft`
+//! * If the current node is part of the segment, return `Accept`. (note that the whole subtree might not be contained in the segment)
+//!
+//! Functions like search, which logically expect only one accepted node, and not a segment,
+//! will use any node that is accepted.
+//! Functions like insertions, will expect a locator that doesn't accept any node,
+//! but leads the locator into a space between nodes, where the node will be inserted.
+//! 
+//! The locator receives as input the current node,
+//! the accumulated value left of the subtree of the current node,
+//! and the accumulated value right of the current node.
+//!
+//! Locators are immutable, and therefore it is assumed that they can be called in any order,
+//! i.e., earlier calls will not change the result of later calls. This is even though
+//! that might not be the case, using interior mutability.
+//! 
+//! Anonymous functions of the type `Fn(...) -> Result<LocResult, Err>` can be used as locators.
 
 use crate::trees::basic_tree::*;
 

@@ -1,7 +1,12 @@
-/// this module contains:
-/// * traits that all implementations of trees should implement
-/// (both for the tree and the tree's walker)
-/// * specific implementations of trees
+//! This module contains:
+//! * Traits that all implementations of trees should implement
+//! * Specific implementations of trees
+//!
+//! The Walker trait implements walking through a tree. This includes dealing with the borrow
+//! checking problems of recursive structures (using Telescope), and rebalancing the tree.
+//! Therefore, walkers can't guarantee that the tree won't change as you walk through them.
+//! 
+//! Currently this module is limited to trees which are based on the BasicTree type.
 
 pub mod basic_tree;
 pub mod splay;
@@ -23,10 +28,13 @@ pub trait SomeTreeRef<D : Action> {
 
 
 
-/// A Walker of the tree is a type that allows you to walk up and down the tree while modifying it.
-/// Under the hood, the walkers use the Telescope type to achieve this.
+/// The Walker trait implements walking through a tree.
+/// This includes dealing with the borrow checking problems of recursive structures (using Telescope),
+/// and rebalancing the tree.
+/// Therefore, walkers can't guarantee that the tree won't change as you walk through them.
+///
 /// The walker should be able to walk on any of the existing nodes, or any empty position just near them.
-/// i.e., the walker can also be in the position of a son of an existing node, where there isn't
+/// i.e., The walker can also be in the position of a son of an existing node, where there isn't
 /// a node yet.
 /// The method is_empty() can tell whether you are at an empty position. Trying to move downward from an
 /// empty position produces an error value.

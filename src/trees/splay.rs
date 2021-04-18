@@ -1,4 +1,13 @@
-// an implementation of a splay tree
+//! An implementation of a splay tree
+//!
+//! The tree implements the `splay` operation, that should be used after searching for a node.
+//! See documentation for the splay function.
+//!
+//! Since the splay tree's complexity follows from splaying,
+//! if you would apply `go_up()` too many times, the splay tree's complexity might suffer.
+//! Every `go_up()` application costs a constant amount, but the depth of the tree might
+//! as big as `O(n)`.
+//! See documentation for the `go_up` function.
 use super::*;
 use super::basic_tree::*;
 
@@ -122,14 +131,13 @@ impl<'a, D : Action> SplayWalker<'a, D> {
         SplayWalker { walker }
     }
     
-    // if at the root, do nothing.
-    // otherwise, do a splay step upwards.
+    /// If at the root, do nothing.
+    /// otherwise, do a single splay step upwards.
 
-    // about the amortized computational complexity of using splay steps:
-    // the amortized cost of any splay step, except the zig step near the root, is at most
-    // log(new_node.size) - log(old_node.size) - 1
-    // the -1 covers the complexity of going down the tree in the first place,
-    // and therefore you pay for at most log the size of the node where you stop splaying
+    /// Amortized complexity of splay steps:
+    /// The amortized cost of any splay step, except the zig step near the root, is at most
+    /// `log(new_node.size) - log(old_node.size) - 1`
+    /// The -1 covers the complexity of going down the tree in the first place.
 
     pub fn splay_step(&mut self) {
 
@@ -160,7 +168,13 @@ impl<'a, D : Action> SplayWalker<'a, D> {
         }
     }
 
-    // splay the current node to the top of the tree
+    /// Splay the current node to the top of the tree.
+    ///
+    /// If the walker is on an empty spot, it will splay some nearby node
+    /// to the top of the tree instead. (current behavior is the father of the empty spot).
+    ///
+    /// Going down the tree, and then splaying,
+    /// has an amortized cost of `O(log n)`.
     pub fn splay(&mut self) {
         while !self.walker.is_root() {
             self.splay_step();
