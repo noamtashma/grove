@@ -138,7 +138,9 @@ pub fn search_by_locator<TR, D : Action, L>(tree : TR, locator : &L)
 
     let mut walker = tree.walker();
     while let basic_tree::BasicTree::Root(node) = walker.inner() {
-        match locator.locate(node, walker.far_left_value(), walker.far_right_value())? {
+        let left = D::compose_v(walker.far_left_value(), node.left.segment_value());
+        let right = D::compose_v(node.right.segment_value(), walker.far_right_value());
+        match locator.locate(left, node.node_value(), right)? {
             Accept => break,
             GoRight => walker.go_right().unwrap(),
             GoLeft => walker.go_left().unwrap(),
@@ -160,7 +162,9 @@ pub fn accumulate_values<TR, L, A : Action>(tree : TR, locator : &L) ->
 
     let mut walker = tree.walker();
     while let basic_tree::BasicTree::Root(node) = walker.inner() {
-        match locator.locate(node, walker.far_left_value(), walker.far_right_value())? {
+        let left = A::compose_v(walker.far_left_value(), node.left.segment_value());
+        let right = A::compose_v(node.right.segment_value(), walker.far_right_value());
+        match locator.locate(left, node.node_value(), right)? {
             GoRight => walker.go_right().unwrap(),
             GoLeft => walker.go_right().unwrap(),
 
@@ -195,7 +199,9 @@ fn accumulate_values_on_suffix<W, L, A : Action>(walker : &mut W, locator : &L) 
     use LocResult::*;
 
     while let basic_tree::BasicTree::Root(node) = walker.inner() {
-        match locator.locate(node, walker.far_left_value(), walker.far_right_value())? {
+        let left = A::compose_v(walker.far_left_value(), node.left.segment_value());
+        let right = A::compose_v(node.right.segment_value(), walker.far_right_value());
+        match locator.locate(left, node.node_value(), right)? {
             Accept => {
                 res = A::compose_v(node.right.segment_value(), res);
                 res = A::compose_v(node.node_value(), res);
@@ -218,8 +224,9 @@ fn accumulate_values_on_prefix<W, L, A : Action>(walker : &mut W, locator : &L) 
     use LocResult::*;
 
     while let basic_tree::BasicTree::Root(node) = walker.inner() {
-        match locator.locate(node, walker.far_left_value(), walker.far_right_value())? {
-            Accept => {
+        let left = A::compose_v(walker.far_left_value(), node.left.segment_value());
+        let right = A::compose_v(node.right.segment_value(), walker.far_right_value());
+        match locator.locate(left, node.node_value(), right)? {    Accept => {
                 res = A::compose_v(res, node.left.segment_value());
                 res = A::compose_v(res, node.node_value());
                 walker.go_right().unwrap();

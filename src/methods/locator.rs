@@ -31,16 +31,16 @@ use LocResult::*;
 
 pub trait Locator<A : Action> {
     type Error;
-    fn locate(&self, node : &BasicNode<A>, left : A::Value, right : A::Value) -> Result<LocResult, Self::Error>;
+    fn locate(&self, left : A::Value, node : A::Value, right : A::Value) -> Result<LocResult, Self::Error>;
 }
 
 // TODO: immutable locator trait?
 // this might be needed. but might not.
 
-impl<A : Action, E, F : Fn(&BasicNode<A>, A::Value, A::Value) -> Result<LocResult, E>> Locator<A> for F {
+impl<A : Action, E, F : Fn(A::Value, A::Value, A::Value) -> Result<LocResult, E>> Locator<A> for F {
     type Error = E;
-    fn locate(&self, node : &BasicNode<A>, left : A::Value, right : A::Value) -> Result<LocResult, E> {
-        self(node, left, right)
+    fn locate(&self, left : A::Value, node : A::Value, right : A::Value) -> Result<LocResult, E> {
+        self(left, node, right)
     }
 }
 
@@ -48,12 +48,12 @@ impl<A : Action, E, F : Fn(&BasicNode<A>, A::Value, A::Value) -> Result<LocResul
 
 /// Locator for finding an element using a key.
 pub fn locate_by_key<'a, A>(key : &'a <A as crate::data::example_data::Keyed>::Key) -> 
-    impl Fn(&BasicNode<A>, A::Value, A::Value) -> Result<LocResult, void::Void> + 'a where
+    impl Fn(A::Value, A::Value, A::Value) -> Result<LocResult, void::Void> + 'a where
     A : crate::data::example_data::Keyed,
 {
-    move |node : &BasicNode<A>, _, _| -> Result<LocResult, void::Void> {
+    move |_, node : A::Value, _| -> Result<LocResult, void::Void> {
         use std::cmp::Ordering::*;
-        let res = match A::get_key(node.node_value()).cmp(key) {
+        let res = match A::get_key(node).cmp(key) {
             Equal => Accept,
             Less => GoLeft,
             Greater => GoRight,
@@ -83,13 +83,13 @@ impl IndexLocator {
 
 impl<A : Action + example_data::SizedAction> Locator<A> for IndexLocator {
     type Error = void::Void;
-    fn locate(&self, node : &BasicNode<A>, left : A::Value, _right : A::Value) -> Result<LocResult, void::Void> {
+    fn locate(&self, left : A::Value, node : A::Value, _right : A::Value) -> Result<LocResult, void::Void> {
         // find the index of the current node
-        let s = A::size(left) + A::size(node.left.segment_value());
+        let s = A::size(left);
 
         let res = if s >= self.high {
             GoLeft
-        } else if s + A::size(node.node_value()) <= self.low {
+        } else if s + A::size(node) <= self.low {
             GoRight
         } else {
             Accept
