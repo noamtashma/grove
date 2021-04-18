@@ -18,7 +18,7 @@ pub trait Data {
 
 	/// this function should flip the bit of whether you'll want to reverse your data
 	fn reverse(&mut self) {
-		panic!("didn't implement reverse for a D : Reverse");
+		panic!("didn't implement reverse for a A : Reverse");
 	}
 }
 

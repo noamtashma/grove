@@ -6,8 +6,8 @@ use super::*;
 use super::super::*; // crate::trees::*
 use crate::telescope::NO_VALUE_ERROR;
 
-impl<'a, D : Action> SomeTree<D> for BasicTree<D> {
-    fn into_inner(self) -> BasicTree<D> {
+impl<'a, A : Action> SomeTree<A> for BasicTree<A> {
+    fn into_inner(self) -> BasicTree<A> {
         self
     }
 
@@ -15,13 +15,13 @@ impl<'a, D : Action> SomeTree<D> for BasicTree<D> {
         Empty
     }
 
-    fn from_inner(tree : BasicTree<D>) -> Self {
+    fn from_inner(tree : BasicTree<A>) -> Self {
         tree
     }
 }
 
-impl<'a, D : Action> SomeTreeRef<D> for &'a mut BasicTree<D> {
-    type Walker = BasicWalker<'a, D>;
+impl<'a, A : Action> SomeTreeRef<A> for &'a mut BasicTree<A> {
+    type Walker = BasicWalker<'a, A>;
 
     fn walker(self) -> Self::Walker {
         BasicWalker::new(self)
@@ -130,7 +130,7 @@ impl<A : Action> SomeEntry<A> for BasicTree<A> {
 	}
 
 	/*
-	fn write(&mut self, data : D) -> Option<D> {
+	fn write(&mut self, data : A) -> Option<A> {
         match self {
 			Empty => {
                 *self = Root(Box::new(BasicNode::new(data, Empty, Empty)));
@@ -170,7 +170,7 @@ impl<'a, A : Action> SomeEntry<A> for BasicWalker<'a, A> {
     }
 
 	/*
-    fn write(&mut self, data : D) -> Option<D> {
+    fn write(&mut self, data : A) -> Option<A> {
         self.tel.write(data)
 	}
 	*/

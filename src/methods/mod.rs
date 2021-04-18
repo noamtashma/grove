@@ -23,7 +23,7 @@ use crate::*;
 // TODO - figure out how to make this callable like walker.next_empty()
 /// if the walker is at an empty position, return an error.
 /// goes to the next empty position
-pub fn next_empty<W : SomeWalker<D>, D : Action>(walker : &mut W) -> Result<(), ()> {
+pub fn next_empty<W : SomeWalker<A>, A : Action>(walker : &mut W) -> Result<(), ()> {
     walker.go_right()?; // if we're at an empty node, return error
     while !walker.is_empty() {
         walker.go_left().unwrap();
@@ -33,7 +33,7 @@ pub fn next_empty<W : SomeWalker<D>, D : Action>(walker : &mut W) -> Result<(), 
 
 // if the walker is at an empty position, return an error.
 // goes to the previous empty position
-pub fn previous_empty<W : SomeWalker<D>, D : Action>(walker : &mut W) -> Result<(), ()> {
+pub fn previous_empty<W : SomeWalker<A>, A : Action>(walker : &mut W) -> Result<(), ()> {
     walker.go_left()?; // if we're at an empty node, return error
     while !walker.is_empty() {
         walker.go_right().unwrap();
@@ -43,7 +43,7 @@ pub fn previous_empty<W : SomeWalker<D>, D : Action>(walker : &mut W) -> Result<
 
 /// Finds the next filled node.
 /// If there isn't any, moves to root and return Err(()).
-pub fn next_filled<W : SomeWalker<D>, D : Action>(walker : &mut W) -> Result<(), ()> {
+pub fn next_filled<W : SomeWalker<A>, A : Action>(walker : &mut W) -> Result<(), ()> {
     if !walker.is_empty() {
         next_empty(walker).unwrap();
     }
@@ -60,7 +60,7 @@ pub fn next_filled<W : SomeWalker<D>, D : Action>(walker : &mut W) -> Result<(),
 
 /// Finds the previous filled node.
 /// If there isn't any, moves to root and return Err(()).
-pub fn previous_filled<W : SomeWalker<D>, D : Action>(walker : &mut W) -> Result<(), ()> {
+pub fn previous_filled<W : SomeWalker<A>, A : Action>(walker : &mut W) -> Result<(), ()> {
     if !walker.is_empty() {
         previous_empty(walker).unwrap();
     }
@@ -126,10 +126,10 @@ pub fn insert_by_locator<A : Action, L, TR> (tree : TR, locator : &L, value : A:
 // given the input nodes.
 
 
-pub fn search<TR, D : Action>(tree : TR, key : &D::Key) ->  TR::Walker where
-    TR : SomeTreeRef<D>,
-    D : crate::data::example_data::Keyed,
-    //<D as data::Action>::Value : std::fmt::Debug,
+pub fn search<TR, A : Action>(tree : TR, key : &A::Key) ->  TR::Walker where
+    TR : SomeTreeRef<A>,
+    A : crate::data::example_data::Keyed,
+    //<A as data::Action>::Value : std::fmt::Debug,
 {
     let res : Result<_, void::Void> = search_by_locator(tree, &locate_by_key(key));
     match res {
@@ -141,18 +141,18 @@ pub fn search<TR, D : Action>(tree : TR, key : &D::Key) ->  TR::Walker where
 /// Finds any node that the locator `Accept`s.
 /// If there isn't any, it find the empty location the locator has navigated it to.
 /// Returns an Err if the Locator has returned an Err.
-pub fn search_by_locator<TR, D : Action, L>(tree : TR, locator : &L)
+pub fn search_by_locator<TR, A : Action, L>(tree : TR, locator : &L)
     -> Result<TR::Walker, L::Error> where
-    TR : crate::trees::SomeTreeRef<D>,
-    L : Locator<D>,
-    //<D as data::Action>::Value : std::fmt::Debug,
+    TR : crate::trees::SomeTreeRef<A>,
+    L : Locator<A>,
+    //<A as data::Action>::Value : std::fmt::Debug,
 {
     use LocResult::*;
 
     let mut walker = tree.walker();
     while let basic_tree::BasicTree::Root(node) = walker.inner() {
-        let left = D::compose_v(walker.far_left_value(), node.left.segment_value());
-        let right = D::compose_v(node.right.segment_value(), walker.far_right_value());
+        let left = A::compose_v(walker.far_left_value(), node.left.segment_value());
+        let right = A::compose_v(node.right.segment_value(), walker.far_right_value());
         match locator.locate(left, node.node_value(), right)? {
             Accept => break,
             GoRight => walker.go_right().unwrap(),

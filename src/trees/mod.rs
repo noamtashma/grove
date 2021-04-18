@@ -13,17 +13,17 @@ pub mod basic_tree;
 pub mod splay;
 
 use crate::data::*;
-pub trait SomeTree<D : Action> where
-    for<'a> &'a mut Self : SomeTreeRef<D> {
+pub trait SomeTree<A : Action> where
+    for<'a> &'a mut Self : SomeTreeRef<A> {
 
-    fn into_inner(self) -> basic_tree::BasicTree<D>;
+    fn into_inner(self) -> basic_tree::BasicTree<A>;
     fn new() -> Self;
-    fn from_inner(tree : basic_tree::BasicTree<D>) -> Self;
+    fn from_inner(tree : basic_tree::BasicTree<A>) -> Self;
 
 }
 
-pub trait SomeTreeRef<D : Action> {
-    type Walker : SomeWalker<D>;
+pub trait SomeTreeRef<A : Action> {
+    type Walker : SomeWalker<A>;
     fn walker(self) -> Self::Walker;
 }
 
@@ -68,7 +68,7 @@ pub trait SomeWalker<A : Action> : SomeEntry<A> {
     fn inner_mut(&mut self) -> &mut basic_tree::BasicTree<A>;
     fn inner(&self) -> &basic_tree::BasicTree<A>;
 }
-/// Things that allow access to a maybe-missing value, as if it is an Option<D>.
+/// Things that allow access to a maybe-missing value, as if it is an Option<A>.
 /// Currently there are no actual Entry types, and the walkers themselves
 /// act as the entries. However, the traits are still separated.
 pub trait SomeEntry<A : Action> {

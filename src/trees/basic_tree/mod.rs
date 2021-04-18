@@ -151,7 +151,7 @@ impl<A : Action> BasicNode<A> {
 	}
 
 	/*
-	pub fn create(mut data : D, left : BasicTree<D>, right : BasicTree<D>) -> BasicNode<D> {
+	pub fn create(mut data : A, left : BasicTree<A>, right : BasicTree<A>) -> BasicNode<A> {
 		// this must be written first because later the values are moved into the result
 		data.rebuild_data(left.data(), right.data());
 		BasicNode {
@@ -164,15 +164,15 @@ impl<A : Action> BasicNode<A> {
 }
 
 /*
-impl<D : Action> std::ops::Deref for BasicNode<D> {
-	type Target = D;
-	fn deref(&self) -> &D {
+impl<A : Action> std::ops::Deref for BasicNode<A> {
+	type Target = A;
+	fn deref(&self) -> &A {
 		&self.data
 	}
 }
 
-impl<D : Action> std::ops::DerefMut for BasicNode<D> {
-	fn deref_mut(&mut self) -> &mut D {
+impl<A : Action> std::ops::DerefMut for BasicNode<A> {
+	fn deref_mut(&mut self) -> &mut A {
 		&mut self.data
 	}
 }
