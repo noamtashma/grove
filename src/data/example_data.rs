@@ -5,10 +5,6 @@ pub struct Value<T> {
     pub val : T,
 }
 
-impl<T> Data for Value<T> {
-    fn rebuild_data<'a>(&'a mut self, _ : Option<&'a Self>, _ : Option<&'a Self>) {}
-    fn access<'a>(&'a mut self, _ : Option<&'a mut Self>, _ : Option<&'a mut Self>) {}
-}
 
 /// storing the size of a subtree
 /// assumes that storing the size of the structure in a usize is enough.
@@ -19,16 +15,6 @@ pub struct Size {
 }
 #[derive(PartialEq, Eq, Copy, Clone)]
 struct SizeAction {}
-
-impl Data for Size {
-    fn rebuild_data<'a>(&'a mut self, left : Option<&'a Self>, right : Option<&'a Self>) {
-        self.size = 1;
-        self.size += left.map_or(0, |r| r.size);
-        self.size += right.map_or(0, |r| r.size);
-    }
-
-    fn access<'a>(&'a mut self, _ : Option<&'a mut Self>, _ : Option<&'a mut Self>) {}
-}
 
 impl Action for SizeAction {
     type Value = Size;
@@ -53,34 +39,10 @@ impl SizedAction for SizeAction {
     fn size(val : Size) -> usize { val.size }
 }
 
-pub trait SizedData : Data {
-    /// The size of the subtree of the current node
-    fn size(&self) -> usize;
-
-    // TODO: should we keep the option of wide values?
-    /// The "width" of the current element alone.
-    /// The default implementation always returns 1.
-    fn width(&self) -> usize {
-        1
-    }
-}
-
-impl SizedData for Size {
-    fn size(&self) -> usize { self.size }
-}
 
 /// the height of a subtree
 pub struct Height {
     pub height : usize
-}
-
-impl Data for Height {
-    fn rebuild_data<'a>(&'a mut self, left : Option<&'a Self>, right : Option<&'a Self>) {
-        let lh = left.map_or(0, |r| r.height);
-        let rh = right.map_or(0, |r| r.height);
-        self.height = 1 + std::cmp::max(lh, rh);
-    }
-    fn access<'a>(&'a mut self, _ : Option<&'a mut Self>, _ : Option<&'a mut Self>) {}
 }
 
 
