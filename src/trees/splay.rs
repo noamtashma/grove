@@ -18,15 +18,15 @@ pub struct SplayTree<A : Action> {
 }
 
 impl<A : Action> SplayTree<A> {
-    pub fn root_node_value(&self) -> Option<A::Value> {
+    pub fn root_node_value(&self) -> Option<&A::Value> {
         match &self.tree {
             BasicTree::Root(node) => Some(node.node_value()),
             _ => None,
         }
     }
 
-    pub fn segment_value(&self) -> A::Value {
-        self.tree.segment_value()
+    pub fn segment_value(&self) -> A::Summary {
+        self.tree.segment_summary()
     }
 
     /// Note: using this directly may cause the tree to lose its properties as a splay tree
@@ -263,10 +263,10 @@ impl<'a, A : Action> SomeWalker<A> for SplayWalker<'a, A> {
         self.walker.depth()
     }
 
-    fn far_left_value(&self) -> A::Value {
+    fn far_left_value(&self) -> A::Summary {
         self.walker.far_left_value()
     }
-    fn far_right_value(&self) -> A::Value {
+    fn far_right_value(&self) -> A::Summary {
         self.walker.far_right_value()
     }
 
@@ -286,6 +286,10 @@ impl<'a, A : Action> SomeEntry<A> for SplayWalker<'a, A> {
 
     fn value(&self) -> Option<&A::Value> {
         self.walker.value()
+    }
+
+    fn node_summary(&self) -> A::Summary {
+        self.walker.node_summary()
     }
 
     /*

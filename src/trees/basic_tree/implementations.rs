@@ -38,8 +38,8 @@ impl<'a, A : Action> SomeWalker<A> for BasicWalker<'a, A> {
 				Empty => Err(()),
 				Root(node) => {
 					// update values
-					frame.right = A::compose_v(node.right.segment_value(), frame.right);
-					frame.right = A::compose_v(node.node_value(), frame.right);
+					frame.right = A::compose_s(node.right.segment_summary(), frame.right);
+					frame.right = A::compose_s(node.node_summary(), frame.right);
 					node.left.access();
 					Ok(&mut node.left)
 				},
@@ -63,8 +63,8 @@ impl<'a, A : Action> SomeWalker<A> for BasicWalker<'a, A> {
 				Empty => Err(()),
 				Root(node) => {
 					// update values
-					frame.left = A::compose_v(frame.left, node.left.segment_value());
-					frame.left = A::compose_v(frame.left, node.node_value());
+					frame.left = A::compose_s(frame.left, node.left.segment_summary());
+					frame.left = A::compose_s(frame.left, node.node_summary());
 					
 					node.right.access();
 					Ok(&mut node.right)
@@ -97,10 +97,10 @@ impl<'a, A : Action> SomeWalker<A> for BasicWalker<'a, A> {
 		self.depth()
 	}
 
-	fn far_left_value(&self) -> A::Value {
+	fn far_left_value(&self) -> A::Summary {
 		self.vals.last().expect(NO_VALUE_ERROR).left
 	}
-	fn far_right_value(&self) -> A::Value {
+	fn far_right_value(&self) -> A::Summary {
 		self.vals.last().expect(NO_VALUE_ERROR).right
 	}
 
@@ -126,6 +126,13 @@ impl<A : Action> SomeEntry<A> for BasicTree<A> {
 		match self {
 			Empty => None,
 			Root(node) => Some(&node.node_value),
+		}
+	}
+
+	fn node_summary(&self) -> A::Summary {
+		match self {
+			Empty => A::EMPTY,
+			Root(node) => node.node_summary()
 		}
 	}
 
@@ -168,6 +175,10 @@ impl<'a, A : Action> SomeEntry<A> for BasicWalker<'a, A> {
     fn value(&self) -> Option<&A::Value> {
         self.tel.value()
     }
+
+	fn node_summary(&self) -> A::Summary {
+		self.tel.node_summary()
+	}
 
 	/*
     fn write(&mut self, data : A) -> Option<A> {

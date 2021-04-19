@@ -14,28 +14,33 @@ pub struct Size {
     pub size : usize
 }
 #[derive(PartialEq, Eq, Copy, Clone)]
-struct SizeAction {}
+struct SizeAction<V> {phantom : PhantomData<V>}
 
-impl Action for SizeAction {
-    type Value = Size;
-    fn compose_a(self : SizeAction, _ : SizeAction) -> SizeAction {
-        SizeAction {}
+// TODO: remove the Eq + Copy requirement
+impl<V : Eq + Copy> Action for SizeAction<V> {
+    type Summary = Size;
+    type Value = V;
+    fn compose_a(self : SizeAction<V>, _ : SizeAction<V>) -> SizeAction<V> {
+        self
     }
-    const IDENTITY : Self = SizeAction {};
-    fn compose_v(a : Size, b : Size) -> Size {
+    const IDENTITY : Self = SizeAction { phantom : PhantomData};
+    fn compose_s(a : Size, b : Size) -> Size {
         Size { size : a.size + b.size }
     }
     const EMPTY : Size = Size {size : 0};
-    fn act(self : SizeAction, b : Size) -> Size { b }
+    fn act(self : SizeAction<V>, b : Size) -> Size { b }
+    fn to_summary(val : &Self::Value) -> Self::Summary {
+        Size {size : 1}
+    }
 }
 
 /// actions in which action::Value keeps track of the size of subtrees.
 pub trait SizedAction : Action {
     /// The size of the subtree of the current node
-    fn size(val : Self::Value) -> usize;
+    fn size(val : Self::Summary) -> usize;
 }
 
-impl SizedAction for SizeAction {
+impl<V : Eq + Copy> SizedAction for SizeAction<V> {
     fn size(val : Size) -> usize { val.size }
 }
 
@@ -49,58 +54,42 @@ pub struct Height {
 // ordering keys
 // similar to Value<K>, but implements the keying trait. TODO
 
-#[derive(Clone, Copy, Debug)]
-pub struct Key<K> {
-    pub key : Option<K>,
-}
 
-impl<K> Key<K> {
-    pub fn new(key : K) -> Key<K> {
-        Key {key : Some(key)}
-    }
-}
 
 // TODO: complete
 use std::marker::PhantomData;
 #[derive(PartialEq, Eq, Clone, Copy)]
-pub struct KeyAction<K> {
-    phantom : PhantomData<K>,
+pub struct NoAction<V> {
+    phantom : PhantomData<V>,
 }
-impl<K> KeyAction<K> {
-    pub fn new() -> KeyAction<K> {
-        KeyAction {phantom : PhantomData}
+impl<V> NoAction<V> {
+    pub fn new() -> NoAction<V> {
+        NoAction {phantom : PhantomData}
     }
 }
 
-impl<K:Eq + Copy> Action for KeyAction<K> {
-    type Value = Key<K>;
-    const IDENTITY : Self = KeyAction {phantom : PhantomData};
-    fn compose_a(self, _ : Self) -> Self {KeyAction::new()}
+impl<V : Eq + Copy> Action for NoAction<V> {
+    type Summary = ();
+    type Value = V;
+    const IDENTITY : Self = NoAction {phantom : PhantomData};
+    fn compose_a(self, _ : Self) -> Self {NoAction::new()}
 
-    const EMPTY : Key<K> = Key {key : None};
-    fn compose_v(left : Key<K>, right : Key<K>) -> Key<K> {
-        match left.key {
-            None => right,
-            Some(_) => match right.key {
-                None => left,
-                Some(_) => Key{key : None},
-            }
-        }
+    const EMPTY : () = ();
+    fn compose_s(left : (), right : ()) -> () {
+        ()
+    }
+
+    fn to_summary(val : &Self::Value) -> Self::Summary {
+        ()
     }
 }
 
 /// The convention is that smaller values go on the left
-pub trait Keyed : Action {
+pub trait Keyed {
     type Key : std::cmp::Ord;
-    fn get_key(val : <Self as Action>::Value) -> <Self as Keyed>::Key;
+    fn get_key(&self) -> <Self as Keyed>::Key;
 }
 
-impl<K : std::cmp::Ord + Copy> Keyed for KeyAction<K> {
-    type Key = K;
-    fn get_key(val : Key<K>) -> K {
-        val.key.unwrap()
-    }
-}
 
 /*
 impl<K : std::cmp::Ord> Data for Key<K> {

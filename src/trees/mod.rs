@@ -60,8 +60,8 @@ pub trait SomeWalker<A : Action> : SomeEntry<A> {
 
     fn depth(&self) -> usize;
 
-    fn far_left_value(&self) -> A::Value;
-    fn far_right_value(&self) -> A::Value;
+    fn far_left_value(&self) -> A::Summary;
+    fn far_right_value(&self) -> A::Summary;
     
 
     // these functions are here instead of Deref and DerefMut. 
@@ -74,6 +74,11 @@ pub trait SomeWalker<A : Action> : SomeEntry<A> {
 pub trait SomeEntry<A : Action> {
     fn value_mut(&mut self) -> Option<&mut A::Value>;
     fn value(&self) -> Option<&A::Value>;
+
+    /// Returns a summary of just the current node.
+    /// Returns the empty summary if at an empty position.
+    fn node_summary(&self) -> A::Summary;
+    
 
     fn is_empty(&self) -> bool {
         self.value().is_none()

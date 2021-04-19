@@ -12,7 +12,7 @@ pub use crate::data::*; // because everyone will need to specify Data for the ge
 
 // use crate::trees::SomeEntry;
 
-/// A bisc tree. might be empty.
+/// A basic tree. might be empty.
 pub enum BasicTree<A : Action> {
 	Empty, Root(Box<BasicNode<A>>) // TODO: rename Root
 }
@@ -44,9 +44,9 @@ impl<A : Action> BasicTree<A> {
 	}
 
 	/// Returns the summary of all values in this node's subtree.
-	pub fn segment_value(&self) -> A::Value {
+	pub fn segment_summary(&self) -> A::Summary {
 		match self {
-			Root(node) => node.segment_value(),
+			Root(node) => node.segment_summary(),
 			_ => A::EMPTY,
 		}
 	}
@@ -73,7 +73,7 @@ impl<A : Action + Reverse> BasicNode<A> {
 /// A basic node. can be viewed as a non-empty basic tree: it always has at least one value.
 pub struct BasicNode<A : Action> {
 	action : A,
-	segment_value : A::Value,
+	segment_value : A::Summary,
 	node_value : A::Value,
 	pub left : BasicTree<A>,
 	pub right : BasicTree<A>
@@ -85,20 +85,30 @@ impl<A : Action> BasicNode<A> {
 		BasicNode {
 			action : A::IDENTITY,
 			node_value : value,
-			segment_value : value.clone(),
+			segment_value : A::to_summary(&value),
 			left : Empty,
 			right : Empty,
 		}
 	}
 	
 	/// Returns the summary of all values in this node's subtree.
-	pub fn segment_value(&self) -> A::Value {
+	pub fn segment_summary(&self) -> A::Summary {
 		self.action.act(self.segment_value)
 	}
 
+	/// Returns a summary for the value in this node specifically,
+	/// and not the subtree.
+	pub fn node_summary(&mut self) -> A::Summary {
+		let summary = A::to_summary(&self.node_value);
+		self.action.act(summary)
+	}
+
 	/// Returns the value stored in this node specifically.
-	pub fn node_value(&self) -> A::Value {
-		self.action.act(self.node_value)
+	/// Requires mutable access because it calls `access`, to ensure
+	/// that the action applies.
+	pub fn node_value(&mut self) -> &A::Value {
+		self.access();
+		&self.node_value
 	}
 
 	/// Pushes any actions stored in this node to its sons.
@@ -120,7 +130,7 @@ impl<A : Action> BasicNode<A> {
 			node.act(self.action);
 		}
 		self.segment_value = self.action.act(self.segment_value);
-		self.node_value = self.action.act(self.node_value);
+		self.action.act_value(&mut self.node_value);
 		self.action = A::IDENTITY;
 	}
 
@@ -131,12 +141,12 @@ impl<A : Action> BasicNode<A> {
 	/// subtree to be accurate.
 	pub fn rebuild(&mut self) {
 		assert!(self.action == A::IDENTITY);
-		self.segment_value = self.node_value.clone();
+		self.segment_value = A::to_summary(&self.node_value);
 		if let Root(node) = &self.left {
-			self.segment_value = A::compose_v(node.segment_value(), self.segment_value);
+			self.segment_value = A::compose_s(node.segment_summary(), self.segment_value);
 		}
 		if let Root(node) = &self.right {
-			self.segment_value = A::compose_v(self.segment_value, node.segment_value());
+			self.segment_value = A::compose_s(self.segment_value, node.segment_summary());
 		}
 
 		//Data::rebuild_data(&mut self.data, self.left.data(), self.right.data());

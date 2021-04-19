@@ -10,8 +10,8 @@ use crate::trees::SomeWalker; // in order to be able to use our own go_up method
 
 #[derive(Clone)]
 pub (super) struct Frame<A : Action> {
-	pub left : A::Value,
-	pub right : A::Value,
+	pub left : A::Summary,
+	pub right : A::Summary,
 }
 
 impl<A : Action> Frame<A> {
