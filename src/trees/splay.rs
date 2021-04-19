@@ -13,24 +13,26 @@ use super::basic_tree::*;
 
 
 
-pub struct SplayTree<D : Action> {
-    tree : BasicTree<D>,
+pub struct SplayTree<A : Action> {
+    tree : BasicTree<A>,
 }
 
-impl<D : Action> SplayTree<D> {
-    pub fn root_node_value(&self) -> Option<D::Value> {
-        match &self.tree {
+impl<A : Action> SplayTree<A> {
+    /// This is mutable because the tree must be able to call
+    /// `access` on the root
+    pub fn root_node_value(&mut self) -> Option<&A::Value> {
+        match &mut self.tree {
             BasicTree::Root(node) => Some(node.node_value()),
             _ => None,
         }
     }
 
-    pub fn segment_value(&self) -> D::Value {
-        self.tree.segment_value()
+    pub fn segment_value(&self) -> A::Summary {
+        self.tree.segment_summary()
     }
 
     /// Note: using this directly may cause the tree to lose its properties as a splay tree
-    pub fn basic_walker(&mut self) -> BasicWalker<D> {
+    pub fn basic_walker(&mut self) -> BasicWalker<A> {
         BasicWalker::new(&mut self.tree)
     }
 
@@ -65,14 +67,14 @@ impl<D : Action> SplayTree<D> {
     // TODO: implement
     /// Gets the tree into a state in which the locator's segment
     /// is a single subtree, and returns a walker at that subtree.
-    pub fn isolate_segment<L>(&mut self, locator : &L) -> SplayWalker<D> where
-        L : crate::methods::locator::Locator<D>
+    pub fn isolate_segment<L>(&mut self, locator : &L) -> SplayWalker<A> where
+        L : crate::methods::locator::Locator<A>
     {
         unimplemented!();
     }
 
-    pub fn act_segment<L>(&mut self, locator : &L, action : D) where
-        L : crate::methods::locator::Locator<D>
+    pub fn act_segment<L>(&mut self, locator : &L, action : A) where
+        L : crate::methods::locator::Locator<A>
     {
         let mut walker = self.isolate_segment(locator);
         match walker.inner_mut() {
@@ -93,7 +95,7 @@ impl<A : Action + Reverse> SplayTree<A> {
 }
 
 
-impl<D : Action> std::default::Default for SplayTree<D> {
+impl<A : Action> std::default::Default for SplayTree<A> {
     fn default() -> Self {
         SplayTree::new()
     }
@@ -101,13 +103,13 @@ impl<D : Action> std::default::Default for SplayTree<D> {
 
 
 #[derive(destructure)]
-pub struct SplayWalker<'a, D : Action> {
-    walker : BasicWalker<'a, D>,
+pub struct SplayWalker<'a, A : Action> {
+    walker : BasicWalker<'a, A>,
 }
 
-impl<'a, D : Action> SplayWalker<'a, D> {
+impl<'a, A : Action> SplayWalker<'a, A> {
 
-    pub fn inner(&self) -> &BasicTree<D> {
+    pub fn inner(&self) -> &BasicTree<A> {
         &*self.walker
     }
 
@@ -115,11 +117,11 @@ impl<'a, D : Action> SplayWalker<'a, D> {
     // use wisely
     // this function shouldn't really be public
     // TODO: should this function exist?
-    pub fn inner_mut(&mut self) -> &mut BasicTree<D> {
+    pub fn inner_mut(&mut self) -> &mut BasicTree<A> {
         &mut *self.walker
     }
 
-    pub fn into_inner(self) -> BasicWalker<'a, D> {
+    pub fn into_inner(self) -> BasicWalker<'a, A> {
         // this is a workaround for the problem that, 
         // we can't move out of a type implementing Drop
 
@@ -127,7 +129,7 @@ impl<'a, D : Action> SplayWalker<'a, D> {
         walker
     }
 
-    pub fn new(walker : BasicWalker<'a, D>) -> Self {
+    pub fn new(walker : BasicWalker<'a, A>) -> Self {
         SplayWalker { walker }
     }
     
@@ -138,9 +140,7 @@ impl<'a, D : Action> SplayWalker<'a, D> {
     /// The amortized cost of any splay step, except the zig step near the root, is at most
     /// `log(new_node.size) - log(old_node.size) - 1`
     /// The -1 covers the complexity of going down the tree in the first place.
-
     pub fn splay_step(&mut self) {
-
         // if the walker points to an empty position,
         // we can't splay it, just go upwards once.
         if self.walker.is_empty() {
@@ -168,6 +168,40 @@ impl<'a, D : Action> SplayWalker<'a, D> {
         }
     }
 
+    /// Same as `splay_step`, but splays up to the specified depth.
+    pub fn splay_step_depth(&mut self, depth : usize) {
+
+        if self.depth() <= depth { return; }
+
+        // if the walker points to an empty position,
+        // we can't splay it, just go upwards once.
+        if self.walker.is_empty() {
+            if let Err(()) = self.walker.go_up() { // if already the root, exit. otherwise, go up
+                panic!(); // shouldn't happen, because if we are at the root, the previous condition would have caught it.
+            };
+        }
+
+        if self.depth() <= depth { return; }
+
+        let b1 = match self.walker.go_up() {
+            Err(()) => panic!(), // shouldn't happen, the previous condition would have caught this
+            Ok(b1) => b1,
+        };
+
+        let b2 = match self.walker.is_left_son() {
+            None => { self.walker.rot_side(!b1).unwrap(); return }, // zig case
+            Some(b2) => b2,
+        };
+
+        if b1 == b2 { // zig-zig case
+            self.walker.rot_up().unwrap();
+            self.walker.rot_side(!b1).unwrap();
+        } else { // zig-zag case
+            self.walker.rot_side(!b1).unwrap();
+            self.walker.rot_up().unwrap();
+        }
+    }
+
     /// Splay the current node to the top of the tree.
     ///
     /// If the walker is on an empty spot, it will splay some nearby node
@@ -176,8 +210,16 @@ impl<'a, D : Action> SplayWalker<'a, D> {
     /// Going down the tree, and then splaying,
     /// has an amortized cost of `O(log n)`.
     pub fn splay(&mut self) {
-        while !self.walker.is_root() {
-            self.splay_step();
+        self.splay_to_depth(0);
+    }
+
+    /// Splays a node into a given depth. Doesn't make any changes to any nodes closer to the root.
+    /// If the node is at a shallower depth already, the function panics.
+    /// See the splay function.
+    pub fn splay_to_depth(&mut self, depth : usize) {
+        assert!(self.depth() >= depth);
+        while !self.walker.depth() == depth {
+            self.splay_step_depth(depth);
         }
     }
 
@@ -187,7 +229,7 @@ impl<'a, D : Action> SplayWalker<'a, D> {
     /// to the left will remain, and the elements to the right
     /// will be put in the new output tree.
     /// The walker will be at the root after this operation, if it succeeds.
-    pub fn split(&mut self) -> Option<SplayTree<D>> {
+    pub fn split(&mut self) -> Option<SplayTree<A>> {
         if !self.is_empty() { return None }
         
         // to know which side we should cut
@@ -213,7 +255,7 @@ impl<'a, D : Action> SplayWalker<'a, D> {
     }
 }
 
-impl<'a, D : Action> Drop for SplayWalker<'a, D> {
+impl<'a, A : Action> Drop for SplayWalker<'a, A> {
     fn drop(&mut self) {
         self.splay();
     }
@@ -233,9 +275,9 @@ impl<A : Action> SomeTree<A> for SplayTree<A> {
     }
 }
 
-impl<'a, D : Action> SomeTreeRef<D> for &'a mut SplayTree<D> {
-    type Walker = SplayWalker<'a, D>;
-    fn walker(self : &'a mut SplayTree<D>) -> SplayWalker<'a, D> {
+impl<'a, A : Action> SomeTreeRef<A> for &'a mut SplayTree<A> {
+    type Walker = SplayWalker<'a, A>;
+    fn walker(self : &'a mut SplayTree<A>) -> SplayWalker<'a, A> {
         SplayWalker { walker : self.basic_walker() }
     }
 }
@@ -263,11 +305,11 @@ impl<'a, A : Action> SomeWalker<A> for SplayWalker<'a, A> {
         self.walker.depth()
     }
 
-    fn far_left_value(&self) -> A::Value {
-        self.walker.far_left_value()
+    fn far_left_summary(&self) -> A::Summary {
+        self.walker.far_left_summary()
     }
-    fn far_right_value(&self) -> A::Value {
-        self.walker.far_right_value()
+    fn far_right_summary(&self) -> A::Summary {
+        self.walker.far_right_summary()
     }
 
     fn inner_mut(&mut self) -> &mut BasicTree<A> {
@@ -288,8 +330,12 @@ impl<'a, A : Action> SomeEntry<A> for SplayWalker<'a, A> {
         self.walker.value()
     }
 
+    fn node_summary(&self) -> A::Summary {
+        self.walker.node_summary()
+    }
+
     /*
-    fn write(&mut self, data : D) -> Option<D> {
+    fn write(&mut self, data : A) -> Option<A> {
         self.walker.write(data)
     }
     */

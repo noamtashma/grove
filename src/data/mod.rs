@@ -1,26 +1,5 @@
 pub mod example_data;
 
-pub trait Data {
-	/// rebuild the associated data from the previous data and the sons.
-	fn rebuild_data<'a>(&'a mut self, left : Option<&'a Self>, right : Option<&'a Self>);
-	/// clear the current actions in order for the user to access the node safely
-	fn access<'a>(&'a mut self, left : Option<&'a mut Self>, right : Option<&'a mut Self>);
-
-	/// these two functions should be implemented if you want to be able to reverse subtrees of your tree.
-	/// this function should return whether you would like to reverse your subtree
-	/// and zero it back - calling to_reverse() twice should always return false the second time.
-
-	/// it doesn't matter in which function the actual effect of the reverse happens,
-	/// however, you can only pick one
-	fn to_reverse(&mut self) -> bool {
-		false
-	}
-
-	/// this function should flip the bit of whether you'll want to reverse your data
-	fn reverse(&mut self) {
-		panic!("didn't implement reverse for a D : Reverse");
-	}
-}
 
 // TODO: remove Eq
 /// This trait represents the data that will be stored inside the tree.
@@ -44,14 +23,21 @@ pub trait Action : Copy + Eq {
 	/// The identity action.
 	const IDENTITY : Self;
 
-	type Value : Copy;
-	/// Value composition. This is used to create the summary values
+	/// The values that reside in trees.
+	type Value;
+	/// creates the summary of a singletone node.
+	fn to_summary(val : &Self::Value) -> Self::Summary;
+
+	/// The summaries of values over segments. When querying a segment,
+	/// you get a "summary" of the segment.
+	type Summary : Copy;
+	/// Summary composition. This is used to create the summary values
 	/// That give information about whole subtrees.
 	/// Since the structure of the tree may be any structure,
 	/// but the summary value should depend on the values in the subtree and
 	/// not on the tree structure, this composition must be associative.
-	fn compose_v(left : Self::Value, right : Self::Value) -> Self::Value;
-	const EMPTY : Self::Value;
+	fn compose_s(left : Self::Summary, right : Self::Summary) -> Self::Summary;
+	const EMPTY : Self::Summary;
 
 	// default implementation that does nothing:
 	/// Applying an action to a value.
@@ -61,23 +47,21 @@ pub trait Action : Copy + Eq {
 	/// Applying an action on a summary value must be equal to applying the
 	/// action separately and then summing the values:
 	/// ```
-	///    action.act(Self::compose_v(value_1, value_2))
-	///    == Self::compose_v(action.act(value_1), action.act(value_2))
+	///    action.act(Self::compose_v(summary_1, summary_2))
+	///    == Self::compose_v(action.act(summary_1), action.act(summary_2))
 	/// ```
 	/// Indeed, this property is used so that the summary values can be updated without
 	/// updating the whole tree.
 	///
 	/// Therefore, This is essentially a monoid action by the monoid of actions
 	/// on the monoid of values.
-	fn act(self, other : Self::Value) -> Self::Value {
+	fn act(self, other : Self::Summary) -> Self::Summary {
 		other
 	}
-	/*
-	fn act_inplace(&self, other : &mut Self::Value) -> () {
-		let res = self.act(other);
-		*other = res;
-	}
-	*/
+	
+	/// The action, but on values instead of summaries.
+	/// Must commute with `to_summary`.
+	fn act_value(self, other : &mut Self::Value) {}
 
 	/// This function should be implemented if you want to be able to reverse subtrees of your tree,
 	/// i.e., if you also implement Reverse.
