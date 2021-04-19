@@ -140,9 +140,7 @@ impl<'a, A : Action> SplayWalker<'a, A> {
     /// The amortized cost of any splay step, except the zig step near the root, is at most
     /// `log(new_node.size) - log(old_node.size) - 1`
     /// The -1 covers the complexity of going down the tree in the first place.
-
     pub fn splay_step(&mut self) {
-
         // if the walker points to an empty position,
         // we can't splay it, just go upwards once.
         if self.walker.is_empty() {
@@ -170,6 +168,40 @@ impl<'a, A : Action> SplayWalker<'a, A> {
         }
     }
 
+    /// Same as `splay_step`, but splays up to the specified depth.
+    pub fn splay_step_depth(&mut self, depth : usize) {
+
+        if self.depth() <= depth { return; }
+
+        // if the walker points to an empty position,
+        // we can't splay it, just go upwards once.
+        if self.walker.is_empty() {
+            if let Err(()) = self.walker.go_up() { // if already the root, exit. otherwise, go up
+                panic!(); // shouldn't happen, because if we are at the root, the previous condition would have caught it.
+            };
+        }
+
+        if self.depth() <= depth { return; }
+
+        let b1 = match self.walker.go_up() {
+            Err(()) => panic!(), // shouldn't happen, the previous condition would have caught this
+            Ok(b1) => b1,
+        };
+
+        let b2 = match self.walker.is_left_son() {
+            None => { self.walker.rot_side(!b1).unwrap(); return }, // zig case
+            Some(b2) => b2,
+        };
+
+        if b1 == b2 { // zig-zig case
+            self.walker.rot_up().unwrap();
+            self.walker.rot_side(!b1).unwrap();
+        } else { // zig-zag case
+            self.walker.rot_side(!b1).unwrap();
+            self.walker.rot_up().unwrap();
+        }
+    }
+
     /// Splay the current node to the top of the tree.
     ///
     /// If the walker is on an empty spot, it will splay some nearby node
@@ -178,8 +210,16 @@ impl<'a, A : Action> SplayWalker<'a, A> {
     /// Going down the tree, and then splaying,
     /// has an amortized cost of `O(log n)`.
     pub fn splay(&mut self) {
-        while !self.walker.is_root() {
-            self.splay_step();
+        self.splay_to_depth(0);
+    }
+
+    /// Splays a node into a given depth. Doesn't make any changes to any nodes closer to the root.
+    /// If the node is at a shallower depth already, the function panics.
+    /// See the splay function.
+    pub fn splay_to_depth(&mut self, depth : usize) {
+        assert!(self.depth() >= depth);
+        while !self.walker.depth() == depth {
+            self.splay_step_depth(depth);
         }
     }
 
@@ -265,11 +305,11 @@ impl<'a, A : Action> SomeWalker<A> for SplayWalker<'a, A> {
         self.walker.depth()
     }
 
-    fn far_left_value(&self) -> A::Summary {
-        self.walker.far_left_value()
+    fn far_left_summary(&self) -> A::Summary {
+        self.walker.far_left_summary()
     }
-    fn far_right_value(&self) -> A::Summary {
-        self.walker.far_right_value()
+    fn far_right_summary(&self) -> A::Summary {
+        self.walker.far_right_summary()
     }
 
     fn inner_mut(&mut self) -> &mut BasicTree<A> {

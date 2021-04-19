@@ -60,14 +60,40 @@ pub trait SomeWalker<A : Action> : SomeEntry<A> {
 
     fn depth(&self) -> usize;
 
-    fn far_left_value(&self) -> A::Summary;
-    fn far_right_value(&self) -> A::Summary;
+    /// Returns a summary of all the values to the left of this point,
+    /// That are not children of this point.
+    fn far_left_summary(&self) -> A::Summary;
+    /// Returns a summary of all the values to the right of this point,
+    /// That are not children of this point.
+    fn far_right_summary(&self) -> A::Summary;
+
+    /// Returns a summary of all the values to the left of this point.
+    /// If the walker is in a non empty spot, this does not include the current node.
+    fn left_summary(&self) -> A::Summary {
+        let left = self.far_left_summary();
+        if let basic_tree::BasicTree::Root(node) = self.inner() {
+            A::compose_s(left, node.left.segment_summary())
+        } else {
+            left
+        }
+    }
+    /// Returns a summary of all the values to the right of this point.
+    /// If the walker is in a non empty spot, this does not include the current node.
+    fn right_summary(&self) -> A::Summary {
+        let right = self.far_right_summary();
+        if let basic_tree::BasicTree::Root(node) = self.inner() {
+            A::compose_s(node.left.segment_summary(), right)
+        } else {
+            right
+        }
+    }
     
 
     // these functions are here instead of Deref and DerefMut. 
     fn inner_mut(&mut self) -> &mut basic_tree::BasicTree<A>;
     fn inner(&self) -> &basic_tree::BasicTree<A>;
 }
+
 /// Things that allow access to a maybe-missing value, as if it is an Option<A>.
 /// Currently there are no actual Entry types, and the walkers themselves
 /// act as the entries. However, the traits are still separated.

@@ -48,10 +48,10 @@ pub fn walker_locate<W, A : Action, L> (walker : &mut W, locator : &L) -> Option
     W : crate::trees::SomeWalker<A>,
     L : Locator<A>,
 {
-    if let crate::basic_tree::BasicTree::Root(node) = walker.inner() {
-        let left = A::compose_s(walker.far_left_value(), node.left.segment_summary());
-        let right = A::compose_s(node.right.segment_summary(), walker.far_right_value());
-        Some(locator.locate(left, walker.value().unwrap(), right))
+    if let Some(value) = walker.value() {
+        let left = walker.left_summary();
+        let right = walker.right_summary();
+        Some(locator.locate(left, value, right))
     } else {
         None
     }

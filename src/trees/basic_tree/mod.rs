@@ -112,6 +112,13 @@ impl<A : Action> BasicNode<A> {
 		&self.node_value
 	}
 
+	/// Returns the value stored in this node specifically.
+	/// Assumes that the node has been accessed. Panics otherwise.
+	pub fn node_value_clean(&self) -> &A::Value {
+		assert!(self.action == A::IDENTITY);
+		&self.node_value
+	}
+
 	/// Pushes any actions stored in this node to its sons.
 	/// Actions stored in nodes are supposed to be eventually applied to its
 	/// whole subtree. Therefore, in order to access a node cleanly, without

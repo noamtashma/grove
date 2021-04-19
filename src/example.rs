@@ -147,10 +147,7 @@ impl SplayTree<RevAction> {
             search_by_locator(self, &locator).void_unwrap();
         
 
-        let mut left = walker.far_left_value().size;
-        if let basic_tree::BasicTree::Root(node) = walker.inner() {
-            left += node.left.segment_summary().size;
-        }
+        let left = walker.left_summary().size;
         if let Some(val) = walker.value_mut() { // if we need to split a node
             let (v1, v2) = val.split_at_index(index - left);
             *val = v1;
@@ -206,7 +203,7 @@ pub fn yarra(n : usize, k : usize) -> I {
     let mut sn = 1;
     let mut tn = 1;
     for round in 0..k {
-        /*
+        
         if round < 10 {
             dbg!(round);
             dbg!(to_array(&mut tree));
@@ -215,7 +212,7 @@ pub fn yarra(n : usize, k : usize) -> I {
         if round % 2000 == 0 {
             dbg!(round);
         }
-        */
+        
 
         if sn < tn {
             tree.reverse_segment(sn, tn+1);

@@ -97,10 +97,10 @@ impl<'a, A : Action> SomeWalker<A> for BasicWalker<'a, A> {
 		self.depth()
 	}
 
-	fn far_left_value(&self) -> A::Summary {
+	fn far_left_summary(&self) -> A::Summary {
 		self.vals.last().expect(NO_VALUE_ERROR).left
 	}
-	fn far_right_value(&self) -> A::Summary {
+	fn far_right_summary(&self) -> A::Summary {
 		self.vals.last().expect(NO_VALUE_ERROR).right
 	}
 
