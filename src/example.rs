@@ -33,24 +33,46 @@ impl Interval {
     fn flip(&mut self) {
         std::mem::swap(&mut self.start, &mut self.end);
     }
-    
+
+    /*
+    fn sum(&self) -> I {
+        let mut a = self.start; let mut b = self.end;
+        if a > b {
+            std::mem::swap(&mut a, &mut b);
+        }
+        b += 1;
+        let res = b*(b-1)/2 - a*(a-1)/2;
+        res % MODULUS
+    }
+    */
+
     // sum of i*A[i] if the array only starts at index `index` 
     fn sum_with_index(&self, index2 : usize) -> I {
         let index = (index2 as I) % MODULUS;
-        let inter = *self;
-        let size = (inter.size() as I) % MODULUS;
+        let bMODULUS = 6*(MODULUS as i128);
+        let size = (self.size() as I) % (2*MODULUS);
+        let size128 = (self.size() as i128) % bMODULUS;
         // denote i = index + j
         // i*A[i] = (index + j) * (inter.start + incr*j) = incr*j^2 + j*(incr*index + inter.start) + index*inter.start
         // sum (i < n) i^2 = n*(n-1)*(2n-1)/6
         // sum (i < n) i = n*(n-1)/2
-        let a = (size*(size-1) % MODULUS)*(2*size-1)/6;
-        let b = if self.start < self.end {inter.start + index} else {inter.start - index} % MODULUS;
-        let c = index*(inter.start % MODULUS) % MODULUS;
+        let ap = ((size128*(size128-1)) % bMODULUS)*((2*size128-1) % bMODULUS);
+        if ap % 6 != 0 {
+            panic!();
+        }
+        let a = ((ap/6) % (MODULUS as i128)) as i64;
+        let b = if self.start < self.end {self.start + index} else {self.start - index} % MODULUS;
+        let c = index*(self.start % MODULUS) % MODULUS;
 
-        let x = (size*(size-1)/2) % MODULUS;
+        let xp = size*(size-1);
+        assert!(xp % 2 == 0);
+        let x = ((xp/2) % MODULUS) as i64;
 
-        let res = if self.start < self.end {a + b*x + c*size} else { b*x + c*size - a};
-        return res % MODULUS;
+        let mut res = if self.start < self.end {a + b*x + c*size} else { b*x + c*size - a};
+        res %= MODULUS;
+
+
+        res
     }
 
     // split into the index first values and the rest. i.e.,
@@ -95,6 +117,10 @@ impl Action for RevAction {
     fn to_summary(val : &Interval) -> Size {
         Size {size : val.size()}
     }
+
+    fn to_reverse(&self) -> bool {
+        self.to_reverse
+    }
 }
 
 impl Reverse for RevAction {
@@ -113,16 +139,20 @@ impl SplayTree<RevAction> {
     // splits the tree - modifies the first tree and returns the second tree
     // splits to [0, index) and [index, length)
     // TODO: exmplain
-    fn search_split(&mut self, index1 : usize, index2 : usize) -> SplayTree<RevAction> {
+    fn search_split(&mut self, index : usize) -> SplayTree<RevAction> {
 
-        let locator = locate_by_index_range(index1, index1);
+        let locator = locate_by_index_range(index, index);
         let mut walker = // using an empty range so that we'll only end up at a node
             // if we actually need to split that node
             search_by_locator(self, &locator).void_unwrap();
         
 
+        let mut left = walker.far_left_value().size;
+        if let basic_tree::BasicTree::Root(node) = walker.inner() {
+            left += node.left.segment_summary().size;
+        }
         if let Some(val) = walker.value_mut() { // if we need to split a node
-            let (v1, v2) = val.split_at_index(index2);
+            let (v1, v2) = val.split_at_index(index - left);
             *val = v1;
             next_empty(&mut walker).unwrap(); // not at an empty node
             walker.insert_new(v2).unwrap(); // the position must be empty
@@ -157,9 +187,9 @@ impl SplayTree<RevAction> {
 
     // reverse the segment [low, high)
     fn reverse_segment(&mut self, low : usize, high : usize) {
-        let mut self2 = self.search_split(low, low);
+        let mut self2 = self.search_split(low);
         // high-low and not high since this counts the index based on the split tree and not the original tree
-        let self3 = self2.search_split(high-low, high);
+        let self3 = self2.search_split(high-low);
         self2.reverse();
         // unite back together
         self2.union(self3);
@@ -176,10 +206,16 @@ pub fn yarra(n : usize, k : usize) -> I {
     let mut sn = 1;
     let mut tn = 1;
     for round in 0..k {
+        /*
         if round < 10 {
             dbg!(round);
             dbg!(to_array(&mut tree));
         }
+
+        if round % 2000 == 0 {
+            dbg!(round);
+        }
+        */
 
         if sn < tn {
             tree.reverse_segment(sn, tn+1);
@@ -200,8 +236,13 @@ pub fn yarra(n : usize, k : usize) -> I {
         index_sum += inter.sum_with_index(index);
         index_sum %= MODULUS;
         index += inter.size();
+        if index % 1000 == 0 {
+            dbg!(index);
+        }
     }
-
+    dbg!(index_sum);
+    drop(tree);
+    println!("done drop");
     index_sum
 }
 
@@ -209,8 +250,10 @@ pub fn yarra(n : usize, k : usize) -> I {
 pub fn test() {
     println!("Hello, world!");
 
-    dbg!(yarra(1000_000_000_000_000_000, 1000_000));
-    //dbg!(yarra(15, 10));
+    let res = yarra(1000_000_000_000_000_000, 1000_000);
+    //let res = yarra(10000, 10000);
+    println!("{:?}", res);
+    dbg!(res);
     use std::io::Write;
     use std::io::stdout;
     stdout().flush().unwrap();
