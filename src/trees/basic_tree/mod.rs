@@ -82,10 +82,11 @@ pub struct BasicNode<A : Action> {
 impl<A : Action> BasicNode<A> {
 
 	pub fn new(value : A::Value) -> BasicNode<A> {
+		let segment_value = A::to_summary(&value);
 		BasicNode {
 			action : A::IDENTITY,
 			node_value : value,
-			segment_value : A::to_summary(&value),
+			segment_value,
 			left : Empty,
 			right : Empty,
 		}
@@ -98,7 +99,7 @@ impl<A : Action> BasicNode<A> {
 
 	/// Returns a summary for the value in this node specifically,
 	/// and not the subtree.
-	pub fn node_summary(&mut self) -> A::Summary {
+	pub fn node_summary(&self) -> A::Summary {
 		let summary = A::to_summary(&self.node_value);
 		self.action.act(summary)
 	}

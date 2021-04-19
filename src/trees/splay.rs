@@ -18,8 +18,10 @@ pub struct SplayTree<A : Action> {
 }
 
 impl<A : Action> SplayTree<A> {
-    pub fn root_node_value(&self) -> Option<&A::Value> {
-        match &self.tree {
+    /// This is mutable because the tree must be able to call
+    /// `access` on the root
+    pub fn root_node_value(&mut self) -> Option<&A::Value> {
+        match &mut self.tree {
             BasicTree::Root(node) => Some(node.node_value()),
             _ => None,
         }

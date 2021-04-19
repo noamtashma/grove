@@ -44,7 +44,7 @@ impl<A : Action, E, F : Fn(A::Summary, &A::Value, A::Summary) -> Result<LocResul
 
 /// Returns the result of the locator at the walker
 /// Returns None if the walker is at an empty position
-pub fn walker_locate<W, A : Action, L> (walker : W, locator : &L) -> Option<Result<LocResult, L::Error>> where
+pub fn walker_locate<W, A : Action, L> (walker : &mut W, locator : &L) -> Option<Result<LocResult, L::Error>> where
     W : crate::trees::SomeWalker<A>,
     L : Locator<A>,
 {

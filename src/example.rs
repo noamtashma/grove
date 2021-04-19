@@ -66,180 +66,54 @@ impl Interval {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
-struct RAValue {
-    size : usize,
-    start_index : usize,
-    sum : I,
-    // sum of i*a[i] for i in [start_index .. start_index+size]
-    index_sum : I,
-    interval : Interval, // always with the same size. has meaning only in node values.
-}
-
-impl RAValue {
-    pub fn from_interval(start_index : usize, interval : Interval) -> RAValue {
-        RAValue {
-            size : interval.size(),
-            start_index,
-            sum : interval.sum_with_index(1) - interval.sum_with_index(0), // TODO
-            index_sum : interval.sum_with_index(start_index),
-            interval,
-        }
-    }
-
-    // TODO - this doesn't update the values!
-    pub fn split_at_index(&self, index: usize) -> (Self, Self) {
-        assert!(self.interval.size() > 0); // this must be a node value
-        assert!(index > self.start_index && index <= self.start_index + self.size);
-
-        let (i1, i2) = self.interval.split_at_index(index - self.start_index);
-        let v1 = RAValue::from_interval(self.start_index, i1);
-        let v2 = RAValue::from_interval(self.start_index + i1.size(), i2);
-        (v1, v2)
-    }
-}
-
 #[derive(PartialEq, Eq, Clone, Copy)]
-struct RAAction {
-    // in the Err case, this is a reversal.
-    // the value contains 2*the center of a reversal operation.
-    // i.e., the operation switches A[i] to A[center - i] for all i.
-
-    // in the Ok case, this is a shift.
-    // i.e., the operation switches A[i] to A[i+c] for all i.
-
-    // doesn't contain bounds because the action will be applied in the bounds only.
-    transformation : Result<I, I>,
+struct RevAction {
+    to_reverse : bool,
 }
 
-impl Action for RAAction {
-    type Summary = RAValue;
-    fn compose_a(self, other : Self) -> RAAction {
-        let new_transformation = match (self.transformation, other.transformation) {
-            (Ok(a), Ok(b)) => Ok(a+b),
-            (Ok(a), Err(b)) => Err(a+b),
-            (Err(a), Ok(b)) => Err(a-b),
-            (Err(a), Err(b)) => Ok(a-b),
-        };
-        RAAction { transformation : new_transformation }
-    }
-    const IDENTITY : Self = RAAction{transformation : Ok(0)};
-    
-    fn compose_s(left : Self::Summary, right : Self::Summary) -> Self::Summary {
-        assert!(left.size == 0 || right.size == 0 ||
-            left.start_index + left.size == right.start_index); // TODO
-        RAValue {
-            size : left.size + right.size,
-            sum : left.sum + right.sum % MODULUS,
-            start_index : if left.size != 0 {left.start_index} else {right.start_index}, // for the case of the empty value
-            index_sum : left.index_sum + right.index_sum % MODULUS,
-            interval : Interval{start : 0, end : 0}, // some default interval
-        }
-    }
-    const EMPTY : RAValue = RAValue {
-        size : 0,
-        start_index : 0, // random value
-        sum : 0,
-        index_sum : 0,
-        interval : Interval{start : 0, end : 0},
-    };
+impl Action for RevAction {
+    type Summary = Size;
+    type Value = Interval;
 
-    fn act(self, mut val : Self::Summary) -> Self::Summary {
-        match self.transformation {
-            Ok(a) => {
-                val.start_index = (val.start_index as I + a) as usize;
-                val.sum %= MODULUS; // why is this needed?
-                val.index_sum += ((a as I) % MODULUS)*val.sum;
-                val.index_sum %= MODULUS;
-                val
-            },
-            Err(a) => {
-                let end_index = val.start_index + val.size - 1;
-                let new_start_index = a as usize - end_index;
-                val.sum %= MODULUS; // why is this needed?
-                val.index_sum = ((a as I) % MODULUS)*val.sum - val.index_sum;
-                val.index_sum %= MODULUS;
-                val.start_index = new_start_index;
-                val.interval.flip();
-                val
-            },
+    const IDENTITY : RevAction = RevAction { to_reverse : false };
+    const EMPTY : Size = Size {size : 0};
+
+    fn compose_a(self, other : Self) -> Self {
+        RevAction { to_reverse : self.to_reverse != other.to_reverse }
+    }
+
+    fn compose_s(s1 : Size, s2 : Size) -> Size {
+        Size {size : s1.size + s2.size }
+    }
+
+    fn act_value(self, val : &mut Interval) {
+        if self.to_reverse {
+            val.flip();
         }
     }
 
-    fn to_reverse(&self) -> bool {
-        match self.transformation {
-            Ok(_) => false,
-            Err(_) => true,
-        }
-    }
-}
-/*
-struct RAData {
-    size : Size,
-    should_reverse : bool,
-    interval : Interval,
-}
-
-impl RAData {
-    fn new(i : Interval) -> Self {
-        RAData {size : Size {size : 0}, should_reverse : false, interval : i}
+    fn to_summary(val : &Interval) -> Size {
+        Size {size : val.size()}
     }
 }
 
-impl Data for RAData {
-    fn rebuild_data<'a>(&'a mut self, left : Option<&'a Self>, right : Option<&'a Self>) {
-        self.size.rebuild_data(left.map(|r| &r.size), right.map(|r| &r.size));
-        self.size.size += self.interval.size();
-    }
-
-    fn access<'a>(&'a mut self, left : Option<&'a mut Self>, right : Option<&'a mut Self>) {
-        // actually a no-op
-        // left here for completeness
-        self.size.access(left.map(|r| &mut r.size), right.map(|r| &mut r.size));
-    }
-
-    fn to_reverse(&mut self) -> bool {
-        let res = self.should_reverse;
-        self.should_reverse = false;
-        return res;
-	}
-
-    fn reverse(&mut self) {
-        self.should_reverse = !self.should_reverse;
-        self.interval.flip();
-	}
-}
-
-impl SizedData for RAData {
-    fn size(&self) -> usize {
-        self.size.size()
-    }
-
-    fn width(&self) -> usize {
-        self.interval.size()
-    }
-}
-*/
-impl SizedAction for RAAction {
-    fn size(val : RAValue) -> usize {
-        val.size
+impl Reverse for RevAction {
+    fn internal_reverse(node : &mut basic_tree::BasicNode<Self>) {
+        node.act(RevAction{to_reverse : true})
     }
 }
 
-impl crate::data::Reverse for RAAction {
-    fn internal_reverse(node : &mut crate::trees::basic_tree::BasicNode<Self>) {
-        node.access(); // TODO
-        let RAValue {start_index, size, ..} = node.segment_summary();
-        let action = RAAction {transformation : Err((2*start_index + size - 1) as I)};
-        node.act(action);
+impl SizedAction for RevAction {
+    fn size(summary : Self::Summary) -> usize {
+        summary.size
     }
 }
 
-impl SplayTree<RAAction> {
+impl SplayTree<RevAction> {
     // splits the tree - modifies the first tree and returns the second tree
     // splits to [0, index) and [index, length)
     // TODO: exmplain
-    fn search_split(&mut self, index1 : usize, index2 : usize) -> SplayTree<RAAction> {
+    fn search_split(&mut self, index1 : usize, index2 : usize) -> SplayTree<RevAction> {
 
         let locator = locate_by_index_range(index1, index1);
         let mut walker = // using an empty range so that we'll only end up at a node
@@ -295,16 +169,16 @@ impl SplayTree<RAAction> {
 
 
 pub fn yarra(n : usize, k : usize) -> I {
-    let mut tree : SplayTree<RAAction> = SplayTree::new();
+    let mut tree : SplayTree<RevAction> = SplayTree::new();
     let inter = Interval {start : 0, end : (n-1) as I};
-    tree.walker().insert_new(RAValue::from_interval(0, inter)).unwrap();
+    tree.walker().insert_new(inter).unwrap();
 
     let mut sn = 1;
     let mut tn = 1;
     for round in 0..k {
-        if round % 1000 == 999 {
-            //dbg!(tree.segment_value());
+        if round < 10 {
             dbg!(round);
+            dbg!(to_array(&mut tree));
         }
 
         if sn < tn {
@@ -319,8 +193,16 @@ pub fn yarra(n : usize, k : usize) -> I {
         tn %= n;
     }
 
-    let res = tree.segment_value().index_sum;
-    res
+    let arr = to_array(&mut tree);
+    let mut index = 0;
+    let mut index_sum = 0;
+    for inter in arr {
+        index_sum += inter.sum_with_index(index);
+        index_sum %= MODULUS;
+        index += inter.size();
+    }
+
+    index_sum
 }
 
 

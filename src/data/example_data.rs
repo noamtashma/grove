@@ -75,11 +75,11 @@ impl<V : Eq + Copy> Action for NoAction<V> {
     fn compose_a(self, _ : Self) -> Self {NoAction::new()}
 
     const EMPTY : () = ();
-    fn compose_s(left : (), right : ()) -> () {
+    fn compose_s(_left : (), _right : ()) -> () {
         ()
     }
 
-    fn to_summary(val : &Self::Value) -> Self::Summary {
+    fn to_summary(_val : &Self::Value) -> Self::Summary {
         ()
     }
 }

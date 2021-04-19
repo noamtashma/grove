@@ -86,7 +86,7 @@ A::Value : Clone,
         {}
 
     while let Ok(_) = next_filled(&mut walker) {
-        if let trees::basic_tree::BasicTree::Root(node) = walker.inner() {
+        if let trees::basic_tree::BasicTree::Root(node) = walker.inner_mut() {
             res.push(node.node_value().clone());
         } else {panic!()}
     }
@@ -153,7 +153,7 @@ pub fn search_by_locator<TR, A : Action, L>(tree : TR, locator : &L)
     use LocResult::*;
 
     let mut walker = tree.walker();
-    while let Some(res) = walker_locate(walker, locator) {
+    while let Some(res) = walker_locate(&mut walker, locator) {
         match res? {
             Accept => break,
             GoRight => walker.go_right().unwrap(),
@@ -175,18 +175,17 @@ pub fn accumulate_values<TR, L, A : Action>(tree : TR, locator : &L) ->
     use LocResult::*;
 
     let mut walker = tree.walker();
-    while let Some(res) = walker_locate(walker, locator) {
+    while let Some(res) = walker_locate(&mut walker, locator) {
         match res? {
             GoRight => walker.go_right().unwrap(),
             GoLeft => walker.go_right().unwrap(),
 
             // at this point, we split into the two sides
             Accept => {
-                let basic_tree::BasicTree::Root(node) = walker.inner();
                 let node_value = walker.node_summary();
                 let depth = walker.depth();
                 walker.go_left().unwrap();
-                let prefix = accumulate_values_on_prefix(walker, locator)?;
+                let prefix = accumulate_values_on_prefix(&mut walker, locator)?;
                 // get back to the original node
                 for _ in 0..walker.depth() - depth {
                     walker.go_up().unwrap();
@@ -203,7 +202,7 @@ pub fn accumulate_values<TR, L, A : Action>(tree : TR, locator : &L) ->
     Ok(A::EMPTY)
 }
 
-fn accumulate_values_on_suffix<W, L, A : Action>(walker : W, locator : &L) ->
+fn accumulate_values_on_suffix<W, L, A : Action>(mut walker : W, locator : &L) ->
         Result<A::Summary, L::Error> where
     W : SomeWalker<A>,
     L : Locator<A>,
@@ -211,13 +210,14 @@ fn accumulate_values_on_suffix<W, L, A : Action>(walker : W, locator : &L) ->
     let mut res = A::EMPTY;
     use LocResult::*;
 
-    while let Some(dir) = walker_locate(walker, locator) {
+    while let Some(dir) = walker_locate(&mut walker, locator) {
         match dir? {
             Accept => {
-                let basic_tree::BasicTree::Root(node) = walker.inner();
-                res = A::compose_s(node.right.segment_summary(), res);
-                res = A::compose_s(node.node_summary(), res);
-                walker.go_left().unwrap();
+                if let basic_tree::BasicTree::Root(node) = walker.inner_mut() {
+                    res = A::compose_s(node.right.segment_summary(), res);
+                    res = A::compose_s(node.node_summary(), res);
+                    walker.go_left().unwrap();
+                } else {panic!()}
             },
             GoRight => walker.go_right().unwrap(),
             GoLeft => panic!("inconsistent locator"),
@@ -227,7 +227,7 @@ fn accumulate_values_on_suffix<W, L, A : Action>(walker : W, locator : &L) ->
     Ok(res)
 }
 
-fn accumulate_values_on_prefix<W, L, A : Action>(walker : W, locator : &L) ->
+fn accumulate_values_on_prefix<W, L, A : Action>(walker : &mut W, locator : &L) ->
         Result<A::Summary, L::Error> where
     W : SomeWalker<A>,
     L : Locator<A>,
@@ -237,10 +237,13 @@ fn accumulate_values_on_prefix<W, L, A : Action>(walker : W, locator : &L) ->
 
     while let Some(dir) = walker_locate(walker, locator) {
         match dir? {    Accept => {
-                let basic_tree::BasicTree::Root(node) = walker.inner();
-                res = A::compose_s(res, node.left.segment_summary());
-                res = A::compose_s(res, node.node_summary());
-                walker.go_right().unwrap();
+                if let basic_tree::BasicTree::Root(node) = walker.inner_mut() {
+                    res = A::compose_s(res, node.left.segment_summary());
+                    res = A::compose_s(res, node.node_summary());
+                    walker.go_right().unwrap();
+                } else {
+                    panic!();
+                }
             },
             GoRight => panic!("inconsistent locator"),
             GoLeft => walker.go_left().unwrap(), 
