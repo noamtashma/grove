@@ -155,36 +155,11 @@ impl SplayTree<RevData> {
         }
     }
 
-    /// Unites the two trees into one.
-    fn union(&mut self, other : Self) {
-        let mut walker = self.walker();
-        while let Ok(_) = walker.go_right()
-            {}
-        match walker.go_up() {
-            Err(()) => { // the tree is empty; just substiture the other tree.
-                drop(walker);
-                *self = other;
-                return;
-            },
-            Ok(b) => assert!(b == false),
-        };
-        walker.splay();
-        if let trees::basic_tree::BasicTree::Root(node) = walker.inner_mut() {
-            node.right = other.into_inner();
-            node.rebuild();
-            return;
-        }
-        else {
-            panic!();
-        }
-    }
-
     // reverse the segment [low, high)
     fn reverse_segment(&mut self, low : usize, high : usize) {
         self.search_split(low);
-        // high-low and not high since this counts the index based on the split tree and not the original tree
         self.search_split(high);
-        self.act_on_segment(locate_by_index_range(low, high), RevAction { to_reverse : true });
+        self.act_on_segment(locate_by_index_range(low, high), RevAction { to_reverse : true }).unwrap();
     }
 }
 

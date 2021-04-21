@@ -74,7 +74,7 @@ impl<A : Data + Reverse> BasicNode<A> {
 pub struct BasicNode<A : ?Sized + Data> {
 	action : A::Action,
 	subtree_summary : A::Summary,
-	node_value : A::Value,
+	pub (crate) node_value : A::Value,
 	pub left : BasicTree<A>,
 	pub right : BasicTree<A>
 }
@@ -110,6 +110,12 @@ impl<A : Data> BasicNode<A> {
 	pub fn node_value(&mut self) -> &A::Value {
 		self.access();
 		&self.node_value
+	}
+
+	/// Returns the value stored in this node specifically.
+	pub fn node_value_mut(&mut self) -> &mut A::Value {
+		self.access();
+		&mut self.node_value
 	}
 
 	/// Returns the value stored in this node specifically.
