@@ -151,10 +151,10 @@ impl<A : Data> BasicNode<A> {
 		assert!(self.action == A::IDENTITY);
 		self.subtree_summary = A::to_summary(&self.node_value);
 		if let Root(node) = &self.left {
-			self.subtree_summary = A::compose_s(node.subtree_summary(), self.subtree_summary);
+			self.subtree_summary = node.subtree_summary() + self.subtree_summary;
 		}
 		if let Root(node) = &self.right {
-			self.subtree_summary = A::compose_s(self.subtree_summary, node.subtree_summary());
+			self.subtree_summary = self.subtree_summary + node.subtree_summary();
 		}
 
 		//Data::rebuild_data(&mut self.data, self.left.data(), self.right.data());
@@ -165,7 +165,7 @@ impl<A : Data> BasicNode<A> {
 	/// This function leaves the `self.action` field "dirty" - after calling
 	/// this you might need to call access, to push the action to this node's sons.
 	pub fn act(&mut self, action : A::Action) {
-		self.action = A::compose_a(action, self.action);
+		self.action = action + self.action;
 	}
 
 	/*

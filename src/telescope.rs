@@ -2,6 +2,9 @@ use std::marker::PhantomData;
 use std::ops::Deref;
 use std::ops::DerefMut;
 
+/// A Telescope
+/// This struct is used to allow recursively reborrow mutable references in a dynamic
+/// but safe way.
 pub struct Telescope<'a, T : ?Sized> {
 	vec : Vec<*mut T>,
 	phantom : PhantomData<&'a mut T>,
@@ -21,7 +24,7 @@ impl<'a, T : ?Sized> Telescope<'a, T> {
 		self.vec.len()
 	}
 	
-	/// This function extends the telescope one time. That menas, if the latest layer
+	/// This function extends the telescope one time. That meaans, if the latest layer
 	/// of the telescope is a reference `ref`, then this call extends the telescope
 	/// and the new latest layer will have the reference `ref' = func(ref)`.
 	/// After this call, the telescope will expose the new `ref'`, and `ref`
@@ -73,8 +76,8 @@ impl<'a, T : ?Sized> Telescope<'a, T> {
 		self.vec.push(r as *mut T);
 	}
 	
-	// lets the user use the last reference for some time, and discards it completely.
-	// after the user uses it, the next time they inspect the telescope, it won't be there.
+	/// Lets the user use the last reference for some time, and discards it completely.
+	/// After the user uses it, the next time they inspect the telescope, it won't be there.
 	pub fn pop(&mut self) -> Option<&mut T> {
 		let len = self.vec.len();
 		if len == 0 {
@@ -91,10 +94,10 @@ impl<'a, T : ?Sized> Telescope<'a, T> {
 		}
 	}
 
-	// discards the telescope and returns the last reference
-	// the difference between this and using pop() are:
-	// this will consume the telescope
-	// you can use this to take the original reference. therefore, there is no None case.
+	/// Discards the telescope and returns the last reference.
+	/// The difference between this and using `pop()` are:
+	/// * This will consume the telescope
+	/// * `pop()` will never pop the first original reference. This function will.
 	pub fn into_ref(mut self) -> &'a mut T {
 		let len = self.vec.len();
 		if len == 0 {

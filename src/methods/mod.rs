@@ -75,7 +75,8 @@ pub fn previous_filled<W : SomeWalker<A>, A : Data>(walker : &mut W) -> Result<(
     return Ok(());
 }
 
-/// returns a vector of all the values in the tree.
+// TODO: make an iterator
+/// Returns a vector of all the values in the tree.
 pub fn to_array<A : Data, TR>(tree : TR)
 -> Vec<A::Value> where
 TR : SomeTreeRef<A>,
@@ -94,8 +95,8 @@ A::Value : Clone,
     res
 }
 
+// TODO: make this return an error.
 /// Panics if a key was reused.
-/// TODO: make this return an error.
 pub fn insert_by_key<A : Data, TR>(tree : TR, data : A::Value)
     -> TR::Walker where
     TR : SomeTreeRef<A>,
@@ -110,8 +111,8 @@ pub fn insert_by_key<A : Data, TR>(tree : TR, data : A::Value)
     }
 }
 
+// TODO: make this return an error instead
 /// Panics if the locator accepts a node.
-/// TODO: make this return an error instead
 pub fn insert_by_locator<A : Data, L, TR> (tree : TR, locator : &L, value : A::Value)
     -> Result<TR::Walker, L::Error> where
     TR : SomeTreeRef<A>,
@@ -192,7 +193,7 @@ pub fn accumulate_values<TR, L, A : Data>(tree : TR, locator : &L) ->
                 walker.go_right().unwrap();
                 let suffix = accumulate_values_on_suffix(walker, locator)?;
 
-                return Ok(A::compose_s(prefix, A::compose_s(node_value, suffix)));
+                return Ok(prefix + node_value + suffix);
             },
         }
     }
@@ -213,8 +214,7 @@ fn accumulate_values_on_suffix<W, L, A : Data>(mut walker : W, locator : &L) ->
         match dir? {
             Accept => {
                 if let basic_tree::BasicTree::Root(node) = walker.inner_mut() {
-                    res = A::compose_s(node.right.subtree_summary(), res);
-                    res = A::compose_s(node.node_summary(), res);
+                    res = node.node_summary() + node.right.subtree_summary() + res;
                     walker.go_left().unwrap();
                 } else {panic!()}
             },
@@ -237,8 +237,7 @@ fn accumulate_values_on_prefix<W, L, A : Data>(walker : &mut W, locator : &L) ->
     while let Some(dir) = walker_locate(walker, locator) {
         match dir? {    Accept => {
                 if let basic_tree::BasicTree::Root(node) = walker.inner_mut() {
-                    res = A::compose_s(res, node.left.subtree_summary());
-                    res = A::compose_s(res, node.node_summary());
+                    res = res + node.left.subtree_summary() + node.node_summary();
                     walker.go_right().unwrap();
                 } else {
                     panic!();

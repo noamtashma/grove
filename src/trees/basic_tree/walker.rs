@@ -106,7 +106,7 @@ impl<'a, A : Data> BasicWalker<'a, A> {
 	}
 
 	/// Returns if this is the empty tree
-	/// Note: even if you are the root, the root might still be empty,
+	/// Note: even if you are the root, the root might still be empty.
 	pub fn is_root(&self) -> bool {
 		self.is_left.is_empty()
 	}

@@ -93,6 +93,13 @@ struct RevAction {
     to_reverse : bool,
 }
 
+impl std::ops::Add for RevAction {
+    type Output = RevAction;
+    fn add(self, b : RevAction) -> RevAction {
+        RevAction {to_reverse : self.to_reverse != b.to_reverse}
+    }
+}
+
 struct RevData {}
 
 impl Data for RevData {
@@ -102,14 +109,6 @@ impl Data for RevData {
 
     const IDENTITY : RevAction = RevAction { to_reverse : false };
     const EMPTY : Size = Size {size : 0};
-
-    fn compose_a(a : Self::Action, b : Self::Action) -> Self::Action {
-        RevAction { to_reverse : a.to_reverse != b.to_reverse }
-    }
-
-    fn compose_s(s1 : Size, s2 : Size) -> Size {
-        Size {size : s1.size + s2.size }
-    }
 
     fn act_value(act : Self::Action, val : &mut Interval) {
         if act.to_reverse {

@@ -1,7 +1,19 @@
 pub mod example_data;
 
+use std::ops::Add;
 
-// TODO: remove Eq
+/// Used for cases where no action or no summary is needed.
+#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, Default, PartialOrd, Ord)]
+pub struct Unit {}
+
+impl Add for Unit {
+	type Output = Unit;
+	fn add(self, _b : Unit) -> Unit {
+		Unit {}
+	}
+}
+
+// TODO: remove Eq requirement from Self::Action
 /// This trait represents the data that will be stored inside the tree.
 ///
 /// Every node in the tree will contain an action to be performed on the node's subtree,
@@ -15,33 +27,33 @@ pub mod example_data;
 /// `Self::Action` is the type of actions that can be performed on segments. for example,
 /// reverse a subtree, add a constant to a subtree, apply `max` with a constant on a subtree,
 /// and so on.
+///
+/// Action composition is done by requiring that the action implement `Add<Output=Self::Action>`.
+/// i.e., applying `a + b` should be equivalent to applying `b` and then applying `a`.
+/// This composition must be associative. 
+/// Composition is right to left. i.e., what chronologically happens first, is on the right.
+///
+/// Summary composition is done by requiring that the summary implement `Add<Output=Self::Summary>`.
+/// Since the structure of the tree may be any structure,
+/// and the summary value should depend on the values in the subtree and
+/// not on the tree structure, this composition must be associative.
 pub trait Data {
-	type Action : Eq + Copy;
-	/// Action composition. i.e., applying the resulting action should be equivalent
-	/// to applying the `other` function and then the `self` action.
-	/// Therefore, this composition must be associative. 
-	/// Compose right to left. i.e., what chronologically happens first, is on the right.
-	fn compose_a(a : Self::Action, other : Self::Action) -> Self::Action;
-	/// The identity action.
-	const IDENTITY : Self::Action;
-
 	/// The values that reside in trees.
 	type Value;
+	/// The actions you can perform on the values
+	type Action : Eq + Copy + Add<Output=Self::Action>;
+	/// The summaries of values over segments. When querying a segment,
+	/// you get a "summary" of the segment.
+	type Summary : Copy + Add<Output=Self::Summary>;
+
+	/// The identity action.
+	const IDENTITY : Self::Action;
+	/// The empty summary
+	const EMPTY : Self::Summary;
+
 	/// creates the summary of a single value.
 	fn to_summary(val : &Self::Value) -> Self::Summary;
 
-	/// The summaries of values over segments. When querying a segment,
-	/// you get a "summary" of the segment.
-	type Summary : Copy;
-	/// Summary composition. This is used to create the summary values
-	/// That give information about whole subtrees.
-	/// Since the structure of the tree may be any structure,
-	/// and the summary value should depend on the values in the subtree and
-	/// not on the tree structure, this composition must be associative.
-	fn compose_s(left : Self::Summary, right : Self::Summary) -> Self::Summary;
-	const EMPTY : Self::Summary;
-
-	// default implementation that does nothing:
 	/// Applying an action to a value.
 	/// The default implementation just returns the value, since
 	/// this is always a legal implementation.
