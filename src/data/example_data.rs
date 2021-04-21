@@ -1,10 +1,5 @@
 use super::*;
 
-/// straight values. no bookkeeping needed.
-pub struct Value<T> {
-    pub val : T,
-}
-
 
 /// storing the size of a subtree
 /// assumes that storing the size of the structure in a usize is enough.

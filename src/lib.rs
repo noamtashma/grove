@@ -1,12 +1,12 @@
 
 //! This library implements "segment trees" in a generic way.
 //! 
-//! In this library, a segment tree is a data structure of a sequence of values,
+//! In this library, a segment tree is a data structure containing a sequence of values,
 //! that can answer queries about contiguous segments of values,
 //! and/or apply actions to contiguous segments of values.
 //!
 //! For example, a standard segment tree of integers might be able to compute
-//! the sum of values in a segment, the maximum values of a segment,
+//! the sum of values in a segment, the maximum value of a segment,
 //! and be able to add a constant to all values in a segment.
 //!
 //! In order to specify what queries and action can be made, the user needs to specify

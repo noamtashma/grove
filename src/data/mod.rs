@@ -4,14 +4,15 @@ pub mod example_data;
 // TODO: remove Eq
 /// This trait represents the data that will be stored inside the tree.
 ///
-/// Every node in the tree will contain an action, and a value.
-/// The action will be of type `Self`, and the value will be of type `Self::Value`.
+/// Every node in the tree will contain an action to be performed on the node's subtree,
+/// a summary of the node's subtree, and a value.
+/// The action will be of type `Self`, the summary of type `Self::Summary`, and the value will be of type `Self::Value`.
 ///
-/// `Self::Value` can include: keys, values, indices, heights, sizes, sums maximums
-/// and minimums of subtrees, and more. It is the type of values and summaries of values
-/// you can have in your tree.
+/// `Self::Summary` can include: indices, heights, sizes, sums, maximums
+/// and minimums of subtrees, and more. It is the type of summaries of values
+/// you can have in your tree. This is the result of querying for information about a segment.
 ///
-/// `Self` is the type of actions that can be performed on the subtrees. for example,
+/// `Self` is the type of actions that can be performed on segments. for example,
 /// reverse a subtree, add a constant to a subtree, apply `max` with a constant on a subtree,
 /// and so on.
 pub trait Action : Copy + Eq {
@@ -25,7 +26,7 @@ pub trait Action : Copy + Eq {
 
 	/// The values that reside in trees.
 	type Value;
-	/// creates the summary of a singletone node.
+	/// creates the summary of a single value.
 	fn to_summary(val : &Self::Value) -> Self::Summary;
 
 	/// The summaries of values over segments. When querying a segment,
@@ -34,7 +35,7 @@ pub trait Action : Copy + Eq {
 	/// Summary composition. This is used to create the summary values
 	/// That give information about whole subtrees.
 	/// Since the structure of the tree may be any structure,
-	/// but the summary value should depend on the values in the subtree and
+	/// and the summary value should depend on the values in the subtree and
 	/// not on the tree structure, this composition must be associative.
 	fn compose_s(left : Self::Summary, right : Self::Summary) -> Self::Summary;
 	const EMPTY : Self::Summary;
