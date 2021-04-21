@@ -1,13 +1,13 @@
 //! An implementation of a splay tree
 //!
-//! The tree implements the `splay` operation, that should be used after searching for a node.
-//! See documentation for the splay function.
+//! The tree implements the [`splay`] operation, that should be used after searching for a node.
+//! See documentation for the [`splay`] function.
 //!
 //! Since the splay tree's complexity follows from splaying,
-//! if you would apply `go_up()` too many times, the splay tree's complexity might suffer.
-//! Every `go_up()` application costs a constant amount, but the depth of the tree might
+//! if you would apply [`SomeWalker::go_up()`] too many times, the splay tree's complexity might suffer.
+//! Every [`SomeWalker::go_up()`] application costs a constant amount, but the depth of the tree might
 //! as big as `O(n)`.
-//! See documentation for the `go_up` function.
+//! See documentation for the [`SomeWalker::go_up`] function.
 use super::*;
 use super::basic_tree::*;
 
@@ -192,7 +192,7 @@ impl<'a, A : Data> SplayWalker<'a, A> {
         }
     }
 
-    /// Same as `splay_step`, but splays up to the specified depth.
+    /// Same as [`SplayWalker::splay_step`], but splays up to the specified depth.
     pub fn splay_step_depth(&mut self, depth : usize) {
 
         if self.depth() <= depth { return; }
@@ -245,7 +245,7 @@ impl<'a, A : Data> SplayWalker<'a, A> {
 
     /// Splays a node into a given depth. Doesn't make any changes to any nodes closer to the root.
     /// If the node is at a shallower depth already, the function panics.
-    /// See the splay function.
+    /// See the [`splay`] function.
     pub fn splay_to_depth(&mut self, depth : usize) {
         assert!(self.depth() >= depth);
         while self.walker.depth() != depth {
@@ -321,7 +321,7 @@ impl<'a, A : Data> SomeWalker<A> for SplayWalker<'a, A> {
         self.walker.go_right()
     }
 
-    /// you shouldn't use this too much, or you would lose the SplayTree's complexity properties.
+    /// you shouldn't use this too much, or you would lose the [`SplayTree`]'s complexity properties.
     /// basically, when you are going down the tree,
     /// you should only stray from your path by a constant amount,
     /// and you should remember to splay if you want to re-use your walker, instead of
