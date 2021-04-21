@@ -62,11 +62,11 @@ pub trait Action : Copy + Eq {
 	
 	/// The action, but on values instead of summaries.
 	/// Must commute with `to_summary`.
-	fn act_value(self, other : &mut Self::Value) {}
+	fn act_value(self, _other : &mut Self::Value) {}
 
 	/// This function should be implemented if you want to be able to reverse subtrees of your tree,
 	/// i.e., if you also implement Reverse.
-	
+	///
 	/// This function should return whether this action reverses the segment it is applied to.
 	fn to_reverse(&self) -> bool {
 		false

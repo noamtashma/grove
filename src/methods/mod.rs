@@ -13,6 +13,7 @@
 
 pub mod locator;
 pub use locator::*;
+use data::example_data::Keyed;
 
 use crate::*;
 
@@ -101,7 +102,6 @@ pub fn insert_by_key<A : Action, TR>(tree : TR, data : A::Value)
     A::Value : crate::data::example_data::Keyed,
     //<A as data::Action>::Value : std::fmt::Debug,
 {
-    use data::example_data::Keyed;
     let res : Result<TR::Walker, void::Void> =
         insert_by_locator(tree, &locate_by_key(&data.get_key()) , data);
     match res {
@@ -125,8 +125,6 @@ pub fn insert_by_locator<A : Action, L, TR> (tree : TR, locator : &L, value : A:
 
 // TODO: a function that creates a perfectly balanced tree,
 // given the input nodes.
-
-use data::example_data::Keyed;
 
 pub fn search<TR, A : Action>(tree : TR, key : &<<A as Action>::Value as Keyed>::Key) ->  TR::Walker where
     TR : SomeTreeRef<A>,

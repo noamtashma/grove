@@ -24,7 +24,7 @@ impl<V : Eq + Copy> Action for SizeAction<V> {
     }
     const EMPTY : Size = Size {size : 0};
     fn act(self : SizeAction<V>, b : Size) -> Size { b }
-    fn to_summary(val : &Self::Value) -> Self::Summary {
+    fn to_summary(_val : &Self::Value) -> Self::Summary {
         Size {size : 1}
     }
 }
