@@ -8,18 +8,18 @@ mod implementations;
 
 pub use implementations::*;
 pub use walker::*;
+use crate::data::Data;
 pub use crate::data::*; // because everyone will need to specify Data for the generic parameters
 
 // use crate::trees::SomeEntry;
 
 /// A basic tree. might be empty.
-pub enum BasicTree<A : Action> {
+pub enum BasicTree<A : ?Sized + Data> {
 	Empty, Root(Box<BasicNode<A>>) // TODO: rename Root
 }
 use BasicTree::*;
 
-impl<A : Action> BasicTree<A> {
-
+impl<A : Data> BasicTree<A> {
 	/// Remakes the data that is stored in this node, based on its sons.
 	/// This is necessary when the data in the sons might have changed.
 	/// For example, after inserting a new node, all of the nodes from it to the root
@@ -52,7 +52,7 @@ impl<A : Action> BasicTree<A> {
 	}
 }
 
-impl<A : Action + Reverse> BasicTree<A> {
+impl<A : Data + Reverse> BasicTree<A> {
 	/// Reverses the whole tree
 	pub fn reverse(&mut self) {
 		if let Root(node) = self {
@@ -61,7 +61,7 @@ impl<A : Action + Reverse> BasicTree<A> {
 	}
 }
 
-impl<A : Action + Reverse> BasicNode<A> {
+impl<A : Data + Reverse> BasicNode<A> {
 	/// calls access after calling the reverse action.
 	pub fn reverse(&mut self) {
 		Reverse::internal_reverse(self);
@@ -71,15 +71,15 @@ impl<A : Action + Reverse> BasicNode<A> {
 
 // TODO: decide if the fields should really be public
 /// A basic node. can be viewed as a non-empty basic tree: it always has at least one value.
-pub struct BasicNode<A : Action> {
-	action : A,
+pub struct BasicNode<A : ?Sized + Data> {
+	action : A::Action,
 	subtree_summary : A::Summary,
 	node_value : A::Value,
 	pub left : BasicTree<A>,
 	pub right : BasicTree<A>
 }
 
-impl<A : Action> BasicNode<A> {
+impl<A : Data> BasicNode<A> {
 
 	pub fn new(value : A::Value) -> BasicNode<A> {
 		let subtree_summary = A::to_summary(&value);
@@ -94,14 +94,14 @@ impl<A : Action> BasicNode<A> {
 	
 	/// Returns the summary of all values in this node's subtree.
 	pub fn subtree_summary(&self) -> A::Summary {
-		self.action.act(self.subtree_summary)
+		return A::act(self.action, self.subtree_summary);
 	}
 
 	/// Returns a summary for the value in this node specifically,
 	/// and not the subtree.
 	pub fn node_summary(&self) -> A::Summary {
 		let summary = A::to_summary(&self.node_value);
-		self.action.act(summary)
+		A::act(self.action, summary)
 	}
 
 	/// Returns the value stored in this node specifically.
@@ -127,7 +127,7 @@ impl<A : Action> BasicNode<A> {
 		// reversing
 		// for data that doesn't implement reversing, this becomes a no-op
 		// and hopefully optimized away
-		if self.action.to_reverse() {
+		if A::to_reverse(self.action) {
 			std::mem::swap(&mut self.left, &mut self.right);
 		}
 
@@ -137,8 +137,8 @@ impl<A : Action> BasicNode<A> {
 		if let Root(node) = &mut self.right {
 			node.act(self.action);
 		}
-		self.subtree_summary = self.action.act(self.subtree_summary);
-		self.action.act_value(&mut self.node_value);
+		self.subtree_summary = A::act(self.action, self.subtree_summary);
+		A::act_value(self.action, &mut self.node_value);
 		self.action = A::IDENTITY;
 	}
 
@@ -164,7 +164,7 @@ impl<A : Action> BasicNode<A> {
 	///
 	/// This function leaves the `self.action` field "dirty" - after calling
 	/// this you might need to call access, to push the action to this node's sons.
-	pub fn act(&mut self, action : A) {
+	pub fn act(&mut self, action : A::Action) {
 		self.action = A::compose_a(action, self.action);
 	}
 

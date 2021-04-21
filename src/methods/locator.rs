@@ -23,7 +23,8 @@
 //! 
 //! Anonymous functions of the type `Fn(...) -> Result<LocResult, Err>` can be used as locators.
 
-use crate::trees::basic_tree::*;
+use crate::*;
+use trees::basic_tree::*;
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum LocResult {
@@ -31,12 +32,12 @@ pub enum LocResult {
 }
 use LocResult::*;
 
-pub trait Locator<A : Action> {
+pub trait Locator<A : Data> {
     type Error;
     fn locate(&self, left : A::Summary, node : &A::Value, right : A::Summary) -> Result<LocResult, Self::Error>;
 }
 
-impl<A : Action, E, F : Fn(A::Summary, &A::Value, A::Summary) -> Result<LocResult, E>> Locator<A> for F {
+impl<A : Data, E, F : Fn(A::Summary, &A::Value, A::Summary) -> Result<LocResult, E>> Locator<A> for F {
     type Error = E;
     fn locate(&self, left : A::Summary, node : &A::Value, right : A::Summary) -> Result<LocResult, E> {
         self(left, node, right)
@@ -45,7 +46,7 @@ impl<A : Action, E, F : Fn(A::Summary, &A::Value, A::Summary) -> Result<LocResul
 
 /// Returns the result of the locator at the walker
 /// Returns None if the walker is at an empty position
-pub fn walker_locate<W, A : Action, L> (walker : &mut W, locator : &L) -> Option<Result<LocResult, L::Error>> where
+pub fn walker_locate<W, A : Data, L> (walker : &mut W, locator : &L) -> Option<Result<LocResult, L::Error>> where
     W : crate::trees::SomeWalker<A>,
     L : Locator<A>,
 {
@@ -63,7 +64,7 @@ pub fn walker_locate<W, A : Action, L> (walker : &mut W, locator : &L) -> Option
 /// Locator for finding an element using a key.
 pub fn locate_by_key<'a, A>(key : &'a <A::Value as crate::data::example_data::Keyed>::Key) -> 
     impl Fn(A::Summary, &A::Value, A::Summary) -> Result<LocResult, void::Void> + 'a where
-    A : Action,
+    A : Data,
     A::Value : crate::data::example_data::Keyed,
 {
     use crate::data::example_data::Keyed;
@@ -91,7 +92,7 @@ pub struct IndexLocator {
 }
 
 
-impl<A : Action + example_data::SizedAction> Locator<A> for IndexLocator {
+impl<A : Data + example_data::SizedData> Locator<A> for IndexLocator {
     type Error = void::Void;
     fn locate(&self, left : A::Summary, node : &A::Value, _right : A::Summary) -> Result<LocResult, void::Void> {
         // find the index of the current node
@@ -136,7 +137,7 @@ pub struct RightEdgeLocator<L> (
     pub L,
 );
 
-impl<A : Action, L : Locator<A>> Locator<A> for LeftEdgeLocator<L> {
+impl<A : Data, L : Locator<A>> Locator<A> for LeftEdgeLocator<L> {
     type Error = L::Error;
     fn locate(&self, left : A::Summary, node : &A::Value, right : A::Summary) -> 
         Result<LocResult, L::Error>
@@ -148,7 +149,7 @@ impl<A : Action, L : Locator<A>> Locator<A> for LeftEdgeLocator<L> {
     }
 }
 
-impl<A : Action, L : Locator<A>> Locator<A> for RightEdgeLocator<L> {
+impl<A : Data, L : Locator<A>> Locator<A> for RightEdgeLocator<L> {
     type Error = L::Error;
     fn locate(&self, left : A::Summary, node : &A::Value, right : A::Summary) -> 
         Result<LocResult, L::Error>
@@ -166,7 +167,7 @@ pub struct UnionLocator<L> (
     pub L, pub L
 );
 
-impl<A : Action, L : Locator<A>> Locator<A> for UnionLocator<L> {
+impl<A : Data, L : Locator<A>> Locator<A> for UnionLocator<L> {
     type Error = L::Error;
     fn locate(&self, left : A::Summary, node : &A::Value, right : A::Summary) -> 
         Result<LocResult, L::Error>

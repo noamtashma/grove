@@ -24,7 +24,7 @@ use crate::*;
 // TODO - figure out how to make this callable like walker.next_empty()
 /// if the walker is at an empty position, return an error.
 /// goes to the next empty position
-pub fn next_empty<W : SomeWalker<A>, A : Action>(walker : &mut W) -> Result<(), ()> {
+pub fn next_empty<W : SomeWalker<A>, A : Data>(walker : &mut W) -> Result<(), ()> {
     walker.go_right()?; // if we're at an empty node, return error
     while !walker.is_empty() {
         walker.go_left().unwrap();
@@ -34,7 +34,7 @@ pub fn next_empty<W : SomeWalker<A>, A : Action>(walker : &mut W) -> Result<(), 
 
 // if the walker is at an empty position, return an error.
 // goes to the previous empty position
-pub fn previous_empty<W : SomeWalker<A>, A : Action>(walker : &mut W) -> Result<(), ()> {
+pub fn previous_empty<W : SomeWalker<A>, A : Data>(walker : &mut W) -> Result<(), ()> {
     walker.go_left()?; // if we're at an empty node, return error
     while !walker.is_empty() {
         walker.go_right().unwrap();
@@ -44,7 +44,7 @@ pub fn previous_empty<W : SomeWalker<A>, A : Action>(walker : &mut W) -> Result<
 
 /// Finds the next filled node.
 /// If there isn't any, moves to root and return Err(()).
-pub fn next_filled<W : SomeWalker<A>, A : Action>(walker : &mut W) -> Result<(), ()> {
+pub fn next_filled<W : SomeWalker<A>, A : Data>(walker : &mut W) -> Result<(), ()> {
     if !walker.is_empty() {
         next_empty(walker).unwrap();
     }
@@ -61,7 +61,7 @@ pub fn next_filled<W : SomeWalker<A>, A : Action>(walker : &mut W) -> Result<(),
 
 /// Finds the previous filled node.
 /// If there isn't any, moves to root and return Err(()).
-pub fn previous_filled<W : SomeWalker<A>, A : Action>(walker : &mut W) -> Result<(), ()> {
+pub fn previous_filled<W : SomeWalker<A>, A : Data>(walker : &mut W) -> Result<(), ()> {
     if !walker.is_empty() {
         previous_empty(walker).unwrap();
     }
@@ -76,7 +76,7 @@ pub fn previous_filled<W : SomeWalker<A>, A : Action>(walker : &mut W) -> Result
 }
 
 /// returns a vector of all the values in the tree.
-pub fn to_array<A : Action, TR>(tree : TR)
+pub fn to_array<A : Data, TR>(tree : TR)
 -> Vec<A::Value> where
 TR : SomeTreeRef<A>,
 A::Value : Clone,
@@ -96,11 +96,11 @@ A::Value : Clone,
 
 /// Panics if a key was reused.
 /// TODO: make this return an error.
-pub fn insert_by_key<A : Action, TR>(tree : TR, data : A::Value)
+pub fn insert_by_key<A : Data, TR>(tree : TR, data : A::Value)
     -> TR::Walker where
     TR : SomeTreeRef<A>,
     A::Value : crate::data::example_data::Keyed,
-    //<A as data::Action>::Value : std::fmt::Debug,
+    //<A as data::Data>::Value : std::fmt::Debug,
 {
     let res : Result<TR::Walker, void::Void> =
         insert_by_locator(tree, &locate_by_key(&data.get_key()) , data);
@@ -112,11 +112,11 @@ pub fn insert_by_key<A : Action, TR>(tree : TR, data : A::Value)
 
 /// Panics if the locator accepts a node.
 /// TODO: make this return an error instead
-pub fn insert_by_locator<A : Action, L, TR> (tree : TR, locator : &L, value : A::Value)
+pub fn insert_by_locator<A : Data, L, TR> (tree : TR, locator : &L, value : A::Value)
     -> Result<TR::Walker, L::Error> where
     TR : SomeTreeRef<A>,
     L : Locator<A>,
-    //<A as data::Action>::Value : std::fmt::Debug,
+    //<A as data::Data>::Value : std::fmt::Debug,
 {
     let mut walker = search_by_locator(tree, locator)?;
     walker.insert_new(value).expect("tried to insert into an existing node"); // TODO
@@ -126,11 +126,11 @@ pub fn insert_by_locator<A : Action, L, TR> (tree : TR, locator : &L, value : A:
 // TODO: a function that creates a perfectly balanced tree,
 // given the input nodes.
 
-pub fn search<TR, A : Action>(tree : TR, key : &<<A as Action>::Value as Keyed>::Key) ->  TR::Walker where
+pub fn search<TR, A : Data>(tree : TR, key : &<<A as Data>::Value as Keyed>::Key) ->  TR::Walker where
     TR : SomeTreeRef<A>,
-    A : Action,
+    A : Data,
     A::Value : crate::data::example_data::Keyed,
-    //<A as data::Action>::Value : std::fmt::Debug,
+    //<A as data::Data>::Value : std::fmt::Debug,
 {
     let res : Result<_, void::Void> = search_by_locator(tree, &locate_by_key(key));
     match res {
@@ -142,11 +142,11 @@ pub fn search<TR, A : Action>(tree : TR, key : &<<A as Action>::Value as Keyed>:
 /// Finds any node that the locator `Accept`s.
 /// If there isn't any, it find the empty location the locator has navigated it to.
 /// Returns an Err if the Locator has returned an Err.
-pub fn search_by_locator<TR, A : Action, L>(tree : TR, locator : &L)
+pub fn search_by_locator<TR, A : Data, L>(tree : TR, locator : &L)
     -> Result<TR::Walker, L::Error> where
     TR : crate::trees::SomeTreeRef<A>,
     L : Locator<A>,
-    //<A as data::Action>::Value : std::fmt::Debug,
+    //<A as data::Data>::Value : std::fmt::Debug,
 {
     use LocResult::*;
 
@@ -166,7 +166,7 @@ pub fn search_by_locator<TR, A : Action, L>(tree : TR, locator : &L)
 /// because it uses go_up().
 /// 
 /// Instead, use `segment_value()`
-pub fn accumulate_values<TR, L, A : Action>(tree : TR, locator : &L) -> 
+pub fn accumulate_values<TR, L, A : Data>(tree : TR, locator : &L) -> 
         Result<A::Summary, L::Error> where
     TR : SomeTreeRef<A>,
     L : Locator<A>,
@@ -201,7 +201,7 @@ pub fn accumulate_values<TR, L, A : Action>(tree : TR, locator : &L) ->
     Ok(A::EMPTY)
 }
 
-fn accumulate_values_on_suffix<W, L, A : Action>(mut walker : W, locator : &L) ->
+fn accumulate_values_on_suffix<W, L, A : Data>(mut walker : W, locator : &L) ->
         Result<A::Summary, L::Error> where
     W : SomeWalker<A>,
     L : Locator<A>,
@@ -226,7 +226,7 @@ fn accumulate_values_on_suffix<W, L, A : Action>(mut walker : W, locator : &L) -
     Ok(res)
 }
 
-fn accumulate_values_on_prefix<W, L, A : Action>(walker : &mut W, locator : &L) ->
+fn accumulate_values_on_prefix<W, L, A : Data>(walker : &mut W, locator : &L) ->
         Result<A::Summary, L::Error> where
     W : SomeWalker<A>,
     L : Locator<A>,

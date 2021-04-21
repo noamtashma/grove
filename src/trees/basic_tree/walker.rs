@@ -8,13 +8,19 @@ use std::ops::DerefMut;
 
 use crate::trees::SomeWalker; // in order to be able to use our own go_up method
 
-#[derive(Clone)]
-pub (super) struct Frame<A : Action> {
+pub (super) struct Frame<A : ?Sized + Data> {
 	pub left : A::Summary,
 	pub right : A::Summary,
 }
 
-impl<A : Action> Frame<A> {
+// the default clone implementation requires that A : Clone, which is uneccessary
+impl<A : ?Sized + Data> Clone for Frame<A> where A::Summary : Clone {
+	fn clone(&self) -> Self {
+		Frame { left : self.left.clone(), right : self.right.clone() }
+	}
+}
+
+impl<A : Data> Frame<A> {
 	pub fn empty() -> Frame<A> {
 		Frame {left : A::EMPTY, right : A::EMPTY}
 	}
@@ -40,7 +46,7 @@ impl<A : Action> Frame<A> {
 /// Internally, a `Telescope` type is used, in order to be able to dynamically
 /// go up and down the tree without upsetting the borrow checker.
 #[derive(destructure)]
-pub struct BasicWalker<'a, A : Action> {
+pub struct BasicWalker<'a, A : Data> {
 	/// The telescope, holding references to all the subtrees from the root to the
 	/// current position.
 	pub(super) tel : Telescope<'a, BasicTree<A>>,
@@ -57,20 +63,20 @@ pub struct BasicWalker<'a, A : Action> {
 	pub(super) is_left : Vec<bool>,
 }
 
-impl<'a, A : Action> Deref for BasicWalker<'a, A> {
+impl<'a, A : Data> Deref for BasicWalker<'a, A> {
 	type Target = BasicTree<A>;
 	fn deref(&self) -> &BasicTree<A> {
 		&*self.tel
 	}
 }
 
-impl<'a, A : Action> DerefMut for BasicWalker<'a, A> {
+impl<'a, A : Data> DerefMut for BasicWalker<'a, A> {
 	fn deref_mut(&mut self) -> &mut BasicTree<A> {
 		&mut *self.tel
 	}
 }
 
-impl<'a, A : Action> BasicWalker<'a, A> {
+impl<'a, A : Data> BasicWalker<'a, A> {
 	pub fn new(tree : &'a mut BasicTree<A>) -> BasicWalker<'a, A> {
 		tree.access();
 		BasicWalker{ tel : Telescope::new(tree),
@@ -193,7 +199,7 @@ impl<'a, A : Action> BasicWalker<'a, A> {
 
 /// This implementation exists in order to rebuild the nodes
 /// when the walker gets dropped
-impl<'a, A : Action> Drop for BasicWalker<'a, A> {
+impl<'a, A : Data> Drop for BasicWalker<'a, A> {
 	fn drop(&mut self) {
 		self.go_to_root();
 	}

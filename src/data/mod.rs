@@ -6,23 +6,24 @@ pub mod example_data;
 ///
 /// Every node in the tree will contain an action to be performed on the node's subtree,
 /// a summary of the node's subtree, and a value.
-/// The action will be of type `Self`, the summary of type `Self::Summary`, and the value will be of type `Self::Value`.
+/// The action will be of type `Self::Action`, the summary of type `Self::Summary`, and the value will be of type `Self::Value`.
 ///
 /// `Self::Summary` can include: indices, heights, sizes, sums, maximums
 /// and minimums of subtrees, and more. It is the type of summaries of values
 /// you can have in your tree. This is the result of querying for information about a segment.
 ///
-/// `Self` is the type of actions that can be performed on segments. for example,
+/// `Self::Action` is the type of actions that can be performed on segments. for example,
 /// reverse a subtree, add a constant to a subtree, apply `max` with a constant on a subtree,
 /// and so on.
-pub trait Action : Copy + Eq {
+pub trait Data {
+	type Action : Eq + Copy;
 	/// Action composition. i.e., applying the resulting action should be equivalent
 	/// to applying the `other` function and then the `self` action.
 	/// Therefore, this composition must be associative. 
 	/// Compose right to left. i.e., what chronologically happens first, is on the right.
-	fn compose_a(self, other : Self) -> Self;
+	fn compose_a(a : Self::Action, other : Self::Action) -> Self::Action;
 	/// The identity action.
-	const IDENTITY : Self;
+	const IDENTITY : Self::Action;
 
 	/// The values that reside in trees.
 	type Value;
@@ -56,19 +57,19 @@ pub trait Action : Copy + Eq {
 	///
 	/// Therefore, This is essentially a monoid action by the monoid of actions
 	/// on the monoid of values.
-	fn act(self, other : Self::Summary) -> Self::Summary {
+	fn act(_act : Self::Action, other : Self::Summary) -> Self::Summary {
 		other
 	}
 	
 	/// The action, but on values instead of summaries.
 	/// Must commute with `to_summary`.
-	fn act_value(self, _other : &mut Self::Value) {}
+	fn act_value(_act : Self::Action, _other : &mut Self::Value) {}
 
 	/// This function should be implemented if you want to be able to reverse subtrees of your tree,
 	/// i.e., if you also implement Reverse.
 	///
 	/// This function should return whether this action reverses the segment it is applied to.
-	fn to_reverse(&self) -> bool {
+	fn to_reverse(_action : Self::Action) -> bool {
 		false
 	}
 }
@@ -84,7 +85,7 @@ pub trait Action : Copy + Eq {
 /// The `to_reverse` function is part of the `Action` trait and not this trait,
 /// in order that the `access` function can work for both reversible and non reversible
 /// actions uniformly.
-pub trait Reverse : Action {
+pub trait Reverse : Data {
 	/// Mark the action in the node that it should be reversed.
 	fn internal_reverse(node : &mut crate::trees::basic_tree::BasicNode<Self>);
 }

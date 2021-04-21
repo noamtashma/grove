@@ -9,33 +9,34 @@ pub struct Size {
     pub size : usize
 }
 #[derive(PartialEq, Eq, Copy, Clone)]
-struct SizeAction<V> {phantom : PhantomData<V>}
+struct SizeData<V> {phantom : PhantomData<V>}
 
 // TODO: remove the Eq + Copy requirement
-impl<V : Eq + Copy> Action for SizeAction<V> {
+impl<V : Eq + Copy> Data for SizeData<V> {
+    type Action = ();
     type Summary = Size;
     type Value = V;
-    fn compose_a(self : SizeAction<V>, _ : SizeAction<V>) -> SizeAction<V> {
-        self
+    fn compose_a(_ : (), _ : ()) -> () {
+        ()
     }
-    const IDENTITY : Self = SizeAction { phantom : PhantomData};
+    const IDENTITY : Self::Action = ();
     fn compose_s(a : Size, b : Size) -> Size {
         Size { size : a.size + b.size }
     }
     const EMPTY : Size = Size {size : 0};
-    fn act(self : SizeAction<V>, b : Size) -> Size { b }
+    fn act(_ : (), b : Size) -> Size { b }
     fn to_summary(_val : &Self::Value) -> Self::Summary {
         Size {size : 1}
     }
 }
 
 /// actions in which action::Value keeps track of the size of subtrees.
-pub trait SizedAction : Action {
+pub trait SizedData : Data {
     /// The size of the subtree of the current node
     fn size(val : Self::Summary) -> usize;
 }
 
-impl<V : Eq + Copy> SizedAction for SizeAction<V> {
+impl<V : Eq + Copy> SizedData for SizeData<V> {
     fn size(val : Size) -> usize { val.size }
 }
 
@@ -63,11 +64,14 @@ impl<V> NoAction<V> {
     }
 }
 
-impl<V : Eq + Copy> Action for NoAction<V> {
+impl<V : Eq + Copy> Data for NoAction<V> {
     type Summary = ();
+    type Action = ();
     type Value = V;
-    const IDENTITY : Self = NoAction {phantom : PhantomData};
-    fn compose_a(self, _ : Self) -> Self {NoAction::new()}
+    const IDENTITY : Self::Action = ();
+    fn compose_a( _ : Self::Action, _ : Self::Action) -> () {
+        ()
+    }
 
     const EMPTY : () = ();
     fn compose_s(_left : (), _right : ()) -> () {

@@ -13,11 +13,11 @@ use super::basic_tree::*;
 
 
 
-pub struct SplayTree<A : Action> {
+pub struct SplayTree<A : Data> {
     tree : BasicTree<A>,
 }
 
-impl<A : Action> SplayTree<A> {
+impl<A : Data> SplayTree<A> {
     /// This is mutable because the tree must be able to call
     /// `access` on the root
     pub fn root_node_value(&mut self) -> Option<&A::Value> {
@@ -90,7 +90,7 @@ impl<A : Action> SplayTree<A> {
         Ok(walker)
     }
 
-    pub fn act_on_segment<L>(&mut self, locator : L, action : A) -> Result<(), L::Error> where
+    pub fn act_on_segment<L>(&mut self, locator : L, action : A::Action) -> Result<(), L::Error> where
         L : crate::methods::locator::Locator<A>
     {
         let mut walker = self.isolate_segment(locator)?;
@@ -112,14 +112,14 @@ impl<A : Action> SplayTree<A> {
 }
 
 
-impl<A : Action + Reverse> SplayTree<A> {
+impl<A : Data + Reverse> SplayTree<A> {
     pub fn reverse(&mut self) {
         self.tree.reverse();
     }
 }
 
 
-impl<A : Action> std::default::Default for SplayTree<A> {
+impl<A : Data> std::default::Default for SplayTree<A> {
     fn default() -> Self {
         SplayTree::new()
     }
@@ -127,11 +127,11 @@ impl<A : Action> std::default::Default for SplayTree<A> {
 
 
 #[derive(destructure)]
-pub struct SplayWalker<'a, A : Action> {
+pub struct SplayWalker<'a, A : Data> {
     walker : BasicWalker<'a, A>,
 }
 
-impl<'a, A : Action> SplayWalker<'a, A> {
+impl<'a, A : Data> SplayWalker<'a, A> {
 
     pub fn inner(&self) -> &BasicTree<A> {
         &*self.walker
@@ -285,13 +285,13 @@ impl<'a, A : Action> SplayWalker<'a, A> {
     }
 }
 
-impl<'a, A : Action> Drop for SplayWalker<'a, A> {
+impl<'a, A : Data> Drop for SplayWalker<'a, A> {
     fn drop(&mut self) {
         self.splay();
     }
 }
 
-impl<A : Action> SomeTree<A> for SplayTree<A> {
+impl<A : Data> SomeTree<A> for SplayTree<A> {
     fn into_inner(self) -> BasicTree<A> {
         self.tree
     }
@@ -305,14 +305,14 @@ impl<A : Action> SomeTree<A> for SplayTree<A> {
     }
 }
 
-impl<'a, A : Action> SomeTreeRef<A> for &'a mut SplayTree<A> {
+impl<'a, A : Data> SomeTreeRef<A> for &'a mut SplayTree<A> {
     type Walker = SplayWalker<'a, A>;
     fn walker(self : &'a mut SplayTree<A>) -> SplayWalker<'a, A> {
         SplayWalker { walker : self.basic_walker() }
     }
 }
 
-impl<'a, A : Action> SomeWalker<A> for SplayWalker<'a, A> {
+impl<'a, A : Data> SomeWalker<A> for SplayWalker<'a, A> {
     fn go_left(&mut self) -> Result<(), ()> {
         self.walker.go_left()
     }
@@ -351,7 +351,7 @@ impl<'a, A : Action> SomeWalker<A> for SplayWalker<'a, A> {
     }
 }
 
-impl<'a, A : Action> SomeEntry<A> for SplayWalker<'a, A> {
+impl<'a, A : Data> SomeEntry<A> for SplayWalker<'a, A> {
     fn value_mut(&mut self) -> Option<&mut A::Value> {
         self.walker.value_mut()
     }

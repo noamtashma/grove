@@ -93,23 +93,26 @@ struct RevAction {
     to_reverse : bool,
 }
 
-impl Action for RevAction {
+struct RevData {}
+
+impl Data for RevData {
+    type Action = RevAction;
     type Summary = Size;
     type Value = Interval;
 
     const IDENTITY : RevAction = RevAction { to_reverse : false };
     const EMPTY : Size = Size {size : 0};
 
-    fn compose_a(self, other : Self) -> Self {
-        RevAction { to_reverse : self.to_reverse != other.to_reverse }
+    fn compose_a(a : Self::Action, b : Self::Action) -> Self::Action {
+        RevAction { to_reverse : a.to_reverse != b.to_reverse }
     }
 
     fn compose_s(s1 : Size, s2 : Size) -> Size {
         Size {size : s1.size + s2.size }
     }
 
-    fn act_value(self, val : &mut Interval) {
-        if self.to_reverse {
+    fn act_value(act : Self::Action, val : &mut Interval) {
+        if act.to_reverse {
             val.flip();
         }
     }
@@ -118,24 +121,24 @@ impl Action for RevAction {
         Size {size : val.size()}
     }
 
-    fn to_reverse(&self) -> bool {
-        self.to_reverse
+    fn to_reverse(act : Self::Action) -> bool {
+        act.to_reverse
     }
 }
 
-impl Reverse for RevAction {
+impl Reverse for RevData {
     fn internal_reverse(node : &mut basic_tree::BasicNode<Self>) {
         node.act(RevAction{to_reverse : true})
     }
 }
 
-impl SizedAction for RevAction {
+impl SizedData for RevData {
     fn size(summary : Self::Summary) -> usize {
         summary.size
     }
 }
 
-impl SplayTree<RevAction> {
+impl SplayTree<RevData> {
     // splits a segment inside the tree
     fn search_split(&mut self, index : usize) {
         let locator = locate_by_index_range(index, index);
@@ -188,7 +191,7 @@ impl SplayTree<RevAction> {
 
 
 pub fn yarra(n : usize, k : usize) -> I {
-    let mut tree : SplayTree<RevAction> = SplayTree::new();
+    let mut tree : SplayTree<RevData> = SplayTree::new();
     let inter = Interval {start : 0, end : (n-1) as I};
     tree.walker().insert_new(inter).unwrap();
 
