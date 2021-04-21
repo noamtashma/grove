@@ -44,9 +44,9 @@ impl<A : Action> BasicTree<A> {
 	}
 
 	/// Returns the summary of all values in this node's subtree.
-	pub fn segment_summary(&self) -> A::Summary {
+	pub fn subtree_summary(&self) -> A::Summary {
 		match self {
-			Root(node) => node.segment_summary(),
+			Root(node) => node.subtree_summary(),
 			_ => A::EMPTY,
 		}
 	}
@@ -73,7 +73,7 @@ impl<A : Action + Reverse> BasicNode<A> {
 /// A basic node. can be viewed as a non-empty basic tree: it always has at least one value.
 pub struct BasicNode<A : Action> {
 	action : A,
-	segment_value : A::Summary,
+	subtree_summary : A::Summary,
 	node_value : A::Value,
 	pub left : BasicTree<A>,
 	pub right : BasicTree<A>
@@ -82,19 +82,19 @@ pub struct BasicNode<A : Action> {
 impl<A : Action> BasicNode<A> {
 
 	pub fn new(value : A::Value) -> BasicNode<A> {
-		let segment_value = A::to_summary(&value);
+		let subtree_summary = A::to_summary(&value);
 		BasicNode {
 			action : A::IDENTITY,
 			node_value : value,
-			segment_value,
+			subtree_summary,
 			left : Empty,
 			right : Empty,
 		}
 	}
 	
 	/// Returns the summary of all values in this node's subtree.
-	pub fn segment_summary(&self) -> A::Summary {
-		self.action.act(self.segment_value)
+	pub fn subtree_summary(&self) -> A::Summary {
+		self.action.act(self.subtree_summary)
 	}
 
 	/// Returns a summary for the value in this node specifically,
@@ -137,7 +137,7 @@ impl<A : Action> BasicNode<A> {
 		if let Root(node) = &mut self.right {
 			node.act(self.action);
 		}
-		self.segment_value = self.action.act(self.segment_value);
+		self.subtree_summary = self.action.act(self.subtree_summary);
 		self.action.act_value(&mut self.node_value);
 		self.action = A::IDENTITY;
 	}
@@ -149,12 +149,12 @@ impl<A : Action> BasicNode<A> {
 	/// subtree to be accurate.
 	pub fn rebuild(&mut self) {
 		assert!(self.action == A::IDENTITY);
-		self.segment_value = A::to_summary(&self.node_value);
+		self.subtree_summary = A::to_summary(&self.node_value);
 		if let Root(node) = &self.left {
-			self.segment_value = A::compose_s(node.segment_summary(), self.segment_value);
+			self.subtree_summary = A::compose_s(node.subtree_summary(), self.subtree_summary);
 		}
 		if let Root(node) = &self.right {
-			self.segment_value = A::compose_s(self.segment_value, node.segment_summary());
+			self.subtree_summary = A::compose_s(self.subtree_summary, node.subtree_summary());
 		}
 
 		//Data::rebuild_data(&mut self.data, self.left.data(), self.right.data());

@@ -25,6 +25,7 @@
 
 use crate::trees::basic_tree::*;
 
+#[derive(PartialEq, Eq, Debug)]
 pub enum LocResult {
     Accept, GoRight, GoLeft,
 }
@@ -82,17 +83,11 @@ pub fn locate_by_key<'a, A>(key : &'a <A::Value as crate::data::example_data::Ke
 // TODO: Splitter. locators that can't `Accept`. used for splitting trees
 // and for insertions.
 
+/// represents the segment of indices [low, high)
 #[derive(Clone)]
 pub struct IndexLocator {
-    low : usize,
-    high : usize,
-}
-
-/// represents the segment of indices [low, high)
-impl IndexLocator {
-    pub fn expose(self) -> (usize, usize) {
-        (self.low, self.high)
-    }
+    pub low : usize,
+    pub high : usize,
 }
 
 
@@ -127,4 +122,57 @@ pub fn locate_by_index_range(low : usize, high : usize) ->
 pub fn locate_by_index(index : usize) -> 
     IndexLocator {
     locate_by_index_range(index, index+1)
+}
+
+
+/// A Wrapper for other locators what will find exactly the left edge
+/// of the previous locator. So, this is always a splitting locator.
+pub struct LeftEdgeLocator<L> (
+    pub L,
+);
+/// A Wrapper for other locators what will find exactly the right edge
+/// of the previous locator. So, this is always a splitting locator.
+pub struct RightEdgeLocator<L> (
+    pub L,
+);
+
+impl<A : Action, L : Locator<A>> Locator<A> for LeftEdgeLocator<L> {
+    type Error = L::Error;
+    fn locate(&self, left : A::Summary, node : &A::Value, right : A::Summary) -> 
+        Result<LocResult, L::Error>
+    {
+        Ok(match self.0.locate(left, node, right)? {
+            Accept => GoLeft,
+            res => res,
+        })
+    }
+}
+
+impl<A : Action, L : Locator<A>> Locator<A> for RightEdgeLocator<L> {
+    type Error = L::Error;
+    fn locate(&self, left : A::Summary, node : &A::Value, right : A::Summary) -> 
+        Result<LocResult, L::Error>
+    {
+        Ok(match self.0.locate(left, node, right)? {
+            Accept => GoRight,
+            res => res,
+        })
+    }
+}
+
+/// A Wrapper for two other locators, that finds the smallest segment containing both of them.
+/// For example, the Union of ranges `[3,6)` and `[7,12)` will  be `[3,12)`.
+pub struct UnionLocator<L> (
+    pub L, pub L
+);
+
+impl<A : Action, L : Locator<A>> Locator<A> for UnionLocator<L> {
+    type Error = L::Error;
+    fn locate(&self, left : A::Summary, node : &A::Value, right : A::Summary) -> 
+        Result<LocResult, L::Error>
+    {
+        let a = self.0.locate(left, node, right)?;
+        let b = self.1.locate(left, node, right)?;
+        Ok(if a == b {a} else { Accept })
+    }
 }

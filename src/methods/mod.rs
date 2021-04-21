@@ -166,7 +166,8 @@ pub fn search_by_locator<TR, A : Action, L>(tree : TR, locator : &L)
 /// Returns the accumulated values on the locator's segment
 /// Do not use with splay trees - it might mess up the complexity,
 /// because it uses go_up().
-/// TODO - find an alternative
+/// 
+/// Instead, use `segment_value()`
 pub fn accumulate_values<TR, L, A : Action>(tree : TR, locator : &L) -> 
         Result<A::Summary, L::Error> where
     TR : SomeTreeRef<A>,
@@ -214,7 +215,7 @@ fn accumulate_values_on_suffix<W, L, A : Action>(mut walker : W, locator : &L) -
         match dir? {
             Accept => {
                 if let basic_tree::BasicTree::Root(node) = walker.inner_mut() {
-                    res = A::compose_s(node.right.segment_summary(), res);
+                    res = A::compose_s(node.right.subtree_summary(), res);
                     res = A::compose_s(node.node_summary(), res);
                     walker.go_left().unwrap();
                 } else {panic!()}
@@ -238,7 +239,7 @@ fn accumulate_values_on_prefix<W, L, A : Action>(walker : &mut W, locator : &L) 
     while let Some(dir) = walker_locate(walker, locator) {
         match dir? {    Accept => {
                 if let basic_tree::BasicTree::Root(node) = walker.inner_mut() {
-                    res = A::compose_s(res, node.left.segment_summary());
+                    res = A::compose_s(res, node.left.subtree_summary());
                     res = A::compose_s(res, node.node_summary());
                     walker.go_right().unwrap();
                 } else {

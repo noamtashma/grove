@@ -136,11 +136,8 @@ impl SizedAction for RevAction {
 }
 
 impl SplayTree<RevAction> {
-    // splits the tree - modifies the first tree and returns the second tree
-    // splits to [0, index) and [index, length)
-    // TODO: exmplain
-    fn search_split(&mut self, index : usize) -> SplayTree<RevAction> {
-
+    // splits a segment inside the tree
+    fn search_split(&mut self, index : usize) {
         let locator = locate_by_index_range(index, index);
         let mut walker = // using an empty range so that we'll only end up at a node
             // if we actually need to split that node
@@ -153,9 +150,7 @@ impl SplayTree<RevAction> {
             *val = v1;
             next_empty(&mut walker).unwrap(); // not at an empty node
             walker.insert_new(v2).unwrap(); // the position must be empty
-            walker.go_left().unwrap();
         }
-        return walker.split().unwrap();
     }
 
     /// Unites the two trees into one.
@@ -184,13 +179,10 @@ impl SplayTree<RevAction> {
 
     // reverse the segment [low, high)
     fn reverse_segment(&mut self, low : usize, high : usize) {
-        let mut self2 = self.search_split(low);
+        self.search_split(low);
         // high-low and not high since this counts the index based on the split tree and not the original tree
-        let self3 = self2.search_split(high-low);
-        self2.reverse();
-        // unite back together
-        self2.union(self3);
-        self.union(self2);
+        self.search_split(high);
+        self.act_on_segment(locate_by_index_range(low, high), RevAction { to_reverse : true });
     }
 }
 

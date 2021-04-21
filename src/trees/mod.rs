@@ -72,7 +72,7 @@ pub trait SomeWalker<A : Action> : SomeEntry<A> {
     fn left_summary(&self) -> A::Summary {
         let left = self.far_left_summary();
         if let basic_tree::BasicTree::Root(node) = self.inner() {
-            A::compose_s(left, node.left.segment_summary())
+            A::compose_s(left, node.left.subtree_summary())
         } else {
             left
         }
@@ -82,7 +82,7 @@ pub trait SomeWalker<A : Action> : SomeEntry<A> {
     fn right_summary(&self) -> A::Summary {
         let right = self.far_right_summary();
         if let basic_tree::BasicTree::Root(node) = self.inner() {
-            A::compose_s(node.left.segment_summary(), right)
+            A::compose_s(node.left.subtree_summary(), right)
         } else {
             right
         }

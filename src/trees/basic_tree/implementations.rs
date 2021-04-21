@@ -38,7 +38,7 @@ impl<'a, A : Action> SomeWalker<A> for BasicWalker<'a, A> {
 				Empty => Err(()),
 				Root(node) => {
 					// update values
-					frame.right = A::compose_s(node.right.segment_summary(), frame.right);
+					frame.right = A::compose_s(node.right.subtree_summary(), frame.right);
 					frame.right = A::compose_s(node.node_summary(), frame.right);
 					node.left.access();
 					Ok(&mut node.left)
@@ -63,7 +63,7 @@ impl<'a, A : Action> SomeWalker<A> for BasicWalker<'a, A> {
 				Empty => Err(()),
 				Root(node) => {
 					// update values
-					frame.left = A::compose_s(frame.left, node.left.segment_summary());
+					frame.left = A::compose_s(frame.left, node.left.subtree_summary());
 					frame.left = A::compose_s(frame.left, node.node_summary());
 					
 					node.right.access();

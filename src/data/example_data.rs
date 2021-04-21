@@ -4,7 +4,7 @@ use super::*;
 /// storing the size of a subtree
 /// assumes that storing the size of the structure in a usize is enough.
 /// if it's enough for all the addresses in the computers... it must always be enough, right? right?
-#[derive(Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub struct Size {
     pub size : usize
 }

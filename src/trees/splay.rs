@@ -27,8 +27,8 @@ impl<A : Action> SplayTree<A> {
         }
     }
 
-    pub fn segment_value(&self) -> A::Summary {
-        self.tree.segment_summary()
+    pub fn subtree_summary(&self) -> A::Summary {
+        self.tree.subtree_summary()
     }
 
     /// Note: using this directly may cause the tree to lose its properties as a splay tree
@@ -64,26 +64,50 @@ impl<A : Action> SplayTree<A> {
         }
     }
 
-    // TODO: implement
+    // TODO: isolate segment is probably not working correctly
     /// Gets the tree into a state in which the locator's segment
     /// is a single subtree, and returns a walker at that subtree.
-    pub fn isolate_segment<L>(&mut self, locator : &L) -> SplayWalker<A> where
+    pub fn isolate_segment<L>(&mut self, locator : L) -> Result<SplayWalker<A>, L::Error> where
         L : crate::methods::locator::Locator<A>
     {
-        unimplemented!();
+        use crate::methods;
+
+        let left_edge = methods::LeftEdgeLocator(locator);
+        // reborrows the tree for a shorter time
+        let mut walker = methods::search_by_locator(&mut *self, &left_edge)?;
+        let b1 = methods::previous_filled(&mut walker).is_ok();
+        // walker.splay(); already happens because of the drop
+        drop(walker); // must drop here so that the next call to search can happen
+
+        let right_edge = methods::RightEdgeLocator(left_edge.0);
+        let mut walker = methods::search_by_locator(&mut *self, &right_edge)?;
+        let b2 = methods::next_filled(&mut walker).is_ok();
+        if b2 {
+            walker.splay_to_depth( if b1 {1} else {0});
+            walker.go_left().unwrap();
+        }
+
+        Ok(walker)
     }
 
-    pub fn act_segment<L>(&mut self, locator : &L, action : A) where
+    pub fn act_on_segment<L>(&mut self, locator : L, action : A) -> Result<(), L::Error> where
         L : crate::methods::locator::Locator<A>
     {
-        let mut walker = self.isolate_segment(locator);
-        match walker.inner_mut() {
+        let mut walker = self.isolate_segment(locator)?;
+        Ok(match walker.inner_mut() {
             crate::basic_tree::BasicTree::Root(node) => {
                 node.act(action);
                 node.access();
             },
             _ => (),
-        }
+        })
+    }
+
+    pub fn segment_summary<L>(&mut self, locator : L) -> Result<A::Summary, L::Error> where
+    L : crate::methods::locator::Locator<A>
+    {
+        let walker = self.isolate_segment(locator)?;
+        Ok(walker.inner().subtree_summary())
     }
 }
 
@@ -135,6 +159,7 @@ impl<'a, A : Action> SplayWalker<'a, A> {
     
     /// If at the root, do nothing.
     /// otherwise, do a single splay step upwards.
+    /// If empty, go up once and return.
 
     /// Amortized complexity of splay steps:
     /// The amortized cost of any splay step, except the zig step near the root, is at most
@@ -144,9 +169,8 @@ impl<'a, A : Action> SplayWalker<'a, A> {
         // if the walker points to an empty position,
         // we can't splay it, just go upwards once.
         if self.walker.is_empty() {
-            if let Err(()) = self.walker.go_up() { // if already the root, exit. otherwise, go up
-                return
-            };
+            let _ = self.walker.go_up();
+            return;
         }
 
         let b1 = match self.walker.go_up() {
@@ -179,26 +203,32 @@ impl<'a, A : Action> SplayWalker<'a, A> {
             if let Err(()) = self.walker.go_up() { // if already the root, exit. otherwise, go up
                 panic!(); // shouldn't happen, because if we are at the root, the previous condition would have caught it.
             };
+            return;
         }
 
-        if self.depth() <= depth { return; }
 
         let b1 = match self.walker.go_up() {
-            Err(()) => panic!(), // shouldn't happen, the previous condition would have caught this
             Ok(b1) => b1,
+            Err(()) => panic!(), // shouldn't happen, the previous condition would have caught this
         };
 
-        let b2 = match self.walker.is_left_son() {
-            None => { self.walker.rot_side(!b1).unwrap(); return }, // zig case
-            Some(b2) => b2,
-        };
-
-        if b1 == b2 { // zig-zig case
-            self.walker.rot_up().unwrap();
+        if self.depth() <= depth { // zig case
             self.walker.rot_side(!b1).unwrap();
-        } else { // zig-zag case
-            self.walker.rot_side(!b1).unwrap();
-            self.walker.rot_up().unwrap();
+            return;
+        } 
+        else {
+            let b2 = match self.walker.is_left_son() {
+                None => panic!(), // we couldn't have gone into this branch 
+                Some(b2) => b2,
+            };
+            
+            if b1 == b2 { // zig-zig case
+                self.walker.rot_up().unwrap();
+                self.walker.rot_side(!b1).unwrap();
+            } else { // zig-zag case
+                self.walker.rot_side(!b1).unwrap();
+                self.walker.rot_up().unwrap();
+            }
         }
     }
 
@@ -218,7 +248,7 @@ impl<'a, A : Action> SplayWalker<'a, A> {
     /// See the splay function.
     pub fn splay_to_depth(&mut self, depth : usize) {
         assert!(self.depth() >= depth);
-        while !self.walker.depth() == depth {
+        while self.walker.depth() != depth {
             self.splay_step_depth(depth);
         }
     }
