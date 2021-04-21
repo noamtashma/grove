@@ -6,7 +6,7 @@ use super::*;
 use super::super::*; // crate::trees::*
 use crate::telescope::NO_VALUE_ERROR;
 
-impl<'a, A : Action> SomeTree<A> for BasicTree<A> {
+impl<'a, A : Data> SomeTree<A> for BasicTree<A> {
     fn into_inner(self) -> BasicTree<A> {
         self
     }
@@ -20,7 +20,7 @@ impl<'a, A : Action> SomeTree<A> for BasicTree<A> {
     }
 }
 
-impl<'a, A : Action> SomeTreeRef<A> for &'a mut BasicTree<A> {
+impl<'a, A : Data> SomeTreeRef<A> for &'a mut BasicTree<A> {
     type Walker = BasicWalker<'a, A>;
 
     fn walker(self) -> Self::Walker {
@@ -28,7 +28,7 @@ impl<'a, A : Action> SomeTreeRef<A> for &'a mut BasicTree<A> {
     }
 }
 
-impl<'a, A : Action> SomeWalker<A> for BasicWalker<'a, A> {
+impl<'a, A : Data> SomeWalker<A> for BasicWalker<'a, A> {
     // returns Err if it's impossible to go left
 	// otherwise returns Ok
 	fn go_left(&mut self) -> Result<(), ()> {
@@ -38,8 +38,7 @@ impl<'a, A : Action> SomeWalker<A> for BasicWalker<'a, A> {
 				Empty => Err(()),
 				Root(node) => {
 					// update values
-					frame.right = A::compose_s(node.right.subtree_summary(), frame.right);
-					frame.right = A::compose_s(node.node_summary(), frame.right);
+					frame.right = node.node_summary() + node.right.subtree_summary() + frame.right;
 					node.left.access();
 					Ok(&mut node.left)
 				},
@@ -63,8 +62,7 @@ impl<'a, A : Action> SomeWalker<A> for BasicWalker<'a, A> {
 				Empty => Err(()),
 				Root(node) => {
 					// update values
-					frame.left = A::compose_s(frame.left, node.left.subtree_summary());
-					frame.left = A::compose_s(frame.left, node.node_summary());
+					frame.left = frame.left + node.left.subtree_summary() + node.node_summary();
 					
 					node.right.access();
 					Ok(&mut node.right)
@@ -114,7 +112,7 @@ impl<'a, A : Action> SomeWalker<A> for BasicWalker<'a, A> {
 }
 
 
-impl<A : Action> SomeEntry<A> for BasicTree<A> {
+impl<A : Data> SomeEntry<A> for BasicTree<A> {
 	fn value_mut(&mut self) -> Option<&mut A::Value> {
 		match self {
 			Empty => None,
@@ -167,7 +165,7 @@ impl<A : Action> SomeEntry<A> for BasicTree<A> {
     }
 }
 
-impl<'a, A : Action> SomeEntry<A> for BasicWalker<'a, A> {
+impl<'a, A : Data> SomeEntry<A> for BasicWalker<'a, A> {
     fn value_mut(&mut self) -> Option<&mut A::Value> {
         self.tel.value_mut()
     }

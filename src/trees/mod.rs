@@ -13,7 +13,7 @@ pub mod basic_tree;
 pub mod splay;
 
 use crate::data::*;
-pub trait SomeTree<A : Action> where
+pub trait SomeTree<A : Data> where
     for<'a> &'a mut Self : SomeTreeRef<A> {
 
     fn into_inner(self) -> basic_tree::BasicTree<A>;
@@ -22,7 +22,7 @@ pub trait SomeTree<A : Action> where
 
 }
 
-pub trait SomeTreeRef<A : Action> {
+pub trait SomeTreeRef<A : Data> {
     type Walker : SomeWalker<A>;
     fn walker(self) -> Self::Walker;
 }
@@ -39,7 +39,7 @@ pub trait SomeTreeRef<A : Action> {
 /// a node yet.
 /// The method is_empty() can tell whether you are at an empty position. Trying to move downward from an
 /// empty position produces an error value.
-pub trait SomeWalker<A : Action> : SomeEntry<A> {
+pub trait SomeWalker<A : Data> : SomeEntry<A> {
     /// return `Err(())` if it is in an empty spot.
     fn go_left(&mut self) -> Result<(), ()>;
     /// returns `Err(())` if it is in an empty spot.
@@ -72,7 +72,7 @@ pub trait SomeWalker<A : Action> : SomeEntry<A> {
     fn left_summary(&self) -> A::Summary {
         let left = self.far_left_summary();
         if let basic_tree::BasicTree::Root(node) = self.inner() {
-            A::compose_s(left, node.left.subtree_summary())
+            left + node.left.subtree_summary()
         } else {
             left
         }
@@ -82,7 +82,7 @@ pub trait SomeWalker<A : Action> : SomeEntry<A> {
     fn right_summary(&self) -> A::Summary {
         let right = self.far_right_summary();
         if let basic_tree::BasicTree::Root(node) = self.inner() {
-            A::compose_s(node.left.subtree_summary(), right)
+            node.left.subtree_summary() + right
         } else {
             right
         }
@@ -97,7 +97,7 @@ pub trait SomeWalker<A : Action> : SomeEntry<A> {
 /// Things that allow access to a maybe-missing value, as if it is an Option<A>.
 /// Currently there are no actual Entry types, and the walkers themselves
 /// act as the entries. However, the traits are still separated.
-pub trait SomeEntry<A : Action> {
+pub trait SomeEntry<A : Data> {
     fn value_mut(&mut self) -> Option<&mut A::Value>;
     fn value(&self) -> Option<&A::Value>;
 

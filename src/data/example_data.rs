@@ -1,107 +1,178 @@
 use super::*;
+use std::marker::PhantomData;
 
 
-/// storing the size of a subtree
-/// assumes that storing the size of the structure in a usize is enough.
-/// if it's enough for all the addresses in the computers... it must always be enough, right? right?
+
+/// Storing the size of a subtree.
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub struct Size {
     pub size : usize
 }
-#[derive(PartialEq, Eq, Copy, Clone)]
-struct SizeAction<V> {phantom : PhantomData<V>}
 
-// TODO: remove the Eq + Copy requirement
-impl<V : Eq + Copy> Action for SizeAction<V> {
+impl Add for Size {
+    type Output = Size;
+    fn add(self, b : Size) -> Size {
+        Size {size : self.size + b.size}
+    }
+}
+
+#[derive(PartialEq, Eq, Copy, Clone, Debug)]
+struct SizeData<V> {phantom : PhantomData<V>}
+
+impl<V> Data for SizeData<V> {
+    type Action = Unit;
     type Summary = Size;
     type Value = V;
-    fn compose_a(self : SizeAction<V>, _ : SizeAction<V>) -> SizeAction<V> {
-        self
-    }
-    const IDENTITY : Self = SizeAction { phantom : PhantomData};
-    fn compose_s(a : Size, b : Size) -> Size {
-        Size { size : a.size + b.size }
-    }
+    const IDENTITY : Self::Action = Unit{};
     const EMPTY : Size = Size {size : 0};
-    fn act(self : SizeAction<V>, b : Size) -> Size { b }
-    fn to_summary(val : &Self::Value) -> Self::Summary {
+    fn act(_ : Unit, b : Size) -> Size { b }
+    fn to_summary(_val : &Self::Value) -> Self::Summary {
         Size {size : 1}
     }
 }
 
 /// actions in which action::Value keeps track of the size of subtrees.
-pub trait SizedAction : Action {
+pub trait SizedData : Data {
     /// The size of the subtree of the current node
     fn size(val : Self::Summary) -> usize;
 }
 
-impl<V : Eq + Copy> SizedAction for SizeAction<V> {
+impl<V : Eq + Copy> SizedData for SizeData<V> {
     fn size(val : Size) -> usize { val.size }
 }
 
 
-/// the height of a subtree
-pub struct Height {
-    pub height : usize
-}
 
 
-// ordering keys
-// similar to Value<K>, but implements the keying trait. TODO
-
-
-
-// TODO: complete
-use std::marker::PhantomData;
-#[derive(PartialEq, Eq, Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub struct NoAction<V> {
     phantom : PhantomData<V>,
 }
-impl<V> NoAction<V> {
-    pub fn new() -> NoAction<V> {
-        NoAction {phantom : PhantomData}
-    }
-}
 
-impl<V : Eq + Copy> Action for NoAction<V> {
-    type Summary = ();
+impl<V : Eq + Copy> Data for NoAction<V> {
+    type Summary = Unit;
+    type Action = Unit;
     type Value = V;
-    const IDENTITY : Self = NoAction {phantom : PhantomData};
-    fn compose_a(self, _ : Self) -> Self {NoAction::new()}
+    const IDENTITY : Self::Action = Unit{};
 
-    const EMPTY : () = ();
-    fn compose_s(_left : (), _right : ()) -> () {
-        ()
-    }
+    const EMPTY : Unit = Unit{};
 
     fn to_summary(_val : &Self::Value) -> Self::Summary {
-        ()
+        Unit{}
     }
 }
 
+#[derive(PartialEq, Eq, Clone, Copy)]
+struct RevAction {
+    to_reverse : bool,
+}
+
+impl std::ops::Add for RevAction {
+    type Output = RevAction;
+    fn add(self, b : RevAction) -> RevAction {
+        RevAction {to_reverse : self.to_reverse != b.to_reverse}
+    }
+}
+
+
+type I = i32;
+#[derive(PartialEq, Eq, Clone, Copy, Hash)]
+pub struct NumSummary {
+    pub max : Option<I>,
+    pub min : Option<I>,
+    pub size : I,
+    pub sum : I,
+}
+impl Add for NumSummary {
+    type Output = Self;
+    fn add(self, other : Self) -> Self {
+        NumSummary {
+            max : match (self.max, other.max) {
+                    (Some(a), Some(b)) => Some(std::cmp::max(a,b)),
+                    (Some(a), _) => Some(a),
+                    (_, b) => b,
+                },
+            min : match (self.min, other.min) {
+                (Some(a), Some(b)) => Some(std::cmp::min(a,b)),
+                (Some(a), _) => Some(a),
+                (_, b) => b,
+            },
+            size : self.size + other.size,
+            sum : self.sum + other.sum,
+        }
+    }
+}
+
+/// Actions of reversals and constant adding
+#[derive(PartialEq, Eq, Clone, Copy)]
+pub struct RevAddAction{
+    pub to_reverse : bool,
+    pub add : I,
+}
+
+impl Add for RevAddAction {
+    type Output = Self;
+    fn add(self, other : Self) -> Self {
+        RevAddAction {
+            to_reverse : self.to_reverse != other.to_reverse,
+            add : self.add + other.add,
+        }
+    }
+}
+
+pub struct StdNum{}
+
+impl Data for StdNum {
+    type Value = I;
+    type Summary = NumSummary;
+    type Action = RevAddAction;
+
+    const IDENTITY : Self::Action = RevAddAction { to_reverse : false, add : 0 };
+    const EMPTY : Self::Summary = NumSummary {
+        max : None,
+        min : None,
+        size : 0,
+        sum : 0,
+    };
+
+    fn to_reverse(act : Self::Action) -> bool {
+        act.to_reverse
+    }
+
+    fn to_summary(val : &I) -> Self::Summary {
+        NumSummary {
+            max : Some(*val),
+            min : Some(*val),
+            size : 1,
+            sum : *val,
+        }
+    }
+
+    fn act(action : Self::Action, summary : Self::Summary) -> Self::Summary {
+        Self::Summary {
+            max : summary.max.map(|max : I| { max + action.add }),
+            min : summary.min.map(|min : I| { min + action.add }),
+            size : summary.size,
+            sum : summary.sum + action.add*summary.size,
+        }
+    }
+
+    fn act_value(action : Self::Action, val : &mut I) {
+        *val += action.add;
+    }
+}
+
+impl Reverse for StdNum {
+    fn internal_reverse(node : &mut crate::trees::basic_tree::BasicNode<Self>) {
+        node.act(RevAddAction {to_reverse : true, add : 0});
+    }
+}
+
+
+
+// TODO: consider retiring this and just requiring Value : Ord instead.
 /// The convention is that smaller values go on the left
 pub trait Keyed {
     type Key : std::cmp::Ord;
     fn get_key(&self) -> <Self as Keyed>::Key;
 }
-
-
-/*
-impl<K : std::cmp::Ord> Data for Key<K> {
-    fn rebuild_data<'a>(&'a mut self, _ : Option<&'a Self>, _ : Option<&'a Self>) {}
-    fn access<'a>(&'a mut self, _ : Option<&'a mut Self>, _ : Option<&'a mut Self>) {}
-}
-
-
-pub trait KeyedData : Data where {
-    type Key : std::cmp::Ord;
-    fn get_key(&self) -> &<Self as KeyedData>::Key;
-}
-
-impl<K : std::cmp::Ord> KeyedData for Key<K> {
-    type Key = K;
-    fn get_key(&self) -> &K {
-        &self.key
-    }
-}
-*/
