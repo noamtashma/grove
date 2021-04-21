@@ -88,9 +88,6 @@ impl std::ops::Add for RevAction {
 
 
 type I = i32;
-/// A Data marker for a standard set of summaries and actions. Specifically,
-/// One can reverse or add a constant to a whole segment at once, and one can query
-/// the maximum, minimum, size and sum of a whole segment at once.
 #[derive(PartialEq, Eq, Clone, Copy, Hash)]
 pub struct NumSummary {
     pub max : Option<I>,
@@ -135,6 +132,9 @@ impl Add for RevAddAction {
     }
 }
 
+/// A Data marker for a standard set of summaries and actions used for numbers. Specifically,
+/// one can reverse or add a constant to a whole segment at once, and one can query
+/// the maximum, minimum, size and sum of a whole segment at once.
 pub struct StdNum{}
 
 impl Data for StdNum {
