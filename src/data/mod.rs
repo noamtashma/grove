@@ -18,7 +18,7 @@ impl Add for Unit {
 ///
 /// Every node in the tree will contain an action to be performed on the node's subtree,
 /// a summary of the node's subtree, and a value.
-/// The action will be of type `Self::Action`, the summary of type `Self::Summary`, and the value will be of type `Self::Value`.
+/// The action will be of type [`Self::Action`], the summary of type `Self::Summary`, and the value will be of type `Self::Value`.
 ///
 /// `Self::Summary` can include: indices, heights, sizes, sums, maximums
 /// and minimums of subtrees, and more. It is the type of summaries of values

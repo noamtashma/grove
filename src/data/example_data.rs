@@ -2,6 +2,7 @@ use super::*;
 use std::marker::PhantomData;
 
 
+
 /// Storing the size of a subtree.
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub struct Size {
@@ -60,6 +61,114 @@ impl<V : Eq + Copy> Data for NoAction<V> {
         Unit{}
     }
 }
+
+#[derive(PartialEq, Eq, Clone, Copy)]
+struct RevAction {
+    to_reverse : bool,
+}
+
+impl std::ops::Add for RevAction {
+    type Output = RevAction;
+    fn add(self, b : RevAction) -> RevAction {
+        RevAction {to_reverse : self.to_reverse != b.to_reverse}
+    }
+}
+
+
+type I = i32;
+#[derive(PartialEq, Eq, Clone, Copy, Hash)]
+pub struct NumSummary {
+    pub max : Option<I>,
+    pub min : Option<I>,
+    pub size : I,
+    pub sum : I,
+}
+impl Add for NumSummary {
+    type Output = Self;
+    fn add(self, other : Self) -> Self {
+        NumSummary {
+            max : match (self.max, other.max) {
+                    (Some(a), Some(b)) => Some(std::cmp::max(a,b)),
+                    (Some(a), _) => Some(a),
+                    (_, b) => b,
+                },
+            min : match (self.min, other.min) {
+                (Some(a), Some(b)) => Some(std::cmp::min(a,b)),
+                (Some(a), _) => Some(a),
+                (_, b) => b,
+            },
+            size : self.size + other.size,
+            sum : self.sum + other.sum,
+        }
+    }
+}
+
+/// Actions of reversals and constant adding
+#[derive(PartialEq, Eq, Clone, Copy)]
+pub struct RevAddAction{
+    pub to_reverse : bool,
+    pub add : I,
+}
+
+impl Add for RevAddAction {
+    type Output = Self;
+    fn add(self, other : Self) -> Self {
+        RevAddAction {
+            to_reverse : self.to_reverse != other.to_reverse,
+            add : self.add + other.add,
+        }
+    }
+}
+
+pub struct StdNum{}
+
+impl Data for StdNum {
+    type Value = I;
+    type Summary = NumSummary;
+    type Action = RevAddAction;
+
+    const IDENTITY : Self::Action = RevAddAction { to_reverse : false, add : 0 };
+    const EMPTY : Self::Summary = NumSummary {
+        max : None,
+        min : None,
+        size : 0,
+        sum : 0,
+    };
+
+    fn to_reverse(act : Self::Action) -> bool {
+        act.to_reverse
+    }
+
+    fn to_summary(val : &I) -> Self::Summary {
+        NumSummary {
+            max : Some(*val),
+            min : Some(*val),
+            size : 1,
+            sum : *val,
+        }
+    }
+
+    fn act(action : Self::Action, summary : Self::Summary) -> Self::Summary {
+        Self::Summary {
+            max : summary.max.map(|max : I| { max + action.add }),
+            min : summary.min.map(|min : I| { min + action.add }),
+            size : summary.size,
+            sum : summary.sum + action.add*summary.size,
+        }
+    }
+
+    fn act_value(action : Self::Action, val : &mut I) {
+        *val += action.add;
+    }
+}
+
+impl Reverse for StdNum {
+    fn internal_reverse(node : &mut crate::trees::basic_tree::BasicNode<Self>) {
+        node.act(RevAddAction {to_reverse : true, add : 0});
+    }
+}
+
+
 
 // TODO: consider retiring this and just requiring Value : Ord instead.
 /// The convention is that smaller values go on the left
