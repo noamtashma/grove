@@ -2,16 +2,6 @@ pub mod example_data;
 
 use std::ops::Add;
 
-/// Used for cases where no action or no summary is needed.
-#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, Default, PartialOrd, Ord)]
-pub struct Unit {}
-
-impl Add for Unit {
-	type Output = Unit;
-	fn add(self, _b : Unit) -> Unit {
-		Unit {}
-	}
-}
 
 // TODO: remove Eq requirement from Self::Action
 /// This trait represents the data that will be stored inside the tree.

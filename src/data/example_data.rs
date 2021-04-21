@@ -1,7 +1,16 @@
 use super::*;
 use std::marker::PhantomData;
 
+/// Used for cases where no action or no summary is needed.
+#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, Default, PartialOrd, Ord)]
+pub struct Unit {}
 
+impl Add for Unit {
+	type Output = Unit;
+	fn add(self, _b : Unit) -> Unit {
+		Unit {}
+	}
+}
 
 /// Storing the size of a subtree.
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
@@ -44,6 +53,7 @@ impl<V : Eq + Copy> SizedData for SizeData<V> {
 
 
 
+/// A Data marker for no data at all, except for straight values.
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub struct NoAction<V> {
     phantom : PhantomData<V>,
@@ -62,6 +72,8 @@ impl<V : Eq + Copy> Data for NoAction<V> {
     }
 }
 
+
+/// Actions that either reverse a segment or keep it as it is
 #[derive(PartialEq, Eq, Clone, Copy)]
 struct RevAction {
     to_reverse : bool,
@@ -76,6 +88,9 @@ impl std::ops::Add for RevAction {
 
 
 type I = i32;
+/// A Data marker for a standard set of summaries and actions. Specifically,
+/// One can reverse or add a constant to a whole segment at once, and one can query
+/// the maximum, minimum, size and sum of a whole segment at once.
 #[derive(PartialEq, Eq, Clone, Copy, Hash)]
 pub struct NumSummary {
     pub max : Option<I>,
@@ -103,7 +118,7 @@ impl Add for NumSummary {
     }
 }
 
-/// Actions of reversals and constant adding
+/// Actions of reversals and adding a constant
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub struct RevAddAction{
     pub to_reverse : bool,
