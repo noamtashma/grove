@@ -1,7 +1,7 @@
 
-//! This library implements "segment trees" in a generic way.
+//! The Orchard library is a library that implements "segment trees" in a generic way.
 //! 
-//! In this library, a segment tree is a data structure containing a sequence of values,
+//! In Orchard, a segment tree is a data structure containing a sequence of values,
 //! that can answer queries about contiguous segments of values,
 //! and/or apply actions to contiguous segments of values.
 //!
