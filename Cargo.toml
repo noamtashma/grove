@@ -1,5 +1,5 @@
 [package]
-name = "trees"
+name = "orchard"
 version = "0.1.0"
 authors = ["Noam Ta Shma noam.tashma@gmail.com"]
 edition = "2018"
@@ -11,9 +11,9 @@ derive_destructure = "1.0.0"
 void = "*"
 
 [lib]
-name = "trees"
+name = "orchard"
 path = "src/lib.rs"
 
 [[bin]]
-name = "trees"
+name = "orchard"
 path = "src/bin.rs"
