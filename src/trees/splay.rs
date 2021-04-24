@@ -70,7 +70,6 @@ impl<A : Data> SplayTree<A> {
     pub fn isolate_segment<L>(&mut self, locator : L) -> Result<SplayWalker<A>, L::Error> where
         L : crate::methods::locator::Locator<A>
     {
-        use crate::methods;
 
         let left_edge = methods::LeftEdgeLocator(locator);
         // reborrows the tree for a shorter time

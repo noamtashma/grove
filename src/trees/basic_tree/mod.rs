@@ -4,12 +4,15 @@
 // these two should not be public as they are merely separate files
 // for some of the functions of this module
 mod walker;
-mod implementations;
-
-pub use implementations::*;
 pub use walker::*;
-use crate::data::Data;
-pub use crate::data::*; // because everyone will need to specify Data for the generic parameters
+
+mod implementations;
+pub use implementations::*;
+
+pub mod iterators;
+
+use crate::data::*;
+//pub use crate::data::*; // because everyone will need to specify Data for the generic parameters
 
 // use crate::trees::SomeEntry;
 

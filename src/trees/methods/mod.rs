@@ -13,12 +13,10 @@
 
 pub mod locator;
 pub use locator::*;
-mod iterators;
-pub use iterators::*;
 use data::example_data::Keyed;
 
 use crate::*;
-use std::iter::Iterator;
+// use std::iter::Iterator;
 
 
 

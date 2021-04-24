@@ -1,7 +1,16 @@
 use super::*;
 use std::marker::PhantomData;
 
+/// Used for cases where no action or no summary is needed.
+#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, Default, PartialOrd, Ord)]
+pub struct Unit {}
 
+impl Add for Unit {
+	type Output = Unit;
+	fn add(self, _b : Unit) -> Unit {
+		Unit {}
+	}
+}
 
 /// Storing the size of a subtree.
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
