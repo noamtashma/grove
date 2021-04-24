@@ -105,25 +105,20 @@ pub fn insert_by_key<A : Data, TR>(tree : TR, data : A::Value)
     A::Value : crate::data::example_data::Keyed,
     //<A as data::Data>::Value : std::fmt::Debug,
 {
-    let res : Result<TR::Walker, void::Void> =
-        insert_by_locator(tree, &locate_by_key(&data.get_key()) , data);
-    match res {
-        Ok(walker) => walker,
-        Err(void ) => match void {}
-    }
+    insert_by_locator(tree, &locate_by_key(&data.get_key()) , data)
 }
 
 // TODO: make this return an error instead
 /// Panics if the locator accepts a node.
 pub fn insert_by_locator<A : Data, L, TR> (tree : TR, locator : &L, value : A::Value)
-    -> Result<TR::Walker, L::Error> where
+    -> TR::Walker where
     TR : SomeTreeRef<A>,
     L : Locator<A>,
     //<A as data::Data>::Value : std::fmt::Debug,
 {
-    let mut walker = search_by_locator(tree, locator)?;
+    let mut walker = search_by_locator(tree, locator);
     walker.insert_new(value).expect("tried to insert into an existing node"); // TODO
-    Ok(walker)
+    walker
 }
 
 // TODO: a function that creates a perfectly balanced tree,
@@ -135,18 +130,14 @@ pub fn search<TR, A : Data>(tree : TR, key : &<<A as Data>::Value as Keyed>::Key
     A::Value : crate::data::example_data::Keyed,
     //<A as data::Data>::Value : std::fmt::Debug,
 {
-    let res : Result<_, void::Void> = search_by_locator(tree, &locate_by_key(key));
-    match res {
-        Ok(walker) => walker,
-        Err(void) => match void {}
-    }
+    search_by_locator(tree, &locate_by_key(key))
 }
 
 /// Finds any node that the locator `Accept`s.
 /// If there isn't any, it find the empty location the locator has navigated it to.
 /// Returns an Err if the Locator has returned an Err.
 pub fn search_by_locator<TR, A : Data, L>(tree : TR, locator : &L)
-    -> Result<TR::Walker, L::Error> where
+    -> TR::Walker where
     TR : crate::trees::SomeTreeRef<A>,
     L : Locator<A>,
     //<A as data::Data>::Value : std::fmt::Debug,
@@ -155,13 +146,13 @@ pub fn search_by_locator<TR, A : Data, L>(tree : TR, locator : &L)
 
     let mut walker = tree.walker();
     while let Some(res) = walker_locate(&mut walker, locator) {
-        match res? {
+        match res {
             Accept => break,
             GoRight => walker.go_right().unwrap(),
             GoLeft => walker.go_left().unwrap(),
         };
     }
-    return Ok(walker);
+    return walker;
 }
 
 /// Returns the accumulated values on the locator's segment
@@ -170,7 +161,7 @@ pub fn search_by_locator<TR, A : Data, L>(tree : TR, locator : &L)
 /// 
 /// Instead, use `segment_value()`
 pub fn accumulate_values<TR, L, A : Data>(tree : TR, locator : &L) -> 
-        Result<A::Summary, L::Error> where
+        A::Summary where
     TR : SomeTreeRef<A>,
     L : Locator<A>,
 {
@@ -178,7 +169,7 @@ pub fn accumulate_values<TR, L, A : Data>(tree : TR, locator : &L) ->
 
     let mut walker = tree.walker();
     while let Some(res) = walker_locate(&mut walker, locator) {
-        match res? {
+        match res {
             GoRight => walker.go_right().unwrap(),
             GoLeft => walker.go_right().unwrap(),
 
@@ -187,25 +178,25 @@ pub fn accumulate_values<TR, L, A : Data>(tree : TR, locator : &L) ->
                 let node_value = walker.node_summary();
                 let depth = walker.depth();
                 walker.go_left().unwrap();
-                let prefix = accumulate_values_on_prefix(&mut walker, locator)?;
+                let prefix = accumulate_values_on_prefix(&mut walker, locator);
                 // get back to the original node
                 for _ in 0..walker.depth() - depth {
                     walker.go_up().unwrap();
                 }
                 walker.go_right().unwrap();
-                let suffix = accumulate_values_on_suffix(walker, locator)?;
+                let suffix = accumulate_values_on_suffix(walker, locator);
 
-                return Ok(prefix + node_value + suffix);
+                return prefix + node_value + suffix;
             },
         }
     }
 
     // empty segment case
-    Ok(A::EMPTY)
+    A::EMPTY
 }
 
 fn accumulate_values_on_suffix<W, L, A : Data>(mut walker : W, locator : &L) ->
-        Result<A::Summary, L::Error> where
+       A::Summary where
     W : SomeWalker<A>,
     L : Locator<A>,
 {
@@ -213,7 +204,7 @@ fn accumulate_values_on_suffix<W, L, A : Data>(mut walker : W, locator : &L) ->
     use LocResult::*;
 
     while let Some(dir) = walker_locate(&mut walker, locator) {
-        match dir? {
+        match dir {
             Accept => {
                 if let basic_tree::BasicTree::Root(node) = walker.inner_mut() {
                     res = node.node_summary() + node.right.subtree_summary() + res;
@@ -225,11 +216,11 @@ fn accumulate_values_on_suffix<W, L, A : Data>(mut walker : W, locator : &L) ->
         }
     }
 
-    Ok(res)
+    res
 }
 
 fn accumulate_values_on_prefix<W, L, A : Data>(walker : &mut W, locator : &L) ->
-        Result<A::Summary, L::Error> where
+        A::Summary where
     W : SomeWalker<A>,
     L : Locator<A>,
 {
@@ -237,7 +228,7 @@ fn accumulate_values_on_prefix<W, L, A : Data>(walker : &mut W, locator : &L) ->
     use LocResult::*;
 
     while let Some(dir) = walker_locate(walker, locator) {
-        match dir? {    Accept => {
+        match dir {    Accept => {
                 if let basic_tree::BasicTree::Root(node) = walker.inner_mut() {
                     res = res + node.left.subtree_summary() + node.node_summary();
                     walker.go_right().unwrap();
@@ -250,7 +241,7 @@ fn accumulate_values_on_prefix<W, L, A : Data>(walker : &mut W, locator : &L) ->
         }
     }
 
-    Ok(res)
+    res
 }
 
 // TODO:

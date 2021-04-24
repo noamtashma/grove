@@ -67,46 +67,43 @@ impl<A : Data> SplayTree<A> {
     // TODO: isolate segment is probably not working correctly
     /// Gets the tree into a state in which the locator's segment
     /// is a single subtree, and returns a walker at that subtree.
-    pub fn isolate_segment<L>(&mut self, locator : L) -> Result<SplayWalker<A>, L::Error> where
+    pub fn isolate_segment<L>(&mut self, locator : L) -> SplayWalker<A> where
         L : crate::methods::locator::Locator<A>
     {
 
         let left_edge = methods::LeftEdgeLocator(locator);
         // reborrows the tree for a shorter time
-        let mut walker = methods::search_by_locator(&mut *self, &left_edge)?;
+        let mut walker = methods::search_by_locator(&mut *self, &left_edge);
         let b1 = methods::previous_filled(&mut walker).is_ok();
         // walker.splay(); already happens because of the drop
         drop(walker); // must drop here so that the next call to search can happen
 
         let right_edge = methods::RightEdgeLocator(left_edge.0);
-        let mut walker = methods::search_by_locator(&mut *self, &right_edge)?;
+        let mut walker = methods::search_by_locator(&mut *self, &right_edge);
         let b2 = methods::next_filled(&mut walker).is_ok();
         if b2 {
             walker.splay_to_depth( if b1 {1} else {0});
             walker.go_left().unwrap();
         }
 
-        Ok(walker)
+        walker
     }
 
-    pub fn act_on_segment<L>(&mut self, locator : L, action : A::Action) -> Result<(), L::Error> where
+    pub fn act_on_segment<L>(&mut self, locator : L, action : A::Action) where
         L : crate::methods::locator::Locator<A>
     {
-        let mut walker = self.isolate_segment(locator)?;
-        Ok(match walker.inner_mut() {
-            crate::basic_tree::BasicTree::Root(node) => {
-                node.act(action);
-                node.access();
-            },
-            _ => (),
-        })
+        let mut walker = self.isolate_segment(locator);
+        if let crate::basic_tree::BasicTree::Root(node) = walker.inner_mut() {
+            node.act(action);
+            node.access();
+        };
     }
 
-    pub fn segment_summary<L>(&mut self, locator : L) -> Result<A::Summary, L::Error> where
+    pub fn segment_summary<L>(&mut self, locator : L) -> A::Summary where
     L : crate::methods::locator::Locator<A>
     {
-        let walker = self.isolate_segment(locator)?;
-        Ok(walker.inner().subtree_summary())
+        let walker = self.isolate_segment(locator);
+        walker.inner().subtree_summary()
     }
 }
 

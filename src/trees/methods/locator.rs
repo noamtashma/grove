@@ -21,7 +21,7 @@
 //! i.e., earlier calls will not change the result of later calls. This is even though
 //! that might not be the case, using interior mutability.
 //! 
-//! Anonymous functions of the type `Fn(...) -> Result<LocResult, Err>` can be used as locators.
+//! Anonymous functions of the type `Fn(...) -> LocResult` can be used as locators.
 
 use crate::*;
 
@@ -31,25 +31,25 @@ pub enum LocResult {
 }
 use LocResult::*;
 
-pub fn all<D : Data>(_left : D::Summary, _val : &D::Value, _right : D::Summary) -> Result<LocResult, void::Void> {
-    Ok(Accept)
-}
-
 pub trait Locator<A : Data> {
-    type Error;
-    fn locate(&self, left : A::Summary, node : &A::Value, right : A::Summary) -> Result<LocResult, Self::Error>;
+    fn locate(&self, left : A::Summary, node : &A::Value, right : A::Summary) -> LocResult;
 }
 
-impl<A : Data, E, F : Fn(A::Summary, &A::Value, A::Summary) -> Result<LocResult, E>> Locator<A> for F {
-    type Error = E;
-    fn locate(&self, left : A::Summary, node : &A::Value, right : A::Summary) -> Result<LocResult, E> {
+/// A locator that chooses the whole tree
+pub fn all<D : Data>(_left : D::Summary, _val : &D::Value, _right : D::Summary) -> LocResult {
+    Accept
+}
+
+
+impl<A : Data, F : Fn(A::Summary, &A::Value, A::Summary) -> LocResult> Locator<A> for F {
+    fn locate(&self, left : A::Summary, node : &A::Value, right : A::Summary) -> LocResult {
         self(left, node, right)
     }
 }
 
 /// Returns the result of the locator at the walker
 /// Returns None if the walker is at an empty position
-pub fn walker_locate<W, A : Data, L> (walker : &mut W, locator : &L) -> Option<Result<LocResult, L::Error>> where
+pub fn walker_locate<W, A : Data, L> (walker : &mut W, locator : &L) -> Option<LocResult> where
     W : crate::trees::SomeWalker<A>,
     L : Locator<A>,
 {
@@ -66,18 +66,18 @@ pub fn walker_locate<W, A : Data, L> (walker : &mut W, locator : &L) -> Option<R
 
 /// Locator for finding an element using a key.
 pub fn locate_by_key<'a, A>(key : &'a <A::Value as crate::data::example_data::Keyed>::Key) -> 
-    impl Fn(A::Summary, &A::Value, A::Summary) -> Result<LocResult, void::Void> + 'a where
+    impl Fn(A::Summary, &A::Value, A::Summary) -> LocResult + 'a where
     A : Data,
     A::Value : crate::data::example_data::Keyed,
 {
-    move |_, node : &A::Value, _| -> Result<LocResult, void::Void> {
+    move |_, node : &A::Value, _| -> LocResult {
         use std::cmp::Ordering::*;
         let res = match node.get_key().cmp(key) {
             Equal => Accept,
             Less => GoLeft,
             Greater => GoRight,
         };
-        Ok(res)
+        res
     }
 }
 
@@ -95,19 +95,17 @@ pub struct IndexLocator {
 
 
 impl<A : Data + SizedData> Locator<A> for IndexLocator {
-    type Error = void::Void;
-    fn locate(&self, left : A::Summary, node : &A::Value, _right : A::Summary) -> Result<LocResult, void::Void> {
+    fn locate(&self, left : A::Summary, node : &A::Value, _right : A::Summary) -> LocResult {
         // find the index of the current node
         let s = A::size(left);
 
-        let res = if s >= self.high {
+        if s >= self.high {
             GoLeft
         } else if s + A::size(A::to_summary(node)) <= self.low {
             GoRight
         } else {
             Accept
-        };
-        return Ok(res)
+        }
     }
 }
 
@@ -140,42 +138,39 @@ pub struct RightEdgeLocator<L> (
 );
 
 impl<A : Data, L : Locator<A>> Locator<A> for LeftEdgeLocator<L> {
-    type Error = L::Error;
     fn locate(&self, left : A::Summary, node : &A::Value, right : A::Summary) -> 
-        Result<LocResult, L::Error>
+        LocResult
     {
-        Ok(match self.0.locate(left, node, right)? {
+        match self.0.locate(left, node, right) {
             Accept => GoLeft,
             res => res,
-        })
+        }
     }
 }
 
 impl<A : Data, L : Locator<A>> Locator<A> for RightEdgeLocator<L> {
-    type Error = L::Error;
     fn locate(&self, left : A::Summary, node : &A::Value, right : A::Summary) -> 
-        Result<LocResult, L::Error>
+        LocResult
     {
-        Ok(match self.0.locate(left, node, right)? {
+        match self.0.locate(left, node, right) {
             Accept => GoRight,
             res => res,
-        })
+        }
     }
 }
 
 /// A Wrapper for two other locators, that finds the smallest segment containing both of them.
 /// For example, the Union of ranges `[3,6)` and `[7,12)` will  be `[3,12)`.
-pub struct UnionLocator<L> (
-    pub L, pub L
+pub struct UnionLocator<L1, L2> (
+    pub L1, pub L2
 );
 
-impl<A : Data, L : Locator<A>> Locator<A> for UnionLocator<L> {
-    type Error = L::Error;
+impl<A : Data, L1 : Locator<A>, L2 : Locator<A>> Locator<A> for UnionLocator<L1, L2> {
     fn locate(&self, left : A::Summary, node : &A::Value, right : A::Summary) -> 
-        Result<LocResult, L::Error>
+        LocResult
     {
-        let a = self.0.locate(left, node, right)?;
-        let b = self.1.locate(left, node, right)?;
-        Ok(if a == b {a} else { Accept })
+        let a = self.0.locate(left, node, right);
+        let b = self.1.locate(left, node, right);
+        if a == b {a} else { Accept }
     }
 }

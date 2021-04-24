@@ -69,18 +69,17 @@ impl<'a, D : Data, L : Locator<D>> Iterator for MutIterator<'a, D, L> {
 
             let dir = self.locator.locate(near_left_summary, value, near_right_summary);
             match dir {
-                Err(_) => panic!(),
-                Ok(LocResult::GoLeft) => {
+                LocResult::GoLeft => {
                     if self.stack.len() > 0 {
                         panic!("GoLeft received in the middle of a segment");
                     }
                     self.push(left_node, value_summary + near_right_summary);
                 },
-                Ok(LocResult::GoRight) => {
+                LocResult::GoRight => {
                     self.push(right_node, summary);
                     self.left = self.left + near_left_summary;
                 },
-                Ok(LocResult::Accept) => {
+                LocResult::Accept => {
                     self.push(right_node, summary);
                     self.stack.push((Fragment::Value(value), near_right_summary));
                     self.push(left_node, value_summary + near_right_summary);

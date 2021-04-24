@@ -143,7 +143,7 @@ impl SplayTree<RevData> {
         let locator = locate_by_index_range(index, index);
         let mut walker = // using an empty range so that we'll only end up at a node
             // if we actually need to split that node
-            search_by_locator(self, &locator).void_unwrap();
+            search_by_locator(self, &locator);
         
 
         let left = walker.left_summary().size;
@@ -159,7 +159,7 @@ impl SplayTree<RevData> {
     fn reverse_segment(&mut self, low : usize, high : usize) {
         self.search_split(low);
         self.search_split(high);
-        self.act_on_segment(locate_by_index_range(low, high), RevAction { to_reverse : true }).unwrap();
+        self.act_on_segment(locate_by_index_range(low, high), RevAction { to_reverse : true });
     }
 }
 
