@@ -31,6 +31,10 @@ pub enum LocResult {
 }
 use LocResult::*;
 
+pub fn all<D : Data>(_left : D::Summary, _val : &D::Value, _right : D::Summary) -> Result<LocResult, void::Void> {
+    Ok(Accept)
+}
+
 pub trait Locator<A : Data> {
     type Error;
     fn locate(&self, left : A::Summary, node : &A::Value, right : A::Summary) -> Result<LocResult, Self::Error>;
