@@ -1,4 +1,12 @@
-//! TODO
+//! This module representes the values that can be put inside a segment tree,
+//! the summaries that you can receive from a query about a segment in the segment tree,
+//! and the actions that you can perform on the segment tree.
+//!
+//! In order for a choice of types for `Value`, `Summary` and `Action`, to work
+//! in a segment tree, they must be an instance of the [`Data`] trait.
+//!
+//! In addition, this module provides the [`SizedData`] and [`Keyed`] traits,
+//! and some common possible instantiations in the [`example_data`] module.
 
 
 pub mod example_data;
@@ -29,8 +37,40 @@ use std::ops::Add;
 /// Summary composition is done by requiring that the summary implement [`Add`]. i.e.,
 /// if the summary for a list `vals1` is `summary1`, and the summary for a list `vals2`
 /// is `summary2`, the summary of the concatenation `vals1 + vals2` should be `summary1 + summary2`.
-/// Since the structure of the tree may be any structure, and the summary value should
-/// depend on the values in the subtree and not on the tree structure, this composition must be associative.
+/// This composition must be associative.
+///
+/// In addition for the compositions to be associative,
+/// the instance should obey the following rules:
+///```rust,compile
+/// # use orchard::*;
+/// # use orchard::Data;
+/// # fn test<D : Data>(
+///	# action : D::Action, action1 : D::Action, action2 : D::Action,
+/// # summary : D::Summary, summary1 : D::Summary, summary2 : D::Summary,
+/// # mut value : D::Value)  where D::Summary : Eq {
+/// // composition of actions
+/// D::act(action2 + action1, summary) == D::act(action2, D::act(action1, summary));
+/// // composition of actions
+/// D::act_value(action2 + action1, &mut value) == {
+/// 	D::act_value(action1, &mut value);
+/// 	D::act_value(action2, &mut value);
+/// };
+/// // the action respects the monoid structure
+/// D::act(action, summary1 + summary2) == D::act(action, summary1) + D::act(action, summary2);
+/// // the action respects `to_summary`
+/// # let _ = 
+/// {
+/// 	D::act_value(action, &mut value); // first act on value
+/// 	D::to_summary(&value)             // take summary
+/// } == {                               // vs
+/// 	let sum = D::to_summary(&value);  // first take summary
+/// 	D::act_value(action, &mut value); // act on value
+/// 	D::act(action, sum)               // act on summary to reflect acting on the value
+/// };
+/// # }
+///```
+/// If the action also implements [`Reverse`], it should also satisfy that composing two actions
+/// xor's their [`Data::to_reverse()`] results.
 pub trait Data {
 	/// The values that reside in trees.
 	type Value;
@@ -54,9 +94,9 @@ pub trait Data {
 	///
 	/// Applying an action on a summary value must be equal to applying the
 	/// action separately and then summing the values:
-	///```
-	///action.act(Self::compose_v(summary_1, summary_2))
-	///== Self::compose_v(action.act(summary_1), action.act(summary_2))
+	///```rust,ignore
+	///action.act(summary_1 + summary_2)
+	///== action.act(summary_1) + action.act(summary_2)
 	///```
 	/// Indeed, this property is used so that the summary values can be updated without
 	/// updating the whole tree.
