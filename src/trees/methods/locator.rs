@@ -24,13 +24,16 @@
 //! Anonymous functions of the type `Fn(...) -> Result<LocResult, Err>` can be used as locators.
 
 use crate::*;
-use trees::basic_tree::*;
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum LocResult {
     Accept, GoRight, GoLeft,
 }
 use LocResult::*;
+
+pub fn all<D : Data>(_left : D::Summary, _val : &D::Value, _right : D::Summary) -> Result<LocResult, void::Void> {
+    Ok(Accept)
+}
 
 pub trait Locator<A : Data> {
     type Error;
@@ -67,7 +70,6 @@ pub fn locate_by_key<'a, A>(key : &'a <A::Value as crate::data::example_data::Ke
     A : Data,
     A::Value : crate::data::example_data::Keyed,
 {
-    use crate::data::example_data::Keyed;
     move |_, node : &A::Value, _| -> Result<LocResult, void::Void> {
         use std::cmp::Ordering::*;
         let res = match node.get_key().cmp(key) {
@@ -92,7 +94,7 @@ pub struct IndexLocator {
 }
 
 
-impl<A : Data + example_data::SizedData> Locator<A> for IndexLocator {
+impl<A : Data + SizedData> Locator<A> for IndexLocator {
     type Error = void::Void;
     fn locate(&self, left : A::Summary, node : &A::Value, _right : A::Summary) -> Result<LocResult, void::Void> {
         // find the index of the current node

@@ -9,6 +9,7 @@
 //! 
 //! Currently this module is limited to trees which are based on the [`basic_tree::BasicTree`] type.
 
+pub mod methods;
 pub mod basic_tree;
 pub mod splay;
 

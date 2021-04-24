@@ -1,7 +1,10 @@
+//! TODO
+
+
 pub mod example_data;
+pub use example_data::{SizedData, Keyed};
 
 use std::ops::Add;
-
 
 // TODO: remove Eq requirement from Self::Action
 /// This trait represents the data that will be stored inside the tree.

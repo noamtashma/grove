@@ -4,12 +4,15 @@
 // these two should not be public as they are merely separate files
 // for some of the functions of this module
 mod walker;
-mod implementations;
-
-pub use implementations::*;
 pub use walker::*;
-use crate::data::Data;
-pub use crate::data::*; // because everyone will need to specify Data for the generic parameters
+
+mod implementations;
+pub use implementations::*;
+
+pub mod iterators;
+
+use crate::*;
+//pub use crate::data::*; // because everyone will need to specify Data for the generic parameters
 
 // use crate::trees::SomeEntry;
 
@@ -19,7 +22,7 @@ pub enum BasicTree<A : ?Sized + Data> {
 }
 use BasicTree::*;
 
-impl<A : Data> BasicTree<A> {
+impl<D : Data> BasicTree<D> {
 	/// Remakes the data that is stored in this node, based on its sons.
 	/// This is necessary when the data in the sons might have changed.
 	/// For example, after inserting a new node, all of the nodes from it to the root
@@ -44,11 +47,23 @@ impl<A : Data> BasicTree<A> {
 	}
 
 	/// Returns the summary of all values in this node's subtree.
-	pub fn subtree_summary(&self) -> A::Summary {
+	pub fn subtree_summary(&self) -> D::Summary {
 		match self {
 			Root(node) => node.subtree_summary(),
-			_ => A::EMPTY,
+			_ => D::EMPTY,
 		}
+	}
+
+	/// Iterates over the whole tree.
+	pub fn iter(&mut self) -> impl Iterator<Item=&D::Value> {
+		iterators::ImmIterator::new(self, methods::locator::all::<D>)
+	}
+
+	/// Iterates over the given segment.
+	pub fn iter_locator<L>(&mut self, loc : L) -> impl Iterator<Item=&D::Value> where
+		L : methods::locator::Locator<D>
+	{
+		iterators::ImmIterator::new(self, loc)
 	}
 }
 
@@ -77,7 +92,7 @@ impl<A : Data + Reverse> BasicNode<A> {
 pub struct BasicNode<A : ?Sized + Data> {
 	action : A::Action,
 	subtree_summary : A::Summary,
-	node_value : A::Value,
+	pub (crate) node_value : A::Value,
 	pub left : BasicTree<A>,
 	pub right : BasicTree<A>
 }
@@ -113,6 +128,12 @@ impl<A : Data> BasicNode<A> {
 	pub fn node_value(&mut self) -> &A::Value {
 		self.access();
 		&self.node_value
+	}
+
+	/// Returns the value stored in this node specifically.
+	pub fn node_value_mut(&mut self) -> &mut A::Value {
+		self.access();
+		&mut self.node_value
 	}
 
 	/// Returns the value stored in this node specifically.

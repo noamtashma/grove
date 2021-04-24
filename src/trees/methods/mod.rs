@@ -16,14 +16,15 @@ pub use locator::*;
 use data::example_data::Keyed;
 
 use crate::*;
+// use std::iter::Iterator;
 
 
 
 
 // TODO - make this work for both filled and empty starting positions
 // TODO - figure out how to make this callable like walker.next_empty()
-/// if the walker is at an empty position, return an error.
-/// goes to the next empty position
+/// If the walker is at an empty position, return an error.
+/// Goes to the next empty position
 pub fn next_empty<W : SomeWalker<A>, A : Data>(walker : &mut W) -> Result<(), ()> {
     walker.go_right()?; // if we're at an empty node, return error
     while !walker.is_empty() {
@@ -32,8 +33,8 @@ pub fn next_empty<W : SomeWalker<A>, A : Data>(walker : &mut W) -> Result<(), ()
     Ok(())
 }
 
-// if the walker is at an empty position, return an error.
-// goes to the previous empty position
+/// If the walker is at an empty position, return an error.
+/// Goes to the previous empty position
 pub fn previous_empty<W : SomeWalker<A>, A : Data>(walker : &mut W) -> Result<(), ()> {
     walker.go_left()?; // if we're at an empty node, return error
     while !walker.is_empty() {
@@ -94,6 +95,7 @@ A::Value : Clone,
     }
     res
 }
+
 
 // TODO: make this return an error.
 /// Panics if a key was reused.
