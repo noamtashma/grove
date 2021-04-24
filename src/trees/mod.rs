@@ -3,11 +3,11 @@
 //! * Traits that all implementations of trees should implement
 //! * Specific implementations of trees
 //!
-//! The Walker trait implements walking through a tree. This includes dealing with the borrow
-//! checking problems of recursive structures (using Telescope), and rebalancing the tree.
+//! The [`SomeWalker`] trait implements walking through a tree. This includes dealing with the borrow
+//! checking problems of recursive structures (using [`crate::telescope`]), and rebalancing the tree.
 //! Therefore, walkers can't guarantee that the tree won't change as you walk through them.
 //! 
-//! Currently this module is limited to trees which are based on the BasicTree type.
+//! Currently this module is limited to trees which are based on the [`basic_tree::BasicTree`] type.
 
 pub mod methods;
 pub mod basic_tree;

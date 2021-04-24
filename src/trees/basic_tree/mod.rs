@@ -77,7 +77,10 @@ impl<A : Data + Reverse> BasicTree<A> {
 }
 
 impl<A : Data + Reverse> BasicNode<A> {
-	/// calls access after calling the reverse action.
+	// TODO: move the access call into the walker struct,
+	// since the node doesn't have an invariant thay keeps the nodex accessed,
+	// but the walkers do.
+	/// Calls access after calling the reverse action.
 	pub fn reverse(&mut self) {
 		Reverse::internal_reverse(self);
 		self.access();
@@ -120,7 +123,7 @@ impl<A : Data> BasicNode<A> {
 	}
 
 	/// Returns the value stored in this node specifically.
-	/// Requires mutable access because it calls `access`, to ensure
+	/// Requires mutable access because it calls [`BasicNode::access`], to ensure
 	/// that the action applies.
 	pub fn node_value(&mut self) -> &A::Value {
 		self.access();
@@ -183,7 +186,7 @@ impl<A : Data> BasicNode<A> {
 
 	/// This function applies the given action to its whole subtree.
 	///
-	/// This function leaves the `self.action` field "dirty" - after calling
+	/// This function leaves the [`self.action`] field "dirty" - after calling
 	/// this you might need to call access, to push the action to this node's sons.
 	pub fn act(&mut self, action : A::Action) {
 		self.action = action + self.action;

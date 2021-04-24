@@ -11,25 +11,26 @@ use std::ops::Add;
 ///
 /// Every node in the tree will contain an action to be performed on the node's subtree,
 /// a summary of the node's subtree, and a value.
-/// The action will be of type [`Self::Action`], the summary of type `Self::Summary`, and the value will be of type `Self::Value`.
+/// The action will be of type [`Self::Action`], the summary of type [`Self::Summary`], and the value will be of type [`Self::Value`].
 ///
-/// `Self::Summary` can include: indices, heights, sizes, sums, maximums
+/// [`Self::Summary`] can include: indices, heights, sizes, sums, maximums
 /// and minimums of subtrees, and more. It is the type of summaries of values
 /// you can have in your tree. This is the result of querying for information about a segment.
 ///
-/// `Self::Action` is the type of actions that can be performed on segments. for example,
+/// [`Self::Action`] is the type of actions that can be performed on segments. for example,
 /// reverse a subtree, add a constant to a subtree, apply `max` with a constant on a subtree,
 /// and so on.
 ///
-/// Action composition is done by requiring that the action implement `Add<Output=Self::Action>`.
+/// Action composition is done by requiring that the action implement [`Add`].
 /// i.e., applying `a + b` should be equivalent to applying `b` and then applying `a`.
 /// This composition must be associative. 
 /// Composition is right to left. i.e., what chronologically happens first, is on the right.
 ///
-/// Summary composition is done by requiring that the summary implement `Add<Output=Self::Summary>`.
-/// Since the structure of the tree may be any structure,
-/// and the summary value should depend on the values in the subtree and
-/// not on the tree structure, this composition must be associative.
+/// Summary composition is done by requiring that the summary implement [`Add`]. i.e.,
+/// if the summary for a list `vals1` is `summary1`, and the summary for a list `vals2`
+/// is `summary2`, the summary of the concatenation `vals1 + vals2` should be `summary1 + summary2`.
+/// Since the structure of the tree may be any structure, and the summary value should
+/// depend on the values in the subtree and not on the tree structure, this composition must be associative.
 pub trait Data {
 	/// The values that reside in trees.
 	type Value;
@@ -53,10 +54,10 @@ pub trait Data {
 	///
 	/// Applying an action on a summary value must be equal to applying the
 	/// action separately and then summing the values:
-	/// ```
-	///    action.act(Self::compose_v(summary_1, summary_2))
-	///    == Self::compose_v(action.act(summary_1), action.act(summary_2))
-	/// ```
+	///```
+	///action.act(Self::compose_v(summary_1, summary_2))
+	///== Self::compose_v(action.act(summary_1), action.act(summary_2))
+	///```
 	/// Indeed, this property is used so that the summary values can be updated without
 	/// updating the whole tree.
 	///
@@ -67,11 +68,11 @@ pub trait Data {
 	}
 	
 	/// The action, but on values instead of summaries.
-	/// Must commute with `to_summary`.
+	/// Must commute with [`Data::to_summary`].
 	fn act_value(_act : Self::Action, _other : &mut Self::Value) {}
 
 	/// This function should be implemented if you want to be able to reverse subtrees of your tree,
-	/// i.e., if you also implement Reverse.
+	/// i.e., if you also implement [`Reverse`].
 	///
 	/// This function should return whether this action reverses the segment it is applied to.
 	fn to_reverse(_action : Self::Action) -> bool {
@@ -81,14 +82,14 @@ pub trait Data {
 
 /// Marker trait for Data that implement reverse.
 /// If you want your data structure to be able to reverse subtrees,
-/// implement this marker trait, and the `Action::to_reverse` function.
+/// implement this marker trait, and the [`Data::to_reverse`] function.
 
 /// Note that if the action reverses a segment, it shouldn't be used on the regular functions
 /// that apply an action to a segment, because that would reverse different parts of the segment
 /// separately. Instead, it should work with the split-then-apply variants. (TODO: implement)
 
-/// The `to_reverse` function is part of the `Action` trait and not this trait,
-/// in order that the `access` function can work for both reversible and non reversible
+/// The [`Data::to_reverse`] function is part of the [`Data`] trait and not this trait,
+/// in order that the [`crate::basic_tree::BasicNode::access`] function can work for both reversible and non reversible
 /// actions uniformly.
 pub trait Reverse : Data {
 	/// Mark the action in the node that it should be reversed.

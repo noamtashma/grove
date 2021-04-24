@@ -53,6 +53,7 @@ impl<V : Eq + Copy> SizedData for SizeData<V> {
 
 
 
+/// A Data marker for no data at all, except for straight values.
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub struct NoAction<V> {
     phantom : PhantomData<V>,
@@ -71,6 +72,8 @@ impl<V : Eq + Copy> Data for NoAction<V> {
     }
 }
 
+
+/// Actions that either reverse a segment or keep it as it is
 #[derive(PartialEq, Eq, Clone, Copy)]
 struct RevAction {
     to_reverse : bool,
@@ -112,7 +115,7 @@ impl Add for NumSummary {
     }
 }
 
-/// Actions of reversals and constant adding
+/// Actions of reversals and adding a constant
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub struct RevAddAction{
     pub to_reverse : bool,
@@ -129,6 +132,9 @@ impl Add for RevAddAction {
     }
 }
 
+/// A Data marker for a standard set of summaries and actions used for numbers. Specifically,
+/// one can reverse or add a constant to a whole segment at once, and one can query
+/// the maximum, minimum, size and sum of a whole segment at once.
 pub struct StdNum{}
 
 impl Data for StdNum {

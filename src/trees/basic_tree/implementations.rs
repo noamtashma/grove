@@ -1,4 +1,4 @@
-//! This module implements the tree traits for the BasicTree and BasicWalker
+//! This module implements the tree traits for the [`BasicTree`] and [`BasicWalker`]
 //! It is mostly a separate file from the main module file, since it's a private module, and its
 //! contents are re-exported.
 
@@ -29,8 +29,8 @@ impl<'a, A : Data> SomeTreeRef<A> for &'a mut BasicTree<A> {
 }
 
 impl<'a, A : Data> SomeWalker<A> for BasicWalker<'a, A> {
-    // returns Err if it's impossible to go left
-	// otherwise returns Ok
+    /// Returns Err if it's impossible to go left
+	// /otherwise returns Ok
 	fn go_left(&mut self) -> Result<(), ()> {
 		let mut frame = self.vals.last().expect(crate::telescope::NO_VALUE_ERROR).clone();
 		let res = self.tel.extend_result( |tree| {

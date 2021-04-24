@@ -1,7 +1,7 @@
 
-//! This library implements "segment trees" in a generic way.
+//! The Orchard library is a library that implements "segment trees" in a generic way.
 //! 
-//! In this library, a segment tree is a data structure containing a sequence of values,
+//! In Orchard, a segment tree is a data structure containing a sequence of values,
 //! that can answer queries about contiguous segments of values,
 //! and/or apply actions to contiguous segments of values.
 //!
@@ -10,16 +10,16 @@
 //! and be able to add a constant to all values in a segment.
 //!
 //! In order to specify what queries and action can be made, the user needs to specify
-//! a type that implements the `Action` trait, defined in the `data` module.
+//! a type that implements the [`Data`] trait, defined in the [`data`] module.
 //!
 //! In order to use a certain kind of tree, i.e., red-black, AVL, splay tree, treaps,
 //! scapegoat trees, regular unbalanced trees, the user has to specify a tree type that implements
-//! the trait in the `trees` module. (currently only splay trees are implemented, in `trees::splay`)
+//! the trait in the [`trees`] module. (currently only splay trees are implemented, in [`trees::splay`])
 //!
 //! Indeed, the library is generic in both the tree type and the action type: you can use any
 //! action type with any tree type.
 //!
-//! The `methods` module provides some general methods for use on all trees.
+//! The [`methods`] module provides some general methods for use on all trees.
 
 #[macro_use]
 extern crate derive_destructure;
