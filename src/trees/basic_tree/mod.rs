@@ -28,7 +28,7 @@ impl<D : Data> BasicTree<D> {
 	/// For example, after inserting a new node, all of the nodes from it to the root
 	/// must be rebuilt, in order for the segment values accumulated over the whole
 	/// subtree to be accurate.
-	pub fn rebuild(&mut self) {
+	pub(crate) fn rebuild(&mut self) {
 		match self {
 			Root(node) => node.rebuild(),
 			_ => (),
@@ -39,7 +39,7 @@ impl<D : Data> BasicTree<D> {
 	/// Actions stored in nodes are supposed to be eventually applied to its
 	/// whole subtree. Therefore, in order to access a node cleanly, without
 	/// the still-unapplied-function complicating things, you must `access()` the node.
-	pub fn access(&mut self) {
+	pub(crate) fn access(&mut self) {
 		match self {
 			Root(node) => node.access(),
 			_ => (),
@@ -47,6 +47,14 @@ impl<D : Data> BasicTree<D> {
 	}
 
 	/// Returns the summary of all values in this node's subtree.
+	///
+	///```
+	/// use orchard::basic_tree::*;
+	/// use orchard::example_data::StdNum;
+	/// let tree : BasicTree<StdNum> = iterators::build([1,2,3,4,5,6,7,8].iter().cloned());
+	/// assert_eq!(tree.subtree_summary().sum, 36);
+	/// # tree.assert_correctness();
+	///```
 	pub fn subtree_summary(&self) -> D::Summary {
 		match self {
 			Root(node) => node.subtree_summary(),
@@ -64,6 +72,22 @@ impl<D : Data> BasicTree<D> {
 		L : methods::locator::Locator<D>
 	{
 		iterators::ImmIterator::new(self, loc)
+	}
+
+	/// Checks that invariants remain correct. i.e., that every node's summary
+	/// is the sum of the summaries of its children.
+	/// If it is not, panics.
+	pub fn assert_correctness(&self) where
+		D::Summary : Eq,
+	{
+		if let Root(node) = self {
+			let ns = node.subtree_summary;
+			let os : D::Summary = node.left.subtree_summary() + D::to_summary(&node.node_value) + node.right.subtree_summary();
+			assert!(ns == os);
+				
+			node.left.assert_correctness();
+			node.right.assert_correctness();
+		}
 	}
 }
 

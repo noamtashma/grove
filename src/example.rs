@@ -1,5 +1,3 @@
-use void::ResultVoidExt;
-
 use crate::*;
 
 use super::trees::splay::*;
@@ -173,13 +171,20 @@ pub fn yarra(n : usize, k : usize) -> I {
     let mut tn = 1;
     for round in 0..k {
         
+        /*
         if round < 10 {
             dbg!(round);
             dbg!(to_array(&mut tree));
         }
+        */
 
         if round % 2000 == 0 {
             dbg!(round);
+            /*
+            if round % 16000 == 0 {
+                tree.walker().inner().assert_correctness();
+            }
+            */
         }
         
 

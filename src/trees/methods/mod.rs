@@ -12,6 +12,7 @@
 //! splay trees.
 
 pub mod locator;
+
 pub use locator::*;
 use data::example_data::Keyed;
 
