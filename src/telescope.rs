@@ -12,6 +12,9 @@ pub struct Telescope<'a, T : ?Sized> {
 	phantom : PhantomData<&'a mut T>,
 }
 
+// TODO: consider converting the pointers to values without checking for null values.
+// it's supposed to work, since the pointers only ever come from references.
+
 // these aren't ever supposed to happen. but since we touch unsafe code, we might as well
 // have clear error message when we `expect()`
 pub const NO_VALUE_ERROR : &str = "invariant violated: telescope can't be empty";
@@ -77,10 +80,12 @@ impl<'a, T : ?Sized> Telescope<'a, T> {
 		}.expect(NULL_POINTER_ERROR);
 
 		match func(head_ref) {
-			Ok(p) => self.push(p),
-			Err(e) => return Err(e),
+			Ok(p) => {
+				self.push(p);
+				Ok(())
+			}
+			Err(e) => Err(e),
 		}
-		return Ok(());
 	}
 	
 	/// Push another reference, unrelated to the current one.
@@ -108,9 +113,9 @@ impl<'a, T : ?Sized> Telescope<'a, T> {
 	/// * This will consume the telescope
 	/// * [`Self::pop`] will never pop the first original reference. [`Self::into_ref`] will.
 	pub fn into_ref(self) -> &'a mut T {
-		return unsafe {
+		unsafe {
 			self.head.as_mut()
-		}.expect(NULL_POINTER_ERROR);
+		}.expect(NULL_POINTER_ERROR)
 	}
 }
 

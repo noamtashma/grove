@@ -96,10 +96,6 @@ impl<'a, A : Data> SomeWalker<A> for BasicWalker<'a, A> {
 		self.vals.last().expect(NO_VALUE_ERROR).right
 	}
 
-	fn inner_mut(&mut self) -> &mut BasicTree<A> {
-        &mut *self.tel
-    }
-
 	fn inner(&self) -> &BasicTree<A> {
         &*self.tel
     }

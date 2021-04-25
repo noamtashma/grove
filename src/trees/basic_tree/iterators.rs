@@ -1,5 +1,7 @@
 use crate::*;
 use basic_tree::*;
+
+// TODO : Owning iterator
 enum Fragment<'a, D : Data> {
     Value (&'a mut D::Value),
     Node (&'a mut BasicNode<D>)

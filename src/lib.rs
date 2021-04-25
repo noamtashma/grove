@@ -16,19 +16,19 @@
 //! Overall, the operations you can do with a segment tree are (every one in logarithmic time):
 //! * Insert, delete and modify specific values
 //! * Compute a summary value of a subsegment
-//!     Complexity is always logarithmic,
-//!     however, the summary type must satisfy the [`Data`] trait and be compatible
-//!     with the [`Data::Value`] and [`Data::Action`] types.
+//!     * Complexity is always logarithmic,
+//!     * However, the summary type must satisfy the [`Data`] trait and be compatible
+//!       with the [`Data::Value`] and [`Data::Action`] types.
 //! * Apply an action on every element of a subsegment
-//!     Complexity is always logarithmic,
-//!     however, the action type must satisfy the [`Data`] trait and be compatible
-//!     with the [`Data::Summary`] and [`Data::Value`] types.
+//!     * Complexity is always logarithmic,
+//!     * However, the action type must satisfy the [`Data`] trait and be compatible
+//!       with the [`Data::Summary`] and [`Data::Value`] types.
 //! * Reverse subsegments
-//!     Must be part of the action type.
-//!     Possible only with some balanced tree algorithms.
+//!     * Must be part of the action type.
+//!     * Possible only with some balanced tree algorithms.
 //! * Search for specific elements. See [`locator`] module.
 //! * Split and concatenate segment trees
-//!     Possible only with some balanced tree algorithms.
+//!     * Possible only with some balanced tree algorithms.
 //!
 //! In order to use a certain kind of tree, i.e., red-black, AVL, splay tree, treaps,
 //! scapegoat trees, regular unbalanced trees, or any other, the user has to specify

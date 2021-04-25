@@ -364,10 +364,6 @@ impl<'a, A : Data> SomeWalker<A> for SplayWalker<'a, A> {
         self.walker.far_right_summary()
     }
 
-    fn inner_mut(&mut self) -> &mut BasicTree<A> {
-        self.walker.inner_mut()
-    }
-
     fn inner(&self) -> &BasicTree<A> {
         self.walker.inner()
     }

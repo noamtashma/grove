@@ -207,10 +207,8 @@ fn accumulate_values_on_suffix<W, L, A : Data>(mut walker : W, locator : &L) ->
     while let Some(dir) = walker_locate(&mut walker, locator) {
         match dir {
             Accept => {
-                if let Some(node) = walker.inner().node() {
-                    res = node.node_summary() + node.right.subtree_summary() + res;
-                    walker.go_left().unwrap();
-                } else {panic!()}
+                res = walker.node_summary() + walker.right_subtree_summary().unwrap() + res;
+                walker.go_left().unwrap();
             },
             GoRight => walker.go_right().unwrap(),
             GoLeft => panic!("inconsistent locator"),
@@ -231,12 +229,8 @@ fn accumulate_values_on_prefix<W, L, A : Data>(walker : &mut W, locator : &L) ->
     while let Some(dir) = walker_locate(walker, locator) {
         match dir {
             Accept => {
-                if let Some(node) = walker.inner().node() {
-                    res = res + node.left.subtree_summary() + node.node_summary();
-                    walker.go_right().unwrap();
-                } else {
-                    panic!();
-                }
+                res = res + walker.left_subtree_summary().unwrap() + walker.node_summary();
+                walker.go_right().unwrap();
             },
             GoRight => panic!("inconsistent locator"),
             GoLeft => walker.go_left().unwrap(), 

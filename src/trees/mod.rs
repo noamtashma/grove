@@ -91,9 +91,8 @@ pub trait SomeWalker<D : Data> : SomeEntry<D> {
     /// is clean.
     fn value(&self) -> Option<&D::Value>;
 
-    // these functions are here instead of Deref and DerefMut. 
-    // TODO: `inner_mut` should be an inner function.
-    fn inner_mut(&mut self) -> &mut basic_tree::BasicTree<D>;
+    // TODO: consider switching this function to a function that
+    // returns the inner node directly.
     fn inner(&self) -> &basic_tree::BasicTree<D>;
 }
 
