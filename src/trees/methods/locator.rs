@@ -35,6 +35,16 @@ pub trait Locator<A : Data> {
     fn locate(&self, left : A::Summary, node : &A::Value, right : A::Summary) -> LocResult;
 }
 
+// TODO: reconsider. maybe it's better to just require taking locators by reference.
+/// Workaround to both allow programming mostly as if locators are [`Copy`],
+/// Not requiring locators to actually be copy, and still be able to program mostly without
+/// useless reference signs.
+impl<D : Data, L:Locator<D>> Locator<D> for (&L,) {
+    fn locate(&self, left : D::Summary, node : &D::Value, right : D::Summary) -> LocResult {
+        (*self.0).locate(left, node, right)
+    }
+}
+
 /// A locator that chooses the whole tree
 pub fn all<D : Data>(_left : D::Summary, _val : &D::Value, _right : D::Summary) -> LocResult {
     Accept

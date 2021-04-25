@@ -27,7 +27,8 @@ impl<'a, D : Data, L> MutIterator<'a, D, L> {
         res
     }
 
-    // same as stack.push(...), but deals with the [`Empty`] case.
+    /// Internal method: same as stack.push(...), but deals with the [`Empty`] case.
+    /// If empty, do nothing.
     fn push(&mut self, tree : &'a mut BasicTree<D>, summary : D::Summary) {
         match tree {
             BasicTree::Root(node) =>
@@ -50,7 +51,7 @@ impl<'a, D : Data, L : Locator<D>> Iterator for MutIterator<'a, D, L> {
                 // if value has been inserted to the stack, the locator has already been called
                 // on it and returned `Accept`.
                 Fragment::Value(val) => {
-                    self.left = self.left + summary;
+                    self.left = self.left + D::to_summary(val);
                     return Some(val); 
                 },
                 Fragment::Node(node) => {
@@ -77,7 +78,7 @@ impl<'a, D : Data, L : Locator<D>> Iterator for MutIterator<'a, D, L> {
                 },
                 LocResult::GoRight => {
                     self.push(right_node, summary);
-                    self.left = self.left + near_left_summary;
+                    self.left = near_left_summary + value_summary;
                 },
                 LocResult::Accept => {
                     self.push(right_node, summary);

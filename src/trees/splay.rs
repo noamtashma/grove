@@ -111,6 +111,9 @@ impl<A : Data> SplayTree<A> {
 impl<A : Data + Reverse> SplayTree<A> {
     pub fn reverse(&mut self) {
         self.tree.reverse();
+        // This is necessary since the walker maintains the
+        // invariant that the current position is `clean`.
+        self.tree.access();
     }
 }
 

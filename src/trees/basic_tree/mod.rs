@@ -14,8 +14,6 @@ pub mod iterators;
 use crate::*;
 //pub use crate::data::*; // because everyone will need to specify Data for the generic parameters
 
-// use crate::trees::SomeEntry;
-
 /// A basic tree. might be empty.
 pub enum BasicTree<A : ?Sized + Data> {
 	Empty, Root(Box<BasicNode<A>>) // TODO: rename Root
@@ -47,12 +45,15 @@ impl<D : Data> BasicTree<D> {
 	}
 
 	/// Returns the summary of all values in this node's subtree.
-	///
 	///```
 	/// use orchard::basic_tree::*;
 	/// use orchard::example_data::StdNum;
-	/// let tree : BasicTree<StdNum> = iterators::build([1,2,3,4,5,6,7,8].iter().cloned());
-	/// assert_eq!(tree.subtree_summary().sum, 36);
+	/// let tree : BasicTree<StdNum> = (1..=8).collect();
+	/// let summary = tree.subtree_summary();
+	/// assert_eq!(summary.size, 8);
+	/// assert_eq!(summary.sum, 36);
+	/// assert_eq!(summary.max, Some(8));
+	/// assert_eq!(summary.min, Some(1));
 	/// # tree.assert_correctness();
 	///```
 	pub fn subtree_summary(&self) -> D::Summary {
@@ -63,11 +64,27 @@ impl<D : Data> BasicTree<D> {
 	}
 
 	/// Iterates over the whole tree.
+	///```
+	/// use orchard::basic_tree::*;
+	/// use orchard::example_data::StdNum;
+	/// let mut tree : BasicTree<StdNum> = (17..=89).collect();
+	/// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..=89).collect::<Vec<_>>());
+	/// # tree.assert_correctness();
+	///```
 	pub fn iter(&mut self) -> impl Iterator<Item=&D::Value> {
 		iterators::ImmIterator::new(self, methods::locator::all::<D>)
 	}
 
 	/// Iterates over the given segment.
+	///```
+	/// use orchard::basic_tree::*;
+	/// use orchard::example_data::StdNum;
+	/// use orchard::locator;
+	/// let mut tree : BasicTree<StdNum> = (20..80).collect();
+	/// let part = tree.iter_locator(locator::locate_by_index_range(3,13)); // should also try 3..5
+	/// assert_eq!(part.cloned().collect::<Vec<_>>(), (23..33).collect::<Vec<_>>());
+	/// # tree.assert_correctness();
+	///```
 	pub fn iter_locator<L>(&mut self, loc : L) -> impl Iterator<Item=&D::Value> where
 		L : methods::locator::Locator<D>
 	{
@@ -91,23 +108,53 @@ impl<D : Data> BasicTree<D> {
 	}
 }
 
+impl<D : Data> std::iter::FromIterator<D::Value> for BasicTree<D> {
+    fn from_iter<T: IntoIterator<Item = D::Value>>(iter: T) -> Self {
+        iterators::build(iter.into_iter())
+    }
+}
+
 impl<A : Data + Reverse> BasicTree<A> {
-	/// Reverses the whole tree
+	/// Reverses the whole tree.
+	/// Complexity: O(log n).
+	///```
+	/// use orchard::basic_tree::*;
+	/// use orchard::example_data::StdNum;
+	/// let mut tree : BasicTree<StdNum> = (17..=89).collect();
+	/// tree.reverse();
+	/// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..=89).rev().collect::<Vec<_>>());
+	/// # tree.assert_correctness();
+	///```
 	pub fn reverse(&mut self) {
 		if let Root(node) = self {
 			node.reverse();
 		}
 	}
+	/// This function applies the given action to its whole subtree.
+	///
+	/// This function leaves the [`self.action`] field "dirty" - after calling
+	/// this you might need to call access, to push the action to this node's sons.
+	///```
+	/// use orchard::basic_tree::*;
+	/// use orchard::example_data::{StdNum, RevAddAction};
+	/// let mut tree : BasicTree<StdNum> = (1..=8).collect();
+	/// tree.act(RevAddAction {to_reverse : false, add : 5});
+	/// # tree.assert_correctness();
+	///
+	/// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (6..=13).collect::<Vec<_>>());
+	/// # tree.assert_correctness();
+	///```
+	pub fn act(&mut self, action : A::Action) {
+		if let Root(node) = self {
+			node.act(action);
+		}
+	}
 }
 
 impl<A : Data + Reverse> BasicNode<A> {
-	// TODO: move the access call into the walker struct,
-	// since the node doesn't have an invariant thay keeps the nodex accessed,
-	// but the walkers do.
-	/// Calls access after calling the reverse action.
+	/// Same as [`BasicTree::reverse`].
 	pub fn reverse(&mut self) {
 		Reverse::internal_reverse(self);
-		self.access();
 	}
 }
 
@@ -117,12 +164,12 @@ pub struct BasicNode<A : ?Sized + Data> {
 	action : A::Action,
 	subtree_summary : A::Summary,
 	pub (crate) node_value : A::Value,
-	pub left : BasicTree<A>,
-	pub right : BasicTree<A>
+	pub (crate)  left : BasicTree<A>,
+	pub (crate) right : BasicTree<A>
 }
 
 impl<A : Data> BasicNode<A> {
-
+	/// Creates a node with a single value.
 	pub fn new(value : A::Value) -> BasicNode<A> {
 		let subtree_summary = A::to_summary(&value);
 		BasicNode {
@@ -135,6 +182,7 @@ impl<A : Data> BasicNode<A> {
 	}
 	
 	/// Returns the summary of all values in this node's subtree.
+	/// Same as [`BasicTree::subtree_summary`].
 	pub fn subtree_summary(&self) -> A::Summary {
 		return A::act(self.action, self.subtree_summary);
 	}
@@ -146,7 +194,7 @@ impl<A : Data> BasicNode<A> {
 		A::act(self.action, summary)
 	}
 
-	/// Returns the value stored in this node specifically.
+	/// Returns a reference to the value stored in this node specifically.
 	/// Requires mutable access because it calls [`BasicNode::access`], to ensure
 	/// that the action applies.
 	pub fn node_value(&mut self) -> &A::Value {
@@ -154,7 +202,7 @@ impl<A : Data> BasicNode<A> {
 		&self.node_value
 	}
 
-	/// Returns the value stored in this node specifically.
+	/// Returns a mutable reference to the value stored in this node specifically.
 	pub fn node_value_mut(&mut self) -> &mut A::Value {
 		self.access();
 		&mut self.node_value
@@ -162,7 +210,7 @@ impl<A : Data> BasicNode<A> {
 
 	/// Returns the value stored in this node specifically.
 	/// Assumes that the node has been accessed. Panics otherwise.
-	pub fn node_value_clean(&self) -> &A::Value {
+	pub(crate) fn node_value_clean(&self) -> &A::Value {
 		assert!(self.action == A::IDENTITY);
 		&self.node_value
 	}
@@ -171,7 +219,7 @@ impl<A : Data> BasicNode<A> {
 	/// Actions stored in nodes are supposed to be eventually applied to its
 	/// whole subtree. Therefore, in order to access a node cleanly, without
 	/// the still-unapplied-function complicating things, you must `access()` the node.
-	pub fn access(&mut self) {
+	pub(crate) fn access(&mut self) {
 		// reversing
 		// for data that doesn't implement reversing, this becomes a no-op
 		// and hopefully optimized away
@@ -195,7 +243,7 @@ impl<A : Data> BasicNode<A> {
 	/// For example, after inserting a new node, all of the nodes from it to the root
 	/// must be rebuilt, in order for the segment values accumulated over the whole
 	/// subtree to be accurate.
-	pub fn rebuild(&mut self) {
+	pub(crate) fn rebuild(&mut self) {
 		assert!(self.action == A::IDENTITY);
 		self.subtree_summary = A::to_summary(&self.node_value);
 		if let Root(node) = &self.left {
@@ -209,9 +257,7 @@ impl<A : Data> BasicNode<A> {
 	}
 
 	/// This function applies the given action to its whole subtree.
-	///
-	/// This function leaves the [`self.action`] field "dirty" - after calling
-	/// this you might need to call access, to push the action to this node's sons.
+	/// Same as [`BasicTree::act`].
 	pub fn act(&mut self, action : A::Action) {
 		self.action = action + self.action;
 	}

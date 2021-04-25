@@ -177,6 +177,12 @@ impl Data for StdNum {
     }
 }
 
+impl SizedData for StdNum {
+    fn size(summary : Self::Summary) -> usize {
+        summary.size as usize
+    }
+}
+
 impl Reverse for StdNum {
     fn internal_reverse(node : &mut crate::trees::basic_tree::BasicNode<Self>) {
         node.act(RevAddAction {to_reverse : true, add : 0});
