@@ -21,6 +21,12 @@ pub enum BasicTree<A : ?Sized + Data> {
 use BasicTree::*;
 
 impl<D : Data> BasicTree<D> {
+
+	/// Constructs a new non-empty tree from a node.
+	pub fn new(node : BasicNode<D>) -> BasicTree<D> {
+		Root(Box::new(node))
+	}
+
 	/// Remakes the data that is stored in this node, based on its sons.
 	/// This is necessary when the data in the sons might have changed.
 	/// For example, after inserting a new node, all of the nodes from it to the root
@@ -44,30 +50,14 @@ impl<D : Data> BasicTree<D> {
 		}
 	}
 
-	/// Returns the summary of all values in this node's subtree.
-	///```
-	/// use orchard::basic_tree::*;
-	/// use orchard::example_data::StdNum;
-	/// let tree : BasicTree<StdNum> = (1..=8).collect();
-	/// let summary = tree.subtree_summary();
-	/// assert_eq!(summary.size, 8);
-	/// assert_eq!(summary.sum, 36);
-	/// assert_eq!(summary.max, Some(8));
-	/// assert_eq!(summary.min, Some(1));
-	/// # tree.assert_correctness();
-	///```
-	pub fn subtree_summary(&self) -> D::Summary {
-		match self {
-			Root(node) => node.subtree_summary(),
-			_ => D::EMPTY,
-		}
-	}
 
 	/// Iterates over the whole tree.
 	///```
 	/// use orchard::basic_tree::*;
 	/// use orchard::example_data::StdNum;
+	///
 	/// let mut tree : BasicTree<StdNum> = (17..=89).collect();
+	///
 	/// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..=89).collect::<Vec<_>>());
 	/// # tree.assert_correctness();
 	///```
@@ -80,9 +70,11 @@ impl<D : Data> BasicTree<D> {
 	/// use orchard::basic_tree::*;
 	/// use orchard::example_data::StdNum;
 	/// use orchard::locator;
+	///
 	/// let mut tree : BasicTree<StdNum> = (20..80).collect();
-	/// let part = tree.iter_locator(locator::locate_by_index_range(3,13)); // should also try 3..5
-	/// assert_eq!(part.cloned().collect::<Vec<_>>(), (23..33).collect::<Vec<_>>());
+	/// let segment_iter = tree.iter_locator(locator::locate_by_index_range(3,13)); // should also try 3..5
+	///
+	/// assert_eq!(segment_iter.cloned().collect::<Vec<_>>(), (23..33).collect::<Vec<_>>());
 	/// # tree.assert_correctness();
 	///```
 	pub fn iter_locator<L>(&mut self, loc : L) -> impl Iterator<Item=&D::Value> where
@@ -106,6 +98,20 @@ impl<D : Data> BasicTree<D> {
 			node.right.assert_correctness();
 		}
 	}
+
+	pub fn node(&self) -> Option<&BasicNode<D>> {
+		match self {
+			Empty => None,
+			Root(node) => Some(node),
+		}
+	}
+
+	pub fn node_mut(&mut self) -> Option<&mut BasicNode<D>> {
+		match self {
+			Empty => None,
+			Root(node) => Some(node),
+		}
+	}
 }
 
 impl<D : Data> std::iter::FromIterator<D::Value> for BasicTree<D> {
@@ -120,8 +126,10 @@ impl<A : Data + Reverse> BasicTree<A> {
 	///```
 	/// use orchard::basic_tree::*;
 	/// use orchard::example_data::StdNum;
+	///
 	/// let mut tree : BasicTree<StdNum> = (17..=89).collect();
 	/// tree.reverse();
+	///
 	/// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..=89).rev().collect::<Vec<_>>());
 	/// # tree.assert_correctness();
 	///```
@@ -137,6 +145,7 @@ impl<A : Data + Reverse> BasicTree<A> {
 	///```
 	/// use orchard::basic_tree::*;
 	/// use orchard::example_data::{StdNum, RevAddAction};
+	///
 	/// let mut tree : BasicTree<StdNum> = (1..=8).collect();
 	/// tree.act(RevAddAction {to_reverse : false, add : 5});
 	/// # tree.assert_correctness();
@@ -245,15 +254,8 @@ impl<A : Data> BasicNode<A> {
 	/// subtree to be accurate.
 	pub(crate) fn rebuild(&mut self) {
 		assert!(self.action == A::IDENTITY);
-		self.subtree_summary = A::to_summary(&self.node_value);
-		if let Root(node) = &self.left {
-			self.subtree_summary = node.subtree_summary() + self.subtree_summary;
-		}
-		if let Root(node) = &self.right {
-			self.subtree_summary = self.subtree_summary + node.subtree_summary();
-		}
-
-		//Data::rebuild_data(&mut self.data, self.left.data(), self.right.data());
+		let temp = A::to_summary(&self.node_value);
+		self.subtree_summary = self.left.subtree_summary() + temp + self.right.subtree_summary();
 	}
 
 	/// This function applies the given action to its whole subtree.
@@ -261,31 +263,4 @@ impl<A : Data> BasicNode<A> {
 	pub fn act(&mut self, action : A::Action) {
 		self.action = action + self.action;
 	}
-
-	/*
-	pub fn create(mut data : A, left : BasicTree<A>, right : BasicTree<A>) -> BasicNode<A> {
-		// this must be written first because later the values are moved into the result
-		data.rebuild_data(left.data(), right.data());
-		BasicNode {
-			data,
-			left,
-			right,
-		}
-	}
-	*/
 }
-
-/*
-impl<A : Action> std::ops::Deref for BasicNode<A> {
-	type Target = A;
-	fn deref(&self) -> &A {
-		&self.data
-	}
-}
-
-impl<A : Action> std::ops::DerefMut for BasicNode<A> {
-	fn deref_mut(&mut self) -> &mut A {
-		&mut self.data
-	}
-}
-*/

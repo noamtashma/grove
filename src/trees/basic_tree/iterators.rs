@@ -30,10 +30,8 @@ impl<'a, D : Data, L> MutIterator<'a, D, L> {
     /// Internal method: same as stack.push(...), but deals with the [`Empty`] case.
     /// If empty, do nothing.
     fn push(&mut self, tree : &'a mut BasicTree<D>, summary : D::Summary) {
-        match tree {
-            BasicTree::Root(node) =>
-                self.stack.push((Fragment::Node(node), summary)),
-            BasicTree::Empty => (),
+        if let Some(node) = tree.node_mut() {
+            self.stack.push((Fragment::Node(node), summary));
         }
     }
 }
@@ -131,7 +129,7 @@ pub fn build<D : Data, I>(mut iter : I) -> BasicTree<D> where
                 let mut prev_node = stack.pop().unwrap();
                 prev_node.right = tree;
                 prev_node.rebuild();
-                tree = BasicTree::Root(Box::new(prev_node));
+                tree = BasicTree::new(prev_node);
             }
             else {
                 let mut node = BasicNode::new(val);
@@ -147,7 +145,7 @@ pub fn build<D : Data, I>(mut iter : I) -> BasicTree<D> where
     for mut prev_node in stack.into_iter().rev() {
         prev_node.right = tree;
         prev_node.rebuild();
-        tree = BasicTree::Root(Box::new(prev_node));
+        tree = BasicTree::new(prev_node);
     }
     tree
 }

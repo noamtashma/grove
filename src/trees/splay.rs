@@ -1,13 +1,30 @@
 //! An implementation of a splay tree
 //!
-//! The tree implements the [`splay`] operation, that should be used after searching for a node.
-//! See documentation for the [`splay`] function.
+//! It is a balancced tree algorithm that supports reversals, splitting and concatenation,
+//! and has remarkable properties.
 //!
-//! Since the splay tree's complexity follows from splaying,
-//! if you would apply [`SomeWalker::go_up()`] too many times, the splay tree's complexity might suffer.
-//! Every [`SomeWalker::go_up()`] application costs a constant amount, but the depth of the tree might
-//! as big as `O(n)`.
-//! See documentation for the [`SomeWalker::go_up`] function.
+//! Its operations take `O(log n)` amortized time
+//! (deterministically). Therefore, individual operations may take up to linear time,
+//! but it never takes more than `O(log n)` time per operation when the operations are
+//! counted together.
+//!
+//! The tree implements the [`splay`] operation, that should be used after searching for a node.
+//!
+//! The Splay tree's complexity guarantees follow from splaying nodes
+//! after accessing them. This is so that when you go deep down the tree,
+//! when you come back up you make the deep part less deep.
+//!
+//! Therefore, going up the tree without splaying can undermine the splay tree's complexity
+//! guarantees, and operations that should only take `O(log n)` amortized time
+//! can take linear time.
+//!
+//! It is recommended that if you want to reuse a [`SplayWalker`], use the
+//! [`splay`] function.
+//!
+//! When a [`SplayWalker`] is dropped, the walker automatically splays up the tree,
+//! ensuring that nodes that need to be rebuilt are rebuilt, but also that
+//! the splaytree's complexity properties remain.
+
 use super::*;
 use super::basic_tree::*;
 
@@ -18,19 +35,6 @@ pub struct SplayTree<A : Data> {
 }
 
 impl<A : Data> SplayTree<A> {
-    /// This is mutable because the tree must be able to call
-    /// `access` on the root
-    pub fn root_node_value(&mut self) -> Option<&A::Value> {
-        match &mut self.tree {
-            BasicTree::Root(node) => Some(node.node_value()),
-            _ => None,
-        }
-    }
-
-    pub fn subtree_summary(&self) -> A::Summary {
-        self.tree.subtree_summary()
-    }
-
     /// Note: using this directly may cause the tree to lose its properties as a splay tree
     pub fn basic_walker(&mut self) -> BasicWalker<A> {
         BasicWalker::new(&mut self.tree)
@@ -54,10 +58,9 @@ impl<A : Data> SplayTree<A> {
             Ok(true) => panic!(),
         };
         walker.splay();
-        if let crate::basic_tree::BasicTree::Root(node) = walker.inner_mut() {
+        if let Some(node) = walker.inner_mut().node_mut() {
             node.right = other.into_inner();
             node.rebuild();
-            return;
         }
         else {
             panic!();
@@ -93,7 +96,7 @@ impl<A : Data> SplayTree<A> {
         L : crate::methods::locator::Locator<A>
     {
         let mut walker = self.isolate_segment(locator);
-        if let crate::basic_tree::BasicTree::Root(node) = walker.inner_mut() {
+        if let Some(node) = walker.inner_mut().node_mut() {
             node.act(action);
             node.access();
         };
@@ -267,8 +270,8 @@ impl<'a, A : Data> SplayWalker<'a, A> {
             Ok(b) => b,
         };
         self.splay();
-        let node = match self.inner_mut() {
-            BasicTree::Root(node) => node,
+        let node = match self.inner_mut().node_mut() {
+            Some(node) => node,
             _ => panic!(),
         };
         if b {
@@ -304,6 +307,32 @@ impl<A : Data> SomeTree<A> for SplayTree<A> {
     }
 }
 
+impl<D : Data> SomeEntry<D> for SplayTree<D> {
+    fn value_mut(&mut self) -> Option<&mut D::Value> {
+        self.tree.value_mut()
+    }
+
+    fn node_summary(&self) -> D::Summary {
+        self.tree.node_summary()
+    }
+
+    fn subtree_summary(&self) -> D::Summary {
+        self.tree.subtree_summary()
+    }
+
+    fn left_subtree_summary(&self) -> Option<D::Summary> {
+        self.tree.left_subtree_summary()
+    }
+
+    fn right_subtree_summary(&self) -> Option<D::Summary> {
+        self.tree.right_subtree_summary()
+    }
+
+    fn insert_new(&mut self, value : D::Value) -> Result<(), ()> {
+        self.tree.insert_new(value)
+    }
+}
+
 impl<'a, A : Data> SomeTreeRef<A> for &'a mut SplayTree<A> {
     type Walker = SplayWalker<'a, A>;
     fn walker(self : &'a mut SplayTree<A>) -> SplayWalker<'a, A> {
@@ -320,12 +349,6 @@ impl<'a, A : Data> SomeWalker<A> for SplayWalker<'a, A> {
         self.walker.go_right()
     }
 
-    /// you shouldn't use this too much, or you would lose the [`SplayTree`]'s complexity properties.
-    /// basically, when you are going down the tree,
-    /// you should only stray from your path by a constant amount,
-    /// and you should remember to splay if you want to re-use your walker, instead of
-    /// using this fuctionn to get back up.
-    /// (when dropped the walker will splay by itself)
     fn go_up(&mut self) -> Result<bool, ()> {
         self.walker.go_up()
     }
@@ -348,28 +371,34 @@ impl<'a, A : Data> SomeWalker<A> for SplayWalker<'a, A> {
     fn inner(&self) -> &BasicTree<A> {
         self.walker.inner()
     }
-}
-
-impl<'a, A : Data> SomeEntry<A> for SplayWalker<'a, A> {
-    fn value_mut(&mut self) -> Option<&mut A::Value> {
-        self.walker.value_mut()
-    }
 
     fn value(&self) -> Option<&A::Value> {
         self.walker.value()
     }
+}
 
-    fn node_summary(&self) -> A::Summary {
+impl<'a, D : Data> SomeEntry<D> for SplayWalker<'a, D> {
+    fn value_mut(&mut self) -> Option<&mut D::Value> {
+        self.walker.value_mut()
+    }
+
+    fn node_summary(&self) -> D::Summary {
         self.walker.node_summary()
     }
 
-    /*
-    fn write(&mut self, data : A) -> Option<A> {
-        self.walker.write(data)
-    }
-    */
-
-    fn insert_new(&mut self, value : A::Value) -> Result<(), ()> {
+    fn insert_new(&mut self, value : D::Value) -> Result<(), ()> {
         self.walker.insert_new(value)
+    }
+
+    fn subtree_summary(&self) -> D::Summary {
+        self.walker.subtree_summary()
+    }
+
+    fn left_subtree_summary(&self) -> Option<D::Summary> {
+        self.walker.left_subtree_summary()
+    }
+
+    fn right_subtree_summary(&self) -> Option<D::Summary> {
+        self.walker.right_subtree_summary()
     }
 }

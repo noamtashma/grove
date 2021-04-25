@@ -90,8 +90,8 @@ A::Value : Clone,
         {}
 
     while let Ok(_) = next_filled(&mut walker) {
-        if let trees::basic_tree::BasicTree::Root(node) = walker.inner_mut() {
-            res.push(node.node_value().clone());
+        if let Some(value) = walker.value() {
+            res.push(value.clone());
         } else {panic!()}
     }
     res
@@ -207,7 +207,7 @@ fn accumulate_values_on_suffix<W, L, A : Data>(mut walker : W, locator : &L) ->
     while let Some(dir) = walker_locate(&mut walker, locator) {
         match dir {
             Accept => {
-                if let basic_tree::BasicTree::Root(node) = walker.inner_mut() {
+                if let Some(node) = walker.inner().node() {
                     res = node.node_summary() + node.right.subtree_summary() + res;
                     walker.go_left().unwrap();
                 } else {panic!()}
@@ -229,8 +229,9 @@ fn accumulate_values_on_prefix<W, L, A : Data>(walker : &mut W, locator : &L) ->
     use LocResult::*;
 
     while let Some(dir) = walker_locate(walker, locator) {
-        match dir {    Accept => {
-                if let basic_tree::BasicTree::Root(node) = walker.inner_mut() {
+        match dir {
+            Accept => {
+                if let Some(node) = walker.inner().node() {
                     res = res + node.left.subtree_summary() + node.node_summary();
                     walker.go_right().unwrap();
                 } else {
