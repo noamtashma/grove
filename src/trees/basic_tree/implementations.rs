@@ -6,8 +6,8 @@ use super::*;
 use super::super::*; // crate::trees::*
 use crate::telescope::NO_VALUE_ERROR;
 
-impl<'a, A : Data> SomeTree<A> for BasicTree<A> {
-    fn into_inner(self) -> BasicTree<A> {
+impl<'a, D : Data> SomeTree<D> for BasicTree<D> {
+    fn into_inner(self) -> BasicTree<D> {
         self
     }
 
@@ -15,20 +15,20 @@ impl<'a, A : Data> SomeTree<A> for BasicTree<A> {
         Empty
     }
 
-    fn from_inner(tree : BasicTree<A>) -> Self {
+    fn from_inner(tree : BasicTree<D>) -> Self {
         tree
     }
 }
 
-impl<'a, A : Data> SomeTreeRef<A> for &'a mut BasicTree<A> {
-    type Walker = BasicWalker<'a, A>;
+impl<'a, D : Data, T> SomeTreeRef<D> for &'a mut BasicTree<D, T> {
+    type Walker = BasicWalker<'a, D, T>;
 
     fn walker(self) -> Self::Walker {
         BasicWalker::new(self)
     }
 }
 
-impl<'a, A : Data> SomeWalker<A> for BasicWalker<'a, A> {
+impl<'a, D : Data, T> SomeWalker<D> for BasicWalker<'a, D, T> {
     /// Returns Err if it's impossible to go left
 	/// otherwise returns Ok
 	fn go_left(&mut self) -> Result<(), ()> {
@@ -89,10 +89,10 @@ impl<'a, A : Data> SomeWalker<A> for BasicWalker<'a, A> {
 		self.depth()
 	}
 
-	fn far_left_summary(&self) -> A::Summary {
+	fn far_left_summary(&self) -> D::Summary {
 		self.vals.last().expect(NO_VALUE_ERROR).left
 	}
-	fn far_right_summary(&self) -> A::Summary {
+	fn far_right_summary(&self) -> D::Summary {
 		self.vals.last().expect(NO_VALUE_ERROR).right
 	}
 
@@ -100,14 +100,14 @@ impl<'a, A : Data> SomeWalker<A> for BasicWalker<'a, A> {
     //     &*self.tel
     // }
 
-	fn value(&self) -> Option<&A::Value> {
+	fn value(&self) -> Option<&D::Value> {
 		let value = self.node()?.node_value_clean();
 		Some(value)
 	}
 }
 
 
-impl<D : Data> SomeEntry<D> for BasicTree<D> {
+impl<D : Data, T> SomeEntry<D> for BasicTree<D, T> {
 	fn value_mut(&mut self) -> Option<&mut D::Value> {
 		let value = &mut self.node_mut()?.node_value;
 		Some(value)
@@ -119,16 +119,6 @@ impl<D : Data> SomeEntry<D> for BasicTree<D> {
 			Some(node) => node.node_summary()
 		}
 	}
-
-    fn insert_new(&mut self, value : D::Value) -> Result<(), ()> {
-        match self {
-			Empty => {
-				*self = BasicTree::new(BasicNode::new(value));
-				Ok(())
-			},
-			_ => Err(()),
-		}
-    }
 
 	fn subtree_summary(&self) -> D::Summary {
 		if let Some(node) = self.node() {
@@ -160,7 +150,7 @@ impl<D : Data> SomeEntry<D> for BasicTree<D> {
     }
 }
 
-impl<'a, D : Data> SomeEntry<D> for BasicWalker<'a, D> {
+impl<'a, D : Data, T> SomeEntry<D> for BasicWalker<'a, D, T> {
     fn value_mut(&mut self) -> Option<&mut D::Value> {
         self.tel.value_mut()
     }
@@ -168,10 +158,6 @@ impl<'a, D : Data> SomeEntry<D> for BasicWalker<'a, D> {
 	fn node_summary(&self) -> D::Summary {
 		self.tel.node_summary()
 	}
-
-    fn insert_new(&mut self, value : D::Value) -> Result<(), ()> {
-        self.tel.insert_new(value)
-    }
 
     fn subtree_summary(&self) -> D::Summary {
         self.tel.subtree_summary()
@@ -193,6 +179,18 @@ impl<'a, D : Data> SomeEntry<D> for BasicWalker<'a, D> {
     }
 
     fn act_subtree(&mut self, action : D::Action) {
-        self.act_subtree(action);
+        self.tel.act_subtree(action);
+    }
+}
+
+impl<'a, D : Data> InsertableWalker<D> for BasicWalker<'a, D> {
+    fn insert_new(&mut self, value : D::Value) -> Result<(), ()> {
+		match *self.tel {
+			Empty => {
+				*self.tel = BasicTree::new(BasicNode::new(value));
+				Ok(())
+			},
+			_ => Err(()),
+		}
     }
 }

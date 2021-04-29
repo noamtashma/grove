@@ -2,24 +2,24 @@ use crate::*;
 use basic_tree::*;
 
 // TODO : Owning iterator
-enum Fragment<'a, D : Data> {
+enum Fragment<'a, D : Data, T=()> {
     Value (&'a mut D::Value),
-    Node (&'a mut BasicNode<D>)
+    Node (&'a mut BasicNode<D, T>)
 }
 
 // TODO - fix the mutability problem using a guard?
 /// Mutable iterator iterating over a segment of the tree. Since it is a mutable
 /// iterator, the tree will probably not be in a legal state if the values are modified.
-pub struct MutIterator<'a, D : Data, L> {
+pub struct MutIterator<'a, D : Data, L, T=()> {
     left : D::Summary,
     // a stack of the fragments, and for every fragment,
     // the summary of everything to its right
-    stack : Vec<(Fragment<'a, D>, D::Summary)>,
+    stack : Vec<(Fragment<'a, D, T>, D::Summary)>,
     locator : L,
 }
 
-impl<'a, D : Data, L> MutIterator<'a, D, L> {
-    pub fn new(tree : &'a mut BasicTree<D>, locator : L) -> Self {
+impl<'a, D : Data, L, T> MutIterator<'a, D, L, T> {
+    pub fn new(tree : &'a mut BasicTree<D, T>, locator : L) -> Self {
         let mut res = MutIterator {
             left : D::EMPTY,
             stack : vec![],
@@ -31,14 +31,14 @@ impl<'a, D : Data, L> MutIterator<'a, D, L> {
 
     /// Internal method: same as stack.push(...), but deals with the [`Empty`] case.
     /// If empty, do nothing.
-    fn push(&mut self, tree : &'a mut BasicTree<D>, summary : D::Summary) {
+    fn push(&mut self, tree : &'a mut BasicTree<D, T>, summary : D::Summary) {
         if let Some(node) = tree.node_mut() {
             self.stack.push((Fragment::Node(node), summary));
         }
     }
 }
 
-impl<'a, D : Data, L : Locator<D>> Iterator for MutIterator<'a, D, L> {
+impl<'a, D : Data, L : Locator<D>, T> Iterator for MutIterator<'a, D, L, T> {
     type Item = &'a mut D::Value;
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -94,19 +94,19 @@ impl<'a, D : Data, L : Locator<D>> Iterator for MutIterator<'a, D, L> {
 /// Immutable iterator. Requires borrowing the tree as mutable.
 /// An immutable iterator only requiring immutable access to the tree is possible,
 /// just not easy to write, so it's not included currently.
-pub struct ImmIterator<'a, D : Data, L> {
-    mut_iter : MutIterator<'a, D, L>
+pub struct ImmIterator<'a, D : Data, L, T=()> {
+    mut_iter : MutIterator<'a, D, L, T>
 }
 
-impl<'a, D : Data, L : Locator<D>> ImmIterator<'a, D, L> {
-    pub fn new(tree : &'a mut BasicTree<D>, locator : L) -> Self {
+impl<'a, D : Data, L : Locator<D>, T> ImmIterator<'a, D, L, T> {
+    pub fn new(tree : &'a mut BasicTree<D, T>, locator : L) -> Self {
         ImmIterator {
             mut_iter : MutIterator::new(tree, locator)
         }
     }
 }
 
-impl<'a, D : Data, L : Locator<D>> Iterator for ImmIterator<'a, D, L> {
+impl<'a, D : Data, L : Locator<D>, T> Iterator for ImmIterator<'a, D, L, T> {
     type Item = &'a D::Value;
 
     fn next(&mut self) -> Option<Self::Item> {

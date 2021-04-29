@@ -100,10 +100,11 @@ A::Value : Clone,
 
 // TODO: make this return an error.
 /// Panics if a key was reused.
-pub fn insert_by_key<A : Data, TR>(tree : TR, data : A::Value)
+pub fn insert_by_key<D : Data, TR>(tree : TR, data : D::Value)
     -> TR::Walker where
-    TR : SomeTreeRef<A>,
-    A::Value : crate::data::example_data::Keyed,
+    TR : SomeTreeRef<D>,
+    TR::Walker : InsertableWalker<D>,
+    D::Value : crate::data::example_data::Keyed,
     //<A as data::Data>::Value : std::fmt::Debug,
 {
     insert_by_locator(tree, &locate_by_key(&data.get_key()) , data)
@@ -111,10 +112,11 @@ pub fn insert_by_key<A : Data, TR>(tree : TR, data : A::Value)
 
 // TODO: make this return an error instead
 /// Panics if the locator accepts a node.
-pub fn insert_by_locator<A : Data, L, TR> (tree : TR, locator : &L, value : A::Value)
+pub fn insert_by_locator<D : Data, L, TR> (tree : TR, locator : &L, value : D::Value)
     -> TR::Walker where
-    TR : SomeTreeRef<A>,
-    L : Locator<A>,
+    TR : SomeTreeRef<D>,
+    TR::Walker : InsertableWalker<D>,
+    L : Locator<D>,
     //<A as data::Data>::Value : std::fmt::Debug,
 {
     let mut walker = search_by_locator(tree, locator);

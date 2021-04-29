@@ -47,10 +47,10 @@ impl<A : Data> Frame<A> {
 /// Internally, a [`Telescope`] type is used, in order to be able to dynamically
 /// go up and down the tree without upsetting the borrow checker.
 #[derive(destructure)]
-pub struct BasicWalker<'a, A : Data> {
+pub struct BasicWalker<'a, A : Data, T=()> {
 	/// The telescope, holding references to all the subtrees from the root to the
 	/// current position.
-	pub(super) tel : Telescope<'a, BasicTree<A>>,
+	pub(super) tel : Telescope<'a, BasicTree<A, T>>,
 
 	/// This array holds the accumulation of all the values left of the subtree, and
 	/// all of the values right of the subtree, for every subtree from the root to
@@ -64,21 +64,21 @@ pub struct BasicWalker<'a, A : Data> {
 	pub(super) is_left : Vec<bool>,
 }
 
-impl<'a, A : Data> Deref for BasicWalker<'a, A> {
-	type Target = BasicTree<A>;
-	fn deref(&self) -> &BasicTree<A> {
+impl<'a, A : Data, T> Deref for BasicWalker<'a, A, T> {
+	type Target = BasicTree<A, T>;
+	fn deref(&self) -> &BasicTree<A, T> {
 		&*self.tel
 	}
 }
 
-impl<'a, A : Data> DerefMut for BasicWalker<'a, A> {
-	fn deref_mut(&mut self) -> &mut BasicTree<A> {
+impl<'a, A : Data, T> DerefMut for BasicWalker<'a, A, T> {
+	fn deref_mut(&mut self) -> &mut BasicTree<A, T> {
 		&mut *self.tel
 	}
 }
 
-impl<'a, A : Data> BasicWalker<'a, A> {
-	pub fn new(tree : &'a mut BasicTree<A>) -> BasicWalker<'a, A> {
+impl<'a, D : Data, T> BasicWalker<'a, D, T> {
+	pub fn new(tree : &'a mut BasicTree<D, T>) -> BasicWalker<'a, D, T> {
 		tree.access();
 		BasicWalker{ tel : Telescope::new(tree),
 			        vals : vec![Frame::empty()],
@@ -117,22 +117,23 @@ impl<'a, A : Data> BasicWalker<'a, A> {
 	pub fn rot_left(&mut self) -> Result<(), ()> {
 		let owned_tree = std::mem::replace(&mut *self.tel, BasicTree::Empty);
 
-		let mut bn1 : Box<BasicNode<A>> = match owned_tree {
+		let mut bn1 : Box<BasicNode<D, T>> = match owned_tree {
 			BasicTree::Empty => return Err(()),
 			Root(bn) => bn,
 		};
-
+		assert!(bn1.action == D::IDENTITY);
 		bn1.right.access();
 
-		let mut bn2 : Box<BasicNode<A>> = match bn1.right {
+		let mut bn2 : Box<BasicNode<D, T>> = match bn1.right {
 			BasicTree::Empty => return Err(()),
 			Root(bn) => bn,
 		};
 
 		bn1.right = bn2.left;
+		bn2.subtree_summary = bn1.subtree_summary; // this is insetad of bn2.rebuild(), since we already know the result
 		bn1.rebuild();
 		bn2.left = Root(bn1);
-		bn2.rebuild();
+		//bn2.rebuild();
 
 		*self.tel = Root(bn2); // restore the node back
 		Ok(())
@@ -143,22 +144,23 @@ impl<'a, A : Data> BasicWalker<'a, A> {
 	pub fn rot_right(&mut self) -> Result<(), ()> {
 		let owned_tree = std::mem::replace(&mut *self.tel, BasicTree::Empty);
 
-		let mut bn1 : Box<BasicNode<A>> = match owned_tree {
+		let mut bn1 : Box<BasicNode<D, T>> = match owned_tree {
 			BasicTree::Empty => return Err(()),
 			Root(bn) => bn,
 		};
-
+		assert!(bn1.action == D::IDENTITY);
 		bn1.left.access();
 
-		let mut bn2 : Box<BasicNode<A>> = match bn1.left {
+		let mut bn2 : Box<BasicNode<D, T>> = match bn1.left {
 			BasicTree::Empty => return Err(()),
 			Root(bn) => bn,
 		};
 
 		bn1.left = bn2.right;
+		bn2.subtree_summary = bn1.subtree_summary; // this is insetad of bn2.rebuild(), since we already know the result
 		bn1.rebuild();
 		bn2.right = Root(bn1);
-		bn2.rebuild();
+		//bn2.rebuild();
 
 		*self.tel = Root(bn2); // restore the node back
 		Ok(())
@@ -190,7 +192,7 @@ impl<'a, A : Data> BasicWalker<'a, A> {
 	}
 
 	/// This takes the walker and turns it into a reference to the root
-	pub fn root_into_ref(mut self) -> &'a mut BasicTree<A> {
+	pub fn root_into_ref(mut self) -> &'a mut BasicTree<D, T> {
 		// go to the root
 		self.go_to_root();
 		let (tel, _, _) = self.destructure();
@@ -200,7 +202,7 @@ impl<'a, A : Data> BasicWalker<'a, A> {
 
 /// This implementation exists in order to rebuild the nodes
 /// when the walker gets dropped
-impl<'a, A : Data> Drop for BasicWalker<'a, A> {
+impl<'a, A : Data, T> Drop for BasicWalker<'a, A, T> {
 	fn drop(&mut self) {
 		self.go_to_root();
 	}

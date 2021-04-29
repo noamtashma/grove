@@ -34,7 +34,7 @@ impl<V> Data for SizeData<V> {
     type Value = V;
     const IDENTITY : Self::Action = Unit{};
     const EMPTY : Size = Size {size : 0};
-    fn act(_ : Unit, b : Size) -> Size { b }
+    fn act_summary(_ : Unit, b : Size) -> Size { b }
     fn to_summary(_val : &Self::Value) -> Self::Summary {
         Size {size : 1}
     }
@@ -163,7 +163,7 @@ impl Data for StdNum {
         }
     }
 
-    fn act(action : Self::Action, summary : Self::Summary) -> Self::Summary {
+    fn act_summary(action : Self::Action, summary : Self::Summary) -> Self::Summary {
         Self::Summary {
             max : summary.max.map(|max : I| { max + action.add }),
             min : summary.min.map(|min : I| { min + action.add }),
@@ -184,7 +184,7 @@ impl SizedData for StdNum {
 }
 
 impl Reverse for StdNum {
-    fn internal_reverse(node : &mut crate::trees::basic_tree::BasicNode<Self>) {
+    fn internal_reverse<T>(node : &mut crate::trees::basic_tree::BasicNode<Self, T>) {
         node.act(RevAddAction {to_reverse : true, add : 0});
     }
 }

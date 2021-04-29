@@ -142,10 +142,12 @@ pub trait SomeEntry<D : Data> {
     fn left_subtree_summary(&self) -> Option<D::Summary>;
     fn right_subtree_summary(&self) -> Option<D::Summary>;
 
-    /// only writes if it is in an empty position. if the position isn't empty,
-    /// return Err(()).
-    fn insert_new(&mut self, value : D::Value) -> Result<(), ()>;
-
     fn act_subtree(&mut self, action : D::Action);
 }
 
+
+pub trait InsertableWalker<D : Data> : SomeWalker<D> {
+    /// Only writes if it is in an empty position. if the position isn't empty,
+    /// return Err(()).
+    fn insert_new(&mut self, value : D::Value) -> Result<(), ()>;
+}

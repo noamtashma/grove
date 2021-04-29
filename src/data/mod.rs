@@ -103,7 +103,7 @@ pub trait Data {
 	///
 	/// Therefore, This is essentially a monoid action by the monoid of actions
 	/// on the monoid of values.
-	fn act(_act : Self::Action, other : Self::Summary) -> Self::Summary {
+	fn act_summary(_act : Self::Action, other : Self::Summary) -> Self::Summary {
 		other
 	}
 	
@@ -133,5 +133,5 @@ pub trait Data {
 /// actions uniformly.
 pub trait Reverse : Data {
 	/// Mark the action in the node that it should be reversed.
-	fn internal_reverse(node : &mut crate::trees::basic_tree::BasicNode<Self>);
+	fn internal_reverse<T>(node : &mut crate::trees::basic_tree::BasicNode<Self, T>);
 }
