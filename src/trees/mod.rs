@@ -99,10 +99,21 @@ pub trait SomeWalker<D : Data> : SomeEntry<D> {
 /// Methods that ask to read the contents of the current tree/position.
 /// These methods are common to the trees themselves and to the walkers.
 pub trait SomeEntry<D : Data> {
-    // TODO: `value_mut` should be moved into a guard that can
-    // guarantee the tree will be rebuild correctly, since it can be used to
-    // violate the invariant that the walker's current node is clean.
+    // TODO: switch uses to `with_value`.
+    /// Note: this function can be used to violate the invariant that the current node of a walker
+    /// is "clean", which in fact means that the summary value is correct.
+    /// To prevent this, call `self.rebuild()` after modifying, or use
+    /// [`Self::with_value`] instead.
     fn value_mut(&mut self) -> Option<&mut D::Value>;
+
+    // useful example implementation:
+    // let res = f(self.value_mut()?);
+    // self.access();
+    // Some(res)
+    fn with_value<F, R>(&mut self, f : F) -> Option<R> where 
+        F : FnOnce(&mut D::Value) -> R;
+
+        
 
     /// Returns a summary of just the current node.
     /// Returns the empty summary if at an empty position.
@@ -136,5 +147,7 @@ pub trait SomeEntry<D : Data> {
     /// only writes if it is in an empty position. if the position isn't empty,
     /// return Err(()).
     fn insert_new(&mut self, value : D::Value) -> Result<(), ()>;
+
+    fn act_subtree(&mut self, action : D::Action);
 }
 

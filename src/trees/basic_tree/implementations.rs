@@ -145,6 +145,19 @@ impl<D : Data> SomeEntry<D> for BasicTree<D> {
         let res = self.node()?.right.subtree_summary();
 		Some(res)
     }
+
+    fn with_value<F, R>(&mut self, f : F) -> Option<R> where 
+        F : FnOnce(&mut D::Value) -> R {
+        let res = f(self.value_mut()?);
+    	self.access();
+    	Some(res)
+    }
+
+    fn act_subtree(&mut self, action : D::Action) {
+        if let Some(node) = self.node_mut() {
+			node.act(action);
+		}
+    }
 }
 
 impl<'a, D : Data> SomeEntry<D> for BasicWalker<'a, D> {
@@ -170,5 +183,16 @@ impl<'a, D : Data> SomeEntry<D> for BasicWalker<'a, D> {
 
     fn right_subtree_summary(&self) -> Option<D::Summary> {
         self.tel.right_subtree_summary()
+    }
+
+    fn with_value<F, R>(&mut self, f : F) -> Option<R> where 
+        F : FnOnce(&mut D::Value) -> R {
+        let res = f(self.value_mut()?);
+		self.access();
+		Some(res)
+    }
+
+    fn act_subtree(&mut self, action : D::Action) {
+        self.act_subtree(action);
     }
 }

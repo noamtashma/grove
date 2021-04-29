@@ -331,6 +331,16 @@ impl<D : Data> SomeEntry<D> for SplayTree<D> {
     fn insert_new(&mut self, value : D::Value) -> Result<(), ()> {
         self.tree.insert_new(value)
     }
+
+    fn with_value<F, R>(&mut self, f : F) -> Option<R> where 
+        F : FnOnce(&mut D::Value) -> R {
+        self.tree.with_value(f)
+    }
+
+    fn act_subtree(&mut self, action : D::Action) {
+        self.tree.act_subtree(action);
+        
+    }
 }
 
 impl<'a, A : Data> SomeTreeRef<A> for &'a mut SplayTree<A> {
@@ -396,5 +406,14 @@ impl<'a, D : Data> SomeEntry<D> for SplayWalker<'a, D> {
 
     fn right_subtree_summary(&self) -> Option<D::Summary> {
         self.walker.right_subtree_summary()
+    }
+
+    fn with_value<F, R>(&mut self, f : F) -> Option<R> where 
+        F : FnOnce(&mut D::Value) -> R {
+        self.walker.with_value(f)
+    }
+
+    fn act_subtree(&mut self, action : D::Action) {
+        self.walker.act_subtree(action);
     }
 }
