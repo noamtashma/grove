@@ -70,20 +70,18 @@ pub trait SomeWalker<D : Data> : SomeEntry<D> {
     /// If the walker is in a non empty spot, this does not include the current node.
     fn left_summary(&self) -> D::Summary {
         let left = self.far_left_summary();
-        if let Some(node) = self.inner().node() {
-            left + node.left.subtree_summary()
-        } else {
-            left
+        match self.left_subtree_summary() {
+            Some(subtree) => left + subtree,
+            None => left,
         }
     }
     /// Returns a summary of all the values to the right of this point.
     /// If the walker is in a non empty spot, this does not include the current node.
     fn right_summary(&self) -> D::Summary {
         let right = self.far_right_summary();
-        if let Some(node) = self.inner().node() {
-            node.left.subtree_summary() + right
-        } else {
-            right
+        match self.right_subtree_summary() {
+            Some(subtree) => subtree + right,
+            None => right,
         }
     }
 
@@ -91,9 +89,9 @@ pub trait SomeWalker<D : Data> : SomeEntry<D> {
     /// is clean.
     fn value(&self) -> Option<&D::Value>;
 
-    // TODO: consider switching this function to a function that
-    // returns the inner node directly.
-    fn inner(&self) -> &basic_tree::BasicTree<D>;
+    // // TODO: consider switching this function to a function that
+    // // returns the inner node directly.
+    // fn inner(&self) -> &basic_tree::BasicTree<D>;
 }
 
 /// Methods that ask to read the contents of the current tree/position.

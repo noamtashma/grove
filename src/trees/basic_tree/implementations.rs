@@ -96,9 +96,9 @@ impl<'a, A : Data> SomeWalker<A> for BasicWalker<'a, A> {
 		self.vals.last().expect(NO_VALUE_ERROR).right
 	}
 
-	fn inner(&self) -> &BasicTree<A> {
-        &*self.tel
-    }
+	// fn inner(&self) -> &BasicTree<A> {
+    //     &*self.tel
+    // }
 
 	fn value(&self) -> Option<&A::Value> {
 		let value = self.node()?.node_value_clean();

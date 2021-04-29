@@ -374,9 +374,9 @@ impl<'a, A : Data> SomeWalker<A> for SplayWalker<'a, A> {
         self.walker.far_right_summary()
     }
 
-    fn inner(&self) -> &BasicTree<A> {
-        self.walker.inner()
-    }
+    // fn inner(&self) -> &BasicTree<A> {
+    //     self.walker.inner()
+    // }
 
     fn value(&self) -> Option<&A::Value> {
         self.walker.value()
