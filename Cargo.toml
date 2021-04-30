@@ -9,6 +9,7 @@ edition = "2018"
 [dependencies]
 derive_destructure = "1.0.0"
 void = "*"
+rand = "*"
 
 [lib]
 name = "orchard"
