@@ -107,7 +107,7 @@ pub fn insert_by_key<D : Data, TR>(tree : TR, data : D::Value)
     D::Value : crate::data::example_data::Keyed,
     //<A as data::Data>::Value : std::fmt::Debug,
 {
-    insert_by_locator(tree, &locate_by_key(&data.get_key()) , data)
+    insert_by_locator(tree, &locate_by_key::<D>(&data.get_key()) , data)
 }
 
 // TODO: make this return an error instead
@@ -133,7 +133,7 @@ pub fn search<TR, A : Data>(tree : TR, key : &<<A as Data>::Value as Keyed>::Key
     A::Value : crate::data::example_data::Keyed,
     //<A as data::Data>::Value : std::fmt::Debug,
 {
-    search_by_locator(tree, &locate_by_key(key))
+    search_by_locator(tree, &locate_by_key::<A>(key))
 }
 
 /// Finds any node that the locator `Accept`s.
