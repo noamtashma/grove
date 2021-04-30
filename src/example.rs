@@ -149,7 +149,7 @@ impl SplayTree<RevData> {
             let (v1, v2) = val.split_at_index(index - left);
             *val = v1;
             next_empty(&mut walker).unwrap(); // not at an empty node
-            walker.insert_new(v2).unwrap(); // the position must be empty
+            walker.insert(v2).unwrap(); // the position must be empty
         }
     }
 
@@ -165,7 +165,7 @@ impl SplayTree<RevData> {
 pub fn yarra(n : usize, k : usize) -> I {
     let mut tree : SplayTree<RevData> = SplayTree::new();
     let inter = Interval {start : 0, end : (n-1) as I};
-    tree.walker().insert_new(inter).unwrap();
+    tree.walker().insert(inter).unwrap();
 
     let mut sn = 1;
     let mut tn = 1;

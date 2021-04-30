@@ -29,6 +29,11 @@ impl<D : Data, T> BasicTree<D, T> {
 		Root(Box::new(node))
 	}
 
+	/// Returns the algorithm-specific data
+	pub fn alg_data(&self) -> Option<&T> {
+		Some(&self.node()?.alg_data)
+	}
+
 	/// Remakes the data that is stored in this node, based on its sons.
 	/// This is necessary when the data in the sons might have changed.
 	/// For example, after inserting a new node, all of the nodes from it to the root
@@ -114,6 +119,26 @@ impl<D : Data, T> BasicTree<D, T> {
 			Root(node) => Some(node),
 		}
 	}
+	/// This function applies the given action to its whole subtree.
+	///
+	/// This function leaves the [`self.action`] field "dirty" - after calling
+	/// this you might need to call access, to push the action to this node's sons.
+	///```
+	/// use orchard::basic_tree::*;
+	/// use orchard::example_data::{StdNum, RevAddAction};
+	///
+	/// let mut tree : BasicTree<StdNum> = (1..=8).collect();
+	/// tree.act(RevAddAction {to_reverse : false, add : 5});
+	/// # tree.assert_correctness();
+	///
+	/// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (6..=13).collect::<Vec<_>>());
+	/// # tree.assert_correctness();
+	///```
+	pub fn act(&mut self, action : D::Action) {
+		if let Root(node) = self {
+			node.act(action);
+		}
+	}
 }
 
 impl<D : Data> std::iter::FromIterator<D::Value> for BasicTree<D> {
@@ -138,26 +163,6 @@ impl<D : Data + Reverse, T> BasicTree<D, T> {
 	pub fn reverse(&mut self) {
 		if let Root(node) = self {
 			node.reverse();
-		}
-	}
-	/// This function applies the given action to its whole subtree.
-	///
-	/// This function leaves the [`self.action`] field "dirty" - after calling
-	/// this you might need to call access, to push the action to this node's sons.
-	///```
-	/// use orchard::basic_tree::*;
-	/// use orchard::example_data::{StdNum, RevAddAction};
-	///
-	/// let mut tree : BasicTree<StdNum> = (1..=8).collect();
-	/// tree.act(RevAddAction {to_reverse : false, add : 5});
-	/// # tree.assert_correctness();
-	///
-	/// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (6..=13).collect::<Vec<_>>());
-	/// # tree.assert_correctness();
-	///```
-	pub fn act(&mut self, action : D::Action) {
-		if let Root(node) = self {
-			node.act(action);
 		}
 	}
 }
@@ -198,6 +203,18 @@ impl<D : Data> BasicNode<D> {
 }
 	
 impl<D : Data, T> BasicNode<D, T> {
+	/// Creates a node with a single value, and the algorithm specific data.
+	pub fn new_alg(value : D::Value, alg_data : T) -> BasicNode<D, T> {
+		let subtree_summary = D::to_summary(&value);
+		BasicNode {
+			action : D::IDENTITY,
+			node_value : value,
+			subtree_summary,
+			left : Empty,
+			right : Empty,
+			alg_data,
+		}
+	}
 	/// Returns the summary of all values in this node's subtree.
 	/// Same as [`BasicTree::subtree_summary`].
 	pub fn subtree_summary(&self) -> D::Summary {

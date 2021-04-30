@@ -49,14 +49,14 @@ use std::ops::Add;
 /// # summary : D::Summary, summary1 : D::Summary, summary2 : D::Summary,
 /// # mut value : D::Value)  where D::Summary : Eq {
 /// // composition of actions
-/// D::act(action2 + action1, summary) == D::act(action2, D::act(action1, summary));
+/// D::act_summary(action2 + action1, summary) == D::act_summary(action2, D::act_summary(action1, summary));
 /// // composition of actions
 /// D::act_value(action2 + action1, &mut value) == {
 /// 	D::act_value(action1, &mut value);
 /// 	D::act_value(action2, &mut value);
 /// };
 /// // the action respects the monoid structure
-/// D::act(action, summary1 + summary2) == D::act(action, summary1) + D::act(action, summary2);
+/// D::act_summary(action, summary1 + summary2) == D::act_summary(action, summary1) + D::act_summary(action, summary2);
 /// // the action respects `to_summary`
 /// # let _ = 
 /// {
@@ -65,7 +65,7 @@ use std::ops::Add;
 /// } == {                               // vs
 /// 	let sum = D::to_summary(&value);  // first take summary
 /// 	D::act_value(action, &mut value); // act on value
-/// 	D::act(action, sum)               // act on summary to reflect acting on the value
+/// 	D::act_summary(action, sum)               // act on summary to reflect acting on the value
 /// };
 /// # }
 ///```

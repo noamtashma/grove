@@ -34,16 +34,50 @@ pub struct SplayTree<A : Data> {
     tree : BasicTree<A>,
 }
 
-impl<A : Data> SplayTree<A> {
+impl<D : Data> SplayTree<D> {
     /// Note: using this directly may cause the tree to lose its properties as a splay tree
-    pub fn basic_walker(&mut self) -> BasicWalker<A> {
+    pub fn basic_walker(&mut self) -> BasicWalker<D> {
         BasicWalker::new(&mut self.tree)
     }
+
+    /// Checks that invariants remain correct. i.e., that every node's summary
+	/// is the sum of the summaries of its children.
+	/// If it is not, panics.
+	pub fn assert_correctness(&self) where
+        D::Summary : Eq,
+    {
+        self.tree.assert_correctness()
+    }
+
+    /// Iterates over the whole tree.
+	///```
+	/// use orchard::basic_tree::*;
+	/// use orchard::example_data::StdNum;
+	///
+	/// let mut tree : BasicTree<StdNum> = (17..=89).collect();
+	///
+	/// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..=89).collect::<Vec<_>>());
+	/// # tree.assert_correctness();
+	///```
+	pub fn iter(&mut self) -> impl Iterator<Item=&D::Value> {
+		self.tree.iter()
+	}
 
     // TODO: switch to a symmetric view, i.e.,
     // `tree3 = union(tree1, tree2)`, not
     // `tree1.concatenate(tree2)`.
     /// Concatenates the other tree into this tree.
+    ///```
+    /// use orchard::splay::*;
+    /// use orchard::example_data::StdNum;
+    ///
+    /// let mut tree : SplayTree<StdNum> = (17..=89).collect();
+    /// let tree2 : SplayTree<StdNum> = (13..=25).collect();
+    /// tree.concatenate(tree2);
+    ///
+    /// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..=89).chain(13..=25).collect::<Vec<_>>());
+    /// # tree.assert_correctness();
+    ///```
     pub fn concatenate(&mut self, other : Self) {
         let mut walker = self.walker();
         while let Ok(_) = walker.go_right()
@@ -70,8 +104,8 @@ impl<A : Data> SplayTree<A> {
     // TODO: isolate segment is probably not working correctly
     /// Gets the tree into a state in which the locator's segment
     /// is a single subtree, and returns a walker at that subtree.
-    pub fn isolate_segment<L>(&mut self, locator : L) -> SplayWalker<A> where
-        L : crate::methods::locator::Locator<A>
+    pub fn isolate_segment<L>(&mut self, locator : L) -> SplayWalker<D> where
+        L : crate::methods::locator::Locator<D>
     {
 
         let left_edge = methods::LeftEdgeLocator(locator);
@@ -92,8 +126,8 @@ impl<A : Data> SplayTree<A> {
         walker
     }
 
-    pub fn act_on_segment<L>(&mut self, locator : L, action : A::Action) where
-        L : crate::methods::locator::Locator<A>
+    pub fn act_on_segment<L>(&mut self, locator : L, action : D::Action) where
+        L : crate::methods::locator::Locator<D>
     {
         let mut walker = self.isolate_segment(locator);
         if let Some(node) = walker.inner_mut().node_mut() {
@@ -102,8 +136,8 @@ impl<A : Data> SplayTree<A> {
         };
     }
 
-    pub fn segment_summary<L>(&mut self, locator : L) -> A::Summary where
-    L : crate::methods::locator::Locator<A>
+    pub fn segment_summary<L>(&mut self, locator : L) -> D::Summary where
+    L : crate::methods::locator::Locator<D>
     {
         let walker = self.isolate_segment(locator);
         walker.inner().subtree_summary()
@@ -196,7 +230,6 @@ impl<'a, A : Data> SplayWalker<'a, A> {
 
     /// Same as [`SplayWalker::splay_step`], but splays up to the specified depth.
     pub fn splay_step_depth(&mut self, depth : usize) {
-
         if self.depth() <= depth { return; }
 
         // if the walker points to an empty position,
@@ -256,11 +289,26 @@ impl<'a, A : Data> SplayWalker<'a, A> {
     }
 
     // TODO: make a trait for splittable trees
-    /// Will only do anything if the current position is empty
+    /// Will only do anything if the current position is empty.
     /// If it is empty, it will split the tree: the elements
     /// to the left will remain, and the elements to the right
     /// will be put in the new output tree.
     /// The walker will be at the root after this operation, if it succeeds.
+    ///
+    ///```
+    /// use orchard::splay::*;
+    /// use orchard::example_data::StdNum;
+    /// use orchard::methods::*; 
+    ///
+    /// let mut tree : SplayTree<StdNum> = (17..88).collect();
+    /// let mut walker = search_by_locator(&mut tree, &IndexLocator{low : 7, high : 7});
+    /// let mut tree2 = walker.split().unwrap();
+    /// drop(walker);
+    ///
+    /// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..24).collect::<Vec<_>>());
+    /// assert_eq!(tree2.iter().cloned().collect::<Vec<_>>(), (24..88).collect::<Vec<_>>());
+    /// # tree.assert_correctness();
+    ///```
     pub fn split(&mut self) -> Option<SplayTree<A>> {
         if !self.is_empty() { return None }
         
@@ -346,6 +394,12 @@ impl<'a, A : Data> SomeTreeRef<A> for &'a mut SplayTree<A> {
     }
 }
 
+impl<D : Data> std::iter::FromIterator<D::Value> for SplayTree<D> {
+    fn from_iter<T: IntoIterator<Item = D::Value>>(iter: T) -> Self {
+        SplayTree { tree : basic_tree::iterators::build(iter.into_iter()) }
+    }
+}
+
 impl<'a, A : Data> SomeWalker<A> for SplayWalker<'a, A> {
     fn go_left(&mut self) -> Result<(), ()> {
         self.walker.go_left()
@@ -355,6 +409,10 @@ impl<'a, A : Data> SomeWalker<A> for SplayWalker<'a, A> {
         self.walker.go_right()
     }
 
+	/// If successful, returns whether or not the previous current value was the left son.
+    /// If already at the root of the tree, returns `Err(())`.
+    /// You shouldn't use this method too much, or you might lose the
+    /// SplayTree's complexity properties - see documentation aboud splay tree.
     fn go_up(&mut self) -> Result<bool, ()> {
         self.walker.go_up()
     }
@@ -411,7 +469,7 @@ impl<'a, D : Data> SomeEntry<D> for SplayWalker<'a, D> {
 }
 
 impl<'a, D : Data> InsertableWalker<D> for SplayWalker<'a, D> {
-    fn insert_new(&mut self, value : D::Value) -> Result<(), ()> {
-        self.walker.insert_new(value)
+    fn insert(&mut self, value : D::Value) -> Result<(), ()> {
+        self.walker.insert(value)
     }
 }

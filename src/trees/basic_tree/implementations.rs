@@ -29,8 +29,6 @@ impl<'a, D : Data, T> SomeTreeRef<D> for &'a mut BasicTree<D, T> {
 }
 
 impl<'a, D : Data, T> SomeWalker<D> for BasicWalker<'a, D, T> {
-    /// Returns Err if it's impossible to go left
-	/// otherwise returns Ok
 	fn go_left(&mut self) -> Result<(), ()> {
 		let mut frame = self.vals.last().expect(crate::telescope::NO_VALUE_ERROR).clone();
 		let res = self.tel.extend_result( |tree| {
@@ -50,8 +48,6 @@ impl<'a, D : Data, T> SomeWalker<D> for BasicWalker<'a, D, T> {
 		return res;
 	}
 	
-	// returns Err if it's impossible to go right
-	// otherwise returns Ok
 	fn go_right(&mut self) -> Result<(), ()> {
 		let mut frame = self.vals.last().expect(crate::telescope::NO_VALUE_ERROR).clone();
 		let res = self.tel.extend_result( |tree| {
@@ -72,7 +68,6 @@ impl<'a, D : Data, T> SomeWalker<D> for BasicWalker<'a, D, T> {
 		return res;
 	}
 
-	// if successful, returns whether or not the previous current value was the left son.
 	fn go_up(&mut self) -> Result<bool, ()> {
 		match self.is_left.pop() {
 			None => Err(()),
@@ -184,7 +179,7 @@ impl<'a, D : Data, T> SomeEntry<D> for BasicWalker<'a, D, T> {
 }
 
 impl<'a, D : Data> InsertableWalker<D> for BasicWalker<'a, D> {
-    fn insert_new(&mut self, value : D::Value) -> Result<(), ()> {
+    fn insert(&mut self, value : D::Value) -> Result<(), ()> {
 		match *self.tel {
 			Empty => {
 				*self.tel = BasicTree::new(BasicNode::new(value));

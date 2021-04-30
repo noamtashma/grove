@@ -120,13 +120,13 @@ pub fn insert_by_locator<D : Data, L, TR> (tree : TR, locator : &L, value : D::V
     //<A as data::Data>::Value : std::fmt::Debug,
 {
     let mut walker = search_by_locator(tree, locator);
-    walker.insert_new(value).expect("tried to insert into an existing node"); // TODO
+    walker.insert(value).expect("tried to insert into an existing node"); // TODO
     walker
 }
 
-// TODO: a function that creates a perfectly balanced tree,
-// given the input nodes.
-
+/// Finds any node by key.
+/// If there isn't any, it finds the empty location where that node would be instead.
+/// Returns a walker at the wanted position.
 pub fn search<TR, A : Data>(tree : TR, key : &<<A as Data>::Value as Keyed>::Key) ->  TR::Walker where
     TR : SomeTreeRef<A>,
     A : Data,
@@ -137,13 +137,12 @@ pub fn search<TR, A : Data>(tree : TR, key : &<<A as Data>::Value as Keyed>::Key
 }
 
 /// Finds any node that the locator `Accept`s.
-/// If there isn't any, it find the empty location the locator has navigated it to.
-/// Returns an Err if the Locator has returned an Err.
+/// If there isn't any, it finds the empty location where that node would be instead.
+/// Returns a walker at the wanted position.
 pub fn search_by_locator<TR, A : Data, L>(tree : TR, locator : &L)
     -> TR::Walker where
     TR : crate::trees::SomeTreeRef<A>,
     L : Locator<A>,
-    //<A as data::Data>::Value : std::fmt::Debug,
 {
     use LocResult::*;
 

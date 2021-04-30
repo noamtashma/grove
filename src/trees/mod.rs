@@ -12,8 +12,14 @@
 pub mod methods;
 pub mod basic_tree;
 pub mod splay;
+pub mod treap;
 
 use crate::data::*;
+
+// TODO: re-choose the functions that should go here.
+// probably should be useful user-facing functions, such as act_segment, segment_summary,
+// and so on. the current three functions should be replaced with iterator functions.
+// currently this trait is unusable.
 pub trait SomeTree<D : Data> : SomeEntry<D> where
     for<'a> &'a mut Self : SomeTreeRef<D> {
 
@@ -44,15 +50,13 @@ pub trait SomeTreeRef<D : Data> {
 /// The method [`SomeEntry::is_empty()`] can tell whether you are at an empty position. Trying to move downward from an
 /// empty position produces an error value.
 pub trait SomeWalker<D : Data> : SomeEntry<D> {
-    /// return [`Err(())`] if it is in an empty spot.
+    /// return `Err(())` if it is in an empty spot.
     fn go_left(&mut self) -> Result<(), ()>;
-    /// returns [`Err(())`] if it is in an empty spot.
+    /// returns `Err(())` if it is in an empty spot.
     fn go_right(&mut self) -> Result<(), ()>;
 
     /// If successful, returns whether or not the previous current value was the left son.
     /// If already at the root of the tree, returns `Err(())`.
-    /// If you have a SplayTree, you shouldn't use this method too much, or you might lose the
-    /// SplayTree's complexity properties - see documentation aboud splay tree.
     fn go_up(&mut self) -> Result<bool, ()>;
 
 
@@ -149,5 +153,5 @@ pub trait SomeEntry<D : Data> {
 pub trait InsertableWalker<D : Data> : SomeWalker<D> {
     /// Only writes if it is in an empty position. if the position isn't empty,
     /// return Err(()).
-    fn insert_new(&mut self, value : D::Value) -> Result<(), ()>;
+    fn insert(&mut self, value : D::Value) -> Result<(), ()>;
 }
