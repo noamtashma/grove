@@ -3,6 +3,7 @@ use std::ops::Deref;
 use std::ops::DerefMut;
 use void::ResultVoidExt;
 
+// TODO: switch to `NonNull` when rust 1.53 arrives.
 /// A Telescope
 /// This struct is used to allow recursively reborrow mutable references in a dynamic
 /// but safe way.
@@ -71,6 +72,14 @@ impl<'a, T : ?Sized> Telescope<'a, T> {
 	pub fn extend_result<E, F>(&mut self, func : F) -> Result<(),E> where
 		F : for<'b> FnOnce(&'b mut T) -> Result<&'b mut T, E>
 	{
+		self.extend_result_precise(|r, _phantom| func(r))
+	}
+
+	/// Same as [`Self::extend`], but allows the function to return an error value,
+	/// and also tells the inner function that `'a : 'b` using a phantom argument.
+	pub fn extend_result_precise<'x, E, F>(&mut self, func : F) -> Result<(),E> where
+		F : 'x + for<'b> FnOnce(&'b mut T, PhantomData<&'b &'a ()>) -> Result<&'b mut T, E>
+	{
 		// The compiler has to be told explicitly that the lifetime is `'a`.
 		// It probably doesn't matter much in practice, since we specifically require `func` to be able to work
 		// with any lifetime, and the references are converted to pointers immediately.
@@ -79,7 +88,7 @@ impl<'a, T : ?Sized> Telescope<'a, T> {
 			self.head.as_mut()
 		}.expect(NULL_POINTER_ERROR);
 
-		match func(head_ref) {
+		match func(head_ref, PhantomData) {
 			Ok(p) => {
 				self.push(p);
 				Ok(())
@@ -89,11 +98,24 @@ impl<'a, T : ?Sized> Telescope<'a, T> {
 	}
 	
 	/// Push another reference, unrelated to the current one.
-	/// `tel.push(ref)` would be equivalent to `tel.extend(|prev| { Ok(ref) })`, but that
-	/// doesn't compile since [`Self::extend`]'s type may require `'b` to be larger than `'a`.
-	pub fn push(&mut self, r : &'a mut T) {
+	/// `tel.push(ref)` is morally equivalent to `tel.extend_result_precise(move |_, _| { Ok(ref) })`.
+	/// However, you might have some trouble making the anonymous function conform to the
+	/// right type.
+	pub fn push<'x>(&'x mut self, r : &'a mut T) {
 		self.vec.push(self.head);
 		self.head = r as *mut T;
+
+		/* alternative definition using a call to `self.extend_result_precise`.
+		// this is used in order to tell the closure to conform to the right type
+		fn helper<'a,'x, T : ?Sized, F> (f : F) -> F where
+				F : for<'b> FnOnce(&'b mut T, PhantomData<&'b &'a ()>)
+				-> Result<&'b mut T, void::Void> + 'x
+			{ f }
+
+		self.extend_result_precise(
+			helper::<'a,'x>(move |_, _phantom| { Ok(r) })
+		).void_unwrap();
+		*/
 	}
 	
 	/// Lets the user use the last reference for some time, and discards it completely.
