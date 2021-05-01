@@ -14,18 +14,20 @@ pub mod basic_tree;
 pub mod splay;
 pub mod treap;
 
+use std::iter::FromIterator;
+
 use crate::data::*;
 
-// TODO: re-choose the functions that should go here.
-// probably should be useful user-facing functions, such as act_segment, segment_summary,
-// and so on. the current three functions should be replaced with iterator functions.
-// currently this trait is unusable.
-pub trait SomeTree<D : Data> : SomeEntry<D> where
-    for<'a> &'a mut Self : SomeTreeRef<D> {
-
-    fn into_inner(self) -> basic_tree::BasicTree<D>;
-    fn new() -> Self;
-    fn from_inner(tree : basic_tree::BasicTree<D>) -> Self;
+/// This trait is the top-level trait that the different trees implement.
+/// Every tree that implements this trait can be used directly by the functions
+/// immediately in this trait.
+/// More advanced use can be achieved by using walkers, which must be implemented.
+pub trait SomeTree<D : Data> :
+    SomeEntry<D> + FromIterator<D::Value> + IntoIterator<Item=D::Value> + Default
+    where for<'a> &'a mut Self : SomeTreeRef<D>
+{
+    // TODO: segment_summary, act_segment, search
+    
 
 }
 
@@ -150,8 +152,11 @@ pub trait SomeEntry<D : Data> {
 }
 
 
-pub trait InsertableWalker<D : Data> : SomeWalker<D> {
+/// This is a trait for walkers that allow inserting and deleting values.
+pub trait ModifiableWalker<D : Data> : SomeWalker<D> {
     /// Only writes if it is in an empty position. if the position isn't empty,
     /// return Err(()).
-    fn insert(&mut self, value : D::Value) -> Result<(), ()>;
+    fn insert(&mut self, value : D::Value) -> Option<()>;
+
+    fn delete(&mut self) -> Option<D::Value>;
 }

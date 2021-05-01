@@ -103,7 +103,7 @@ A::Value : Clone,
 pub fn insert_by_key<D : Data, TR>(tree : TR, data : D::Value)
     -> TR::Walker where
     TR : SomeTreeRef<D>,
-    TR::Walker : InsertableWalker<D>,
+    TR::Walker : ModifiableWalker<D>,
     D::Value : crate::data::example_data::Keyed,
     //<A as data::Data>::Value : std::fmt::Debug,
 {
@@ -115,7 +115,7 @@ pub fn insert_by_key<D : Data, TR>(tree : TR, data : D::Value)
 pub fn insert_by_locator<D : Data, L, TR> (tree : TR, locator : &L, value : D::Value)
     -> TR::Walker where
     TR : SomeTreeRef<D>,
-    TR::Walker : InsertableWalker<D>,
+    TR::Walker : ModifiableWalker<D>,
     L : Locator<D>,
     //<A as data::Data>::Value : std::fmt::Debug,
 {

@@ -6,19 +6,31 @@ use super::*;
 use super::super::*; // crate::trees::*
 use crate::telescope::NO_VALUE_ERROR;
 
-impl<'a, D : Data> SomeTree<D> for BasicTree<D> {
-    fn into_inner(self) -> BasicTree<D> {
-        self
-    }
+impl<D : Data> SomeTree<D> for BasicTree<D> {
 
-    fn new() -> Self {
+}
+
+impl<D : Data> Default for BasicTree<D> {
+    fn default() -> Self {
         Empty
     }
+}
 
-    fn from_inner(tree : BasicTree<D>) -> Self {
-        tree
+impl<D : Data> std::iter::FromIterator<D::Value> for BasicTree<D> {
+    fn from_iter<T: IntoIterator<Item = D::Value>>(iter: T) -> Self {
+        iterators::build(iter.into_iter())
     }
 }
+
+
+impl<D : Data> IntoIterator for BasicTree<D> {
+	type Item = D::Value;
+	type IntoIter = iterators::OwningIterator<D, fn(D::Summary, &D::Value, D::Summary) -> methods::LocResult>;
+	fn into_iter(self) -> Self::IntoIter {
+		iterators::OwningIterator::new(self, methods::all::<D>)
+	}
+}
+
 
 impl<'a, D : Data, T> SomeTreeRef<D> for &'a mut BasicTree<D, T> {
     type Walker = BasicWalker<'a, D, T>;
@@ -178,14 +190,45 @@ impl<'a, D : Data, T> SomeEntry<D> for BasicWalker<'a, D, T> {
     }
 }
 
-impl<'a, D : Data> InsertableWalker<D> for BasicWalker<'a, D> {
-    fn insert(&mut self, value : D::Value) -> Result<(), ()> {
+impl<'a, D : Data> ModifiableWalker<D> for BasicWalker<'a, D> {
+    fn insert(&mut self, value : D::Value) -> Option<()> {
 		match *self.tel {
 			Empty => {
 				*self.tel = BasicTree::new(BasicNode::new(value));
-				Ok(())
+				Some(())
 			},
-			_ => Err(()),
+			_ => None,
 		}
+    }
+
+    fn delete(&mut self) -> Option<D::Value> {
+        let tree = std::mem::replace(&mut **self, BasicTree::Empty);
+		let mut boxed_node = match tree {
+			Empty => return None,
+			Root(boxed_node) => boxed_node,
+		};
+		match boxed_node.right.is_empty() {
+			false => {
+				let mut walker = boxed_node.right.walker();
+				methods::next_filled(&mut walker).unwrap();
+				let tree2 = std::mem::replace(&mut *walker, BasicTree::Empty);
+				drop(walker);
+
+				let mut boxed_node2 = match tree2 {
+					Empty => unreachable!(),
+					Root(boxed_node) => boxed_node,
+				};
+				assert!(boxed_node2.left.is_empty());
+				assert!(boxed_node2.right.is_empty());
+				boxed_node2.left = boxed_node.left;
+				boxed_node2.right = boxed_node.right;
+				boxed_node2.rebuild();
+				**self = BasicTree::Root(boxed_node2);
+			},
+			true => {
+				**self = boxed_node.left;
+			},
+		}
+		Some(boxed_node.node_value)
     }
 }

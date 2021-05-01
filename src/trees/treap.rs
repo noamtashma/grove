@@ -19,6 +19,16 @@ pub struct Treap<D : Data> {
     tree : BasicTree<D, T>,
 }
 
+impl<D : Data> SomeTree<D> for Treap<D> {
+
+}
+
+impl<D : Data> Default for Treap<D> {
+    fn default() -> Self {
+        Treap::new()
+    }
+}
+
 impl<'a, D : Data> SomeTreeRef<D> for &'a mut Treap<D> {
     type Walker = TreapWalker<'a, D>;
 
@@ -59,6 +69,10 @@ impl<D : Data> SomeEntry<D> for Treap<D> {
 }
 
 impl<D : Data> Treap<D> {
+    pub fn new() -> Treap<D> {
+        Treap { tree : BasicTree::Empty }
+    }
+
     pub fn priority(&self) -> Option<T> {
         Some(self.tree.node()?.alg_data)
     }
@@ -151,10 +165,20 @@ impl<D : Data> std::iter::FromIterator<D::Value> for Treap<D> {
         let mut walker = tree.walker();
         for val in iter {
             walker.insert(val).unwrap();
+            // note that it can only go right once
             while let Ok(()) = walker.go_right() {}
         }
         drop(walker);
         tree
+    }
+}
+
+impl<D : Data> IntoIterator for Treap<D> {
+    type Item = D::Value;
+    type IntoIter = iterators::OwningIterator<D, fn(D::Summary, &D::Value, D::Summary) -> methods::LocResult, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        iterators::OwningIterator::new(self.tree, methods::all::<D>)
     }
 }
 
@@ -280,13 +304,14 @@ impl<'a, D : Data> TreapWalker<'a, D> {
     }
 }
 
-impl<'a, D : Data> InsertableWalker<D> for TreapWalker<'a, D> {
+
+impl<'a, D : Data> ModifiableWalker<D> for TreapWalker<'a, D> {
     /// Inserts the value into the tree at the current empty position.
     /// If the current position is not empty, return [`None`].
     /// When the function returns, the walker will be at the position the node
     /// was inserted.
-    fn insert(&mut self, val : D::Value) -> Result<(), ()> {
-        if !self.is_empty() { return Err(()) }
+    fn insert(&mut self, val : D::Value) -> Option<()> {
+        if !self.is_empty() { return None }
 
         let priority : T = rand::random();
         let mut temp = BasicTree::Empty;
@@ -329,7 +354,21 @@ impl<'a, D : Data> InsertableWalker<D> for TreapWalker<'a, D> {
         }
         new.rebuild();
         *self.walker = BasicTree::new(new);
-        return Ok(());
+        Some(())
+    }
+
+    /// Removes the current value from the tree, and returns it.
+    /// If currently at an empty position, returns [`None`].
+    fn delete(&mut self) -> Option<D::Value> {
+        let tree = std::mem::replace(&mut *self.walker, BasicTree::Empty);
+        let boxed_node = match tree {
+            BasicTree::Root(boxed_node) => boxed_node,
+            BasicTree::Empty => return None,
+        };
+        let left = Treap { tree : boxed_node.left };
+        let right = Treap { tree : boxed_node.right };
+        *self.walker = concatenate(left, right).tree;
+        Some(boxed_node.node_value)
     }
 } 
 

@@ -141,12 +141,6 @@ impl<D : Data, T> BasicTree<D, T> {
 	}
 }
 
-impl<D : Data> std::iter::FromIterator<D::Value> for BasicTree<D> {
-    fn from_iter<T: IntoIterator<Item = D::Value>>(iter: T) -> Self {
-        iterators::build(iter.into_iter())
-    }
-}
-
 impl<D : Data + Reverse, T> BasicTree<D, T> {
 	/// Reverses the whole tree.
 	/// Complexity: O(log n).

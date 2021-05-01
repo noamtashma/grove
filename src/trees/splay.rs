@@ -40,6 +40,14 @@ impl<D : Data> SplayTree<D> {
         BasicWalker::new(&mut self.tree)
     }
 
+    pub fn into_inner(self) -> BasicTree<D> {
+        self.tree
+    }
+
+    pub fn new() -> SplayTree<D> {
+        SplayTree{ tree : BasicTree::Empty }
+    }
+
     /// Checks that invariants remain correct. i.e., that every node's summary
 	/// is the sum of the summaries of its children.
 	/// If it is not, panics.
@@ -342,17 +350,6 @@ impl<'a, A : Data> Drop for SplayWalker<'a, A> {
 }
 
 impl<A : Data> SomeTree<A> for SplayTree<A> {
-    fn into_inner(self) -> BasicTree<A> {
-        self.tree
-    }
-
-    fn new() -> Self {
-        SplayTree { tree : BasicTree::Empty }
-    }
-
-    fn from_inner(tree : BasicTree<A>) -> Self {
-        SplayTree { tree }
-    }
 }
 
 impl<D : Data> SomeEntry<D> for SplayTree<D> {
@@ -396,7 +393,15 @@ impl<'a, A : Data> SomeTreeRef<A> for &'a mut SplayTree<A> {
 
 impl<D : Data> std::iter::FromIterator<D::Value> for SplayTree<D> {
     fn from_iter<T: IntoIterator<Item = D::Value>>(iter: T) -> Self {
-        SplayTree { tree : basic_tree::iterators::build(iter.into_iter()) }
+        SplayTree { tree : iter.into_iter().collect() }
+    }
+}
+
+impl<D : Data> IntoIterator for SplayTree<D> {
+    type Item = D::Value;
+    type IntoIter = <BasicTree<D> as IntoIterator>::IntoIter;
+    fn into_iter(self) -> Self::IntoIter {
+        self.into_inner().into_iter()
     }
 }
 
@@ -468,8 +473,12 @@ impl<'a, D : Data> SomeEntry<D> for SplayWalker<'a, D> {
     }
 }
 
-impl<'a, D : Data> InsertableWalker<D> for SplayWalker<'a, D> {
-    fn insert(&mut self, value : D::Value) -> Result<(), ()> {
+impl<'a, D : Data> ModifiableWalker<D> for SplayWalker<'a, D> {
+    fn insert(&mut self, value : D::Value) -> Option<()> {
         self.walker.insert(value)
+    }
+
+    fn delete(&mut self) -> Option<D::Value> {
+        self.walker.delete()
     }
 }
