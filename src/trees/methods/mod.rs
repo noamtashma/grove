@@ -161,8 +161,8 @@ pub fn search_by_locator<TR, A : Data, L>(tree : TR, locator : &L)
 /// Do not use with splay trees - it might mess up the complexity,
 /// because it uses go_up().
 /// 
-/// Instead, use `segment_value()`
-pub fn accumulate_values<TR, L, A : Data>(tree : TR, locator : &L) -> 
+/// Instead, use [`SomeTree::segment_summary`]
+pub fn segment_summary<TR, L, A : Data>(tree : TR, locator : &L) -> 
         A::Summary where
     TR : SomeTreeRef<A>,
     L : Locator<A>,
@@ -180,13 +180,13 @@ pub fn accumulate_values<TR, L, A : Data>(tree : TR, locator : &L) ->
                 let node_value = walker.node_summary();
                 let depth = walker.depth();
                 walker.go_left().unwrap();
-                let prefix = accumulate_values_on_prefix(&mut walker, locator);
+                let prefix = segment_summary_on_prefix(&mut walker, locator);
                 // get back to the original node
                 for _ in 0..walker.depth() - depth {
                     walker.go_up().unwrap();
                 }
                 walker.go_right().unwrap();
-                let suffix = accumulate_values_on_suffix(walker, locator);
+                let suffix = segment_summary_on_suffix(&mut walker, locator);
 
                 return prefix + node_value + suffix;
             },
@@ -197,7 +197,7 @@ pub fn accumulate_values<TR, L, A : Data>(tree : TR, locator : &L) ->
     A::EMPTY
 }
 
-fn accumulate_values_on_suffix<W, L, A : Data>(mut walker : W, locator : &L) ->
+fn segment_summary_on_suffix<W, L, A : Data>(walker : &mut W, locator : &L) ->
        A::Summary where
     W : SomeWalker<A>,
     L : Locator<A>,
@@ -205,7 +205,7 @@ fn accumulate_values_on_suffix<W, L, A : Data>(mut walker : W, locator : &L) ->
     let mut res = A::EMPTY;
     use LocResult::*;
 
-    while let Some(dir) = walker_locate(&mut walker, locator) {
+    while let Some(dir) = walker_locate(walker, locator) {
         match dir {
             Accept => {
                 res = walker.node_summary() + walker.right_subtree_summary().unwrap() + res;
@@ -219,7 +219,7 @@ fn accumulate_values_on_suffix<W, L, A : Data>(mut walker : W, locator : &L) ->
     res
 }
 
-fn accumulate_values_on_prefix<W, L, A : Data>(walker : &mut W, locator : &L) ->
+fn segment_summary_on_prefix<W, L, A : Data>(walker : &mut W, locator : &L) ->
         A::Summary where
     W : SomeWalker<A>,
     L : Locator<A>,
@@ -241,7 +241,79 @@ fn accumulate_values_on_prefix<W, L, A : Data>(walker : &mut W, locator : &L) ->
     res
 }
 
-// TODO:
-// apply action on segment,
-// apply action on prefix,
-// apply action on suffix
+/// Returns the accumulated values on the locator's segment
+/// Do not use with splay trees - it might mess up the complexity,
+/// because it uses go_up().
+/// 
+/// Instead, use [`SomeTree::act_segment`]
+pub fn act_segment<TR, L, D : Data>(tree : TR, action : D::Action, locator : &L) where
+    TR : SomeTreeRef<D>,
+    L : Locator<D>,
+{
+    use LocResult::*;
+
+    let mut walker = tree.walker();
+    while let Some(res) = walker_locate(&mut walker, locator) {
+        match res {
+            GoRight => walker.go_right().unwrap(),
+            GoLeft => walker.go_right().unwrap(),
+
+            // at this point, we split into the two sides
+            Accept => {
+                walker.act_node(action);
+                let depth = walker.depth();
+                walker.go_left().unwrap();
+                act_on_prefix(&mut walker, action, locator);
+                // get back to the original node
+                for _ in 0..walker.depth() - depth {
+                    walker.go_up().unwrap();
+                }
+                walker.go_right().unwrap();
+                act_on_suffix(&mut walker, action, locator);
+                return;
+            },
+        }
+    }
+}
+
+// Only works if `action.to_reverse()` is false. does not check.
+fn act_on_suffix<W, L, D : Data>(walker : &mut W, action : D::Action, locator : &L) where
+    W : SomeWalker<D>,
+    L : Locator<D>,
+{
+    use LocResult::*;
+
+    while let Some(dir) = walker_locate(walker, locator) {
+        match dir {
+            Accept => {
+                walker.act_node(action);
+                walker.act_right_subtree(action).unwrap();
+                walker.go_left().unwrap();
+            },
+            GoRight => walker.go_right().unwrap(),
+            GoLeft => panic!("inconsistent locator"),
+        }
+    }
+}
+
+
+// Only works if `action.to_reverse()` is false. does not check.
+fn act_on_prefix<W, L, D : Data>(walker : &mut W, action : D::Action, locator : &L) where
+    W : SomeWalker<D>,
+    L : Locator<D>,
+{
+    use LocResult::*;
+
+    while let Some(dir) = walker_locate(walker, locator) {
+        match dir {
+            Accept => {
+                walker.act_node(action);
+                walker.act_left_subtree(action).unwrap();
+                walker.go_right().unwrap();
+            },
+            GoRight => panic!("inconsistent locator"),
+            GoLeft => walker.go_left().unwrap(), 
+        }
+    }
+}
+

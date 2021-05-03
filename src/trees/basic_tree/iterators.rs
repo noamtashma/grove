@@ -1,5 +1,6 @@
 use crate::*;
 use basic_tree::*;
+use methods::LocResult;
 
 // TODO : Owning iterator
 enum Fragment<'a, D : Data, T=()> {

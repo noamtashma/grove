@@ -7,7 +7,15 @@ use super::super::*; // crate::trees::*
 use crate::telescope::NO_VALUE_ERROR;
 
 impl<D : Data> SomeTree<D> for BasicTree<D> {
+    fn segment_summary<L>(&mut self, locator : L) -> D::Summary where
+        L : Locator<D> {
+		methods::segment_summary(self, &locator)
+    }
 
+    fn act_segment<L>(&mut self, action : D::Action, locator : L) where
+        L : Locator<D> {
+       methods::act_segment(self, action, &locator);
+    }
 }
 
 impl<D : Data> Default for BasicTree<D> {
@@ -113,7 +121,6 @@ impl<'a, D : Data, T> SomeWalker<D> for BasicWalker<'a, D, T> {
 	}
 }
 
-
 impl<D : Data, T> SomeEntry<D> for BasicTree<D, T> {
 	fn value_mut(&mut self) -> Option<&mut D::Value> {
 		let value = &mut self.node_mut()?.node_value;
@@ -155,6 +162,29 @@ impl<D : Data, T> SomeEntry<D> for BasicTree<D, T> {
 			node.act(action);
 		}
     }
+
+    fn act_node(&mut self, action : D::Action) -> Option<()> {
+        let node = self.node_mut()?;
+		node.act_value(action);
+		node.rebuild();
+		Some(())
+    }
+
+    fn act_left_subtree(&mut self, action : D::Action) -> Option<()> {
+        let node = self.node_mut()?;
+		node.access();
+		node.left.act_subtree(action);
+		node.rebuild();
+		Some(())
+    }
+
+    fn act_right_subtree(&mut self, action : D::Action) -> Option<()> {
+        let node = self.node_mut()?;
+		node.access();
+		node.right.act_subtree(action);
+		node.rebuild();
+		Some(())
+    }
 }
 
 impl<'a, D : Data, T> SomeEntry<D> for BasicWalker<'a, D, T> {
@@ -187,6 +217,28 @@ impl<'a, D : Data, T> SomeEntry<D> for BasicWalker<'a, D, T> {
 
     fn act_subtree(&mut self, action : D::Action) {
         self.tel.act_subtree(action);
+		self.access();
+    }
+
+    fn act_node(&mut self, action : D::Action) -> Option<()> {
+		let node = self.node_mut()?;
+		D::act_value(action, &mut node.node_value);
+		node.rebuild();
+		Some(())
+    }
+
+    fn act_left_subtree(&mut self, action : D::Action) -> Option<()> {
+        let node = self.node_mut()?;
+		node.left.act_subtree(action);
+		node.rebuild();
+		Some(())
+    }
+
+    fn act_right_subtree(&mut self, action : D::Action) -> Option<()> {
+        let node = self.node_mut()?;
+		node.right.act_subtree(action);
+		node.rebuild();
+		Some(())
     }
 }
 

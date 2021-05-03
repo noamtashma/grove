@@ -50,4 +50,5 @@ pub mod example;
 
 pub use data::*;
 pub use trees::*;
-pub use trees::methods::*;
+pub use trees::methods::Locator;
+// pub use trees::methods::*;

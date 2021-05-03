@@ -26,9 +26,13 @@ pub trait SomeTree<D : Data> :
     SomeEntry<D> + FromIterator<D::Value> + IntoIterator<Item=D::Value> + Default
     where for<'a> &'a mut Self : SomeTreeRef<D>
 {
-    // TODO: segment_summary, act_segment, search
-    
+    /// Compute the summary of a subsegment.
+    fn segment_summary<L>(&mut self, locator : L) -> D::Summary where
+        L : methods::Locator<D>;
 
+    /// Apply an action on a subsegment.
+    fn act_segment<L>(&mut self, action : D::Action, locator : L) where
+        L : methods::Locator<D>;
 }
 
 /// This is a workaround for not having Generic Associated Types in Rust yet.
@@ -116,17 +120,15 @@ pub trait SomeEntry<D : Data> {
     // Some(res)
     fn with_value<F, R>(&mut self, f : F) -> Option<R> where 
         F : FnOnce(&mut D::Value) -> R;
-
-        
-
-    /// Returns a summary of just the current node.
-    /// Returns the empty summary if at an empty position.
-    fn node_summary(&self) -> D::Summary;
     
     /// Returns [`true`] if the current tree is empty.
     fn is_empty(&self) -> bool {
         self.left_subtree_summary().is_none()
     }
+
+    /// Returns a summary of just the current node.
+    /// Returns the empty summary if at an empty position.
+    fn node_summary(&self) -> D::Summary;
 
     /// Returns the summary of all values in this node's subtree.
 	///```
@@ -145,10 +147,21 @@ pub trait SomeEntry<D : Data> {
 	///```
     fn subtree_summary(&self) -> D::Summary;
 
+    /// Returns the summary of the subtree of this node's left son.
     fn left_subtree_summary(&self) -> Option<D::Summary>;
+    /// Returns the summary of the subtree of this node's right son.
     fn right_subtree_summary(&self) -> Option<D::Summary>;
 
+    /// Applies the action on the current node.
+    fn act_node(&mut self, action : D::Action) -> Option<()>;
+
+    /// Applies the given action on this subtree.
     fn act_subtree(&mut self, action : D::Action);
+
+    /// Applies the given action on this node's left son.
+    fn act_left_subtree(&mut self, action : D::Action) -> Option<()>;
+    /// Applies the given action on this node's right son.
+    fn act_right_subtree(&mut self, action : D::Action) -> Option<()>;
 }
 
 

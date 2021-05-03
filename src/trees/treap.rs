@@ -7,6 +7,7 @@
 //! taking more than `O(log n)` time  is extremely low.
 
 
+
 use super::*;
 use super::basic_tree::*;
 use rand;
@@ -20,7 +21,15 @@ pub struct Treap<D : Data> {
 }
 
 impl<D : Data> SomeTree<D> for Treap<D> {
+    fn segment_summary<L>(&mut self, locator : L) -> D::Summary where
+        L : crate::Locator<D> {
+            methods::segment_summary(self, &locator)
+    }
 
+    fn act_segment<L>(&mut self, action : D::Action, locator : L) where
+        L : crate::Locator<D> {
+            methods::act_segment(self, action, &locator)
+    }
 }
 
 impl<D : Data> Default for Treap<D> {
@@ -65,6 +74,18 @@ impl<D : Data> SomeEntry<D> for Treap<D> {
 
     fn act_subtree(&mut self, action : D::Action) {
         self.tree.act_subtree(action);
+    }
+
+    fn act_node(&mut self, action : D::Action) -> Option<()> {
+        self.tree.act_node(action)
+    }
+
+    fn act_left_subtree(&mut self, action : D::Action) -> Option<()> {
+        self.tree.act_left_subtree(action)
+    }
+
+    fn act_right_subtree(&mut self, action : D::Action) -> Option<()> {
+        self.tree.act_right_subtree(action)
     }
 }
 
@@ -244,6 +265,18 @@ impl<'a, D : Data> SomeEntry<D> for TreapWalker<'a, D> {
 
     fn act_subtree(&mut self, action : D::Action) {
         self.walker.act_subtree(action);
+    }
+
+    fn act_node(&mut self, action : D::Action) -> Option<()> {
+        self.walker.act_node(action)
+    }
+
+    fn act_left_subtree(&mut self, action : D::Action) -> Option<()> {
+        self.walker.act_left_subtree(action)
+    }
+
+    fn act_right_subtree(&mut self, action : D::Action) -> Option<()> {
+        self.walker.act_right_subtree(action)
     }
 }
 

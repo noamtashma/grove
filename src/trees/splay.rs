@@ -133,23 +133,6 @@ impl<D : Data> SplayTree<D> {
 
         walker
     }
-
-    pub fn act_on_segment<L>(&mut self, locator : L, action : D::Action) where
-        L : crate::methods::locator::Locator<D>
-    {
-        let mut walker = self.isolate_segment(locator);
-        if let Some(node) = walker.inner_mut().node_mut() {
-            node.act(action);
-            node.access();
-        };
-    }
-
-    pub fn segment_summary<L>(&mut self, locator : L) -> D::Summary where
-    L : crate::methods::locator::Locator<D>
-    {
-        let walker = self.isolate_segment(locator);
-        walker.inner().subtree_summary()
-    }
 }
 
 
@@ -349,7 +332,20 @@ impl<'a, A : Data> Drop for SplayWalker<'a, A> {
     }
 }
 
-impl<A : Data> SomeTree<A> for SplayTree<A> {
+impl<D : Data> SomeTree<D> for SplayTree<D> {
+    
+    fn segment_summary<L>(&mut self, locator : L) -> D::Summary where
+    L : methods::Locator<D>
+    {
+        let walker = self.isolate_segment(locator);
+        walker.subtree_summary()
+    }
+
+    fn act_segment<L>(&mut self, action : D::Action, locator : L) where
+        L : crate::Locator<D> {
+            let mut walker = self.isolate_segment(locator);
+            walker.act_subtree(action);
+    }
 }
 
 impl<D : Data> SomeEntry<D> for SplayTree<D> {
@@ -381,6 +377,18 @@ impl<D : Data> SomeEntry<D> for SplayTree<D> {
     fn act_subtree(&mut self, action : D::Action) {
         self.tree.act_subtree(action);
         
+    }
+
+    fn act_node(&mut self, action : D::Action) -> Option<()> {
+        self.tree.act_node(action)
+    }
+
+    fn act_left_subtree(&mut self, action : D::Action) -> Option<()> {
+        self.tree.act_left_subtree(action)
+    }
+
+    fn act_right_subtree(&mut self, action : D::Action) -> Option<()> {
+        self.tree.act_right_subtree(action)
     }
 }
 
@@ -470,6 +478,18 @@ impl<'a, D : Data> SomeEntry<D> for SplayWalker<'a, D> {
 
     fn act_subtree(&mut self, action : D::Action) {
         self.walker.act_subtree(action);
+    }
+
+    fn act_node(&mut self, action : D::Action) -> Option<()> {
+        self.walker.act_node(action)
+    }
+
+    fn act_left_subtree(&mut self, action : D::Action) -> Option<()> {
+        self.walker.act_left_subtree(action)
+    }
+
+    fn act_right_subtree(&mut self, action : D::Action) -> Option<()> {
+        self.walker.act_right_subtree(action)
     }
 }
 

@@ -282,4 +282,11 @@ impl<D : Data, T> BasicNode<D, T> {
 	pub fn act(&mut self, action : D::Action) {
 		self.action = action + self.action;
 	}
+
+	/// This function applies the given action only to the current value in this node.
+	/// Same as [`SomeTree::act_node`].
+	pub fn act_value(&mut self, action : D::Action) {
+		self.access();
+		D::act_value(action, &mut self.node_value);
+	}
 }

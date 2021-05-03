@@ -1,9 +1,7 @@
 use crate::*;
 
 use super::trees::splay::*;
-use super::trees::*;
-use super::data::*;
-use super::data::example_data::*;
+use super::data::example_data::Size;
 
 const MODULUS : I = 1_000_000_000;
 
@@ -138,17 +136,17 @@ impl SizedData for RevData {
 impl SplayTree<RevData> {
     // splits a segment inside the tree
     fn search_split(&mut self, index : usize) {
-        let locator = locate_by_index_range(index, index);
+        let locator = methods::locate_by_index_range(index, index);
         let mut walker = // using an empty range so that we'll only end up at a node
             // if we actually need to split that node
-            search_by_locator(self, &locator);
+            methods::search_by_locator(self, &locator);
         
 
         let left = walker.left_summary().size;
         if let Some(val) = walker.value_mut() { // if we need to split a node
             let (v1, v2) = val.split_at_index(index - left);
             *val = v1;
-            next_empty(&mut walker).unwrap(); // not at an empty node
+            methods::next_empty(&mut walker).unwrap(); // not at an empty node
             walker.insert(v2).unwrap(); // the position must be empty
         }
     }
@@ -157,7 +155,7 @@ impl SplayTree<RevData> {
     fn reverse_segment(&mut self, low : usize, high : usize) {
         self.search_split(low);
         self.search_split(high);
-        self.act_on_segment(locate_by_index_range(low, high), RevAction { to_reverse : true });
+        self.act_segment(RevAction { to_reverse : true }, methods::locate_by_index_range(low, high));
     }
 }
 
@@ -200,10 +198,9 @@ pub fn yarra(n : usize, k : usize) -> I {
         tn %= n;
     }
 
-    let arr = to_array(&mut tree);
     let mut index = 0;
     let mut index_sum = 0;
-    for inter in arr {
+    for inter in tree.iter() { // coul use an owning iterator, bu we want to delay the tree's drop
         index_sum += inter.sum_with_index(index);
         index_sum %= MODULUS;
         index += inter.size();
@@ -221,6 +218,7 @@ pub fn yarra(n : usize, k : usize) -> I {
 pub fn test() {
     println!("Hello, world!");
 
+    // correct answer: 563917241
     let res = yarra(1000_000_000_000_000_000, 1000_000);
     //let res = yarra(10000, 10000);
     println!("{:?}", res);
