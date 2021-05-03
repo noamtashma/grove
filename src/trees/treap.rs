@@ -112,16 +112,16 @@ impl<D : Data> Treap<D> {
 	///```
 	/// use orchard::basic_tree::*;
 	/// use orchard::example_data::StdNum;
-	/// use orchard::locator;
+	/// use orchard::methods;
 	///
 	/// let mut tree : BasicTree<StdNum> = (20..80).collect();
-	/// let segment_iter = tree.iter_locator(locator::locate_by_index_range(3,13)); // should also try 3..5
+	/// let segment_iter = tree.iter_locator(methods::locate_by_index_range(3,13)); // should also try 3..5
 	///
 	/// assert_eq!(segment_iter.cloned().collect::<Vec<_>>(), (23..33).collect::<Vec<_>>());
 	/// # tree.assert_correctness();
 	///```
 	pub fn iter_locator<L>(&mut self, loc : L) -> impl Iterator<Item=&D::Value> where
-        L : methods::locator::Locator<D>
+        L : methods::Locator<D>
     {
         self.tree.iter_locator(loc)
     }
