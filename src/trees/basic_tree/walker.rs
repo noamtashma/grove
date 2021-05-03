@@ -64,19 +64,6 @@ pub struct BasicWalker<'a, A : Data, T=()> {
 	pub(super) is_left : Vec<bool>,
 }
 
-impl<'a, A : Data, T> Deref for BasicWalker<'a, A, T> {
-	type Target = BasicTree<A, T>;
-	fn deref(&self) -> &BasicTree<A, T> {
-		&*self.tel
-	}
-}
-
-impl<'a, A : Data, T> DerefMut for BasicWalker<'a, A, T> {
-	fn deref_mut(&mut self) -> &mut BasicTree<A, T> {
-		&mut *self.tel
-	}
-}
-
 impl<'a, D : Data, T> BasicWalker<'a, D, T> {
 	pub fn new(tree : &'a mut BasicTree<D, T>) -> BasicWalker<'a, D, T> {
 		tree.access();
@@ -85,31 +72,50 @@ impl<'a, D : Data, T> BasicWalker<'a, D, T> {
 					is_left : vec![] }
 	}
 
+	/// Returns true if at an empty position.
 	pub fn is_empty(&self) -> bool {
-		matches!(&*self.tel, BasicTree::Empty)
-	}
-	
-	/// If there is only the root, returns [`None`]
-	/// Otherwise returns [`Some(true)`] if the current position is a left son
-	/// [`Some(false)`] if the current position is a right son
-	pub fn is_left_son(&self) -> Option<bool> {
-		if self.is_left.is_empty() {
-			None
-		}
-		else {
-			Some(self.is_left[self.is_left.len() - 1])
-		}
-	}
-
-	/// The convention is, the root is at depth zero
-	pub fn depth(&self) -> usize {
-		self.is_left.len()
+		self.tel.is_empty()
 	}
 
 	/// Returns if this is the empty tree
 	/// Note: even if you are the root, the root might still be empty.
 	pub fn is_root(&self) -> bool {
 		self.is_left.is_empty()
+	}
+
+	/// If the current position is the left son of a node, returns [`Some(true)`].
+	/// If the current position is the right son of a node, returns [`Some(false)`].
+	/// If at the root, returns [`None`].
+	pub fn is_left_son(&self) -> Option<bool> {
+		self.is_left.last().cloned()
+	}
+
+	/// Not public since the walker should maintain the invariant that the current position
+	/// is always clean. Ergo, for internal use.
+	pub (in super::super) fn access(&mut self) {
+		self.tel.access();
+	}
+
+	/// Not public since the walker should maintain the invariant that the current position
+	/// is always clean. Ergo, for internal use.
+	pub (in super::super) fn rebuild(&mut self) {
+		self.tel.rebuild();
+	}
+
+	pub fn inner(&self) -> &BasicTree<D, T> {
+		& *self.tel
+	}
+
+	pub (in super::super) fn inner_mut(&mut self) -> &mut BasicTree<D, T> {
+		&mut *self.tel
+	}
+
+	pub fn node(&self) -> Option<&BasicNode<D, T>> {
+		self.tel.node()
+	}
+
+	pub (in super::super) fn node_mut(&mut self) -> Option<&mut BasicNode<D, T>> {
+		self.tel.node_mut()
 	}
 
 	/// Performs a left rotation
@@ -186,9 +192,7 @@ impl<'a, D : Data, T> BasicWalker<'a, D, T> {
 	}
 
 	pub fn go_to_root(&mut self) {
-		while !self.is_root() {
-			self.go_up().unwrap();
-		}
+		while let Ok(_) = self.go_up() {}
 	}
 
 	/// This takes the walker and turns it into a reference to the root

@@ -91,22 +91,19 @@ impl<D : Data> SplayTree<D> {
         while let Ok(_) = walker.go_right()
             {}
         match walker.go_up() {
-            Err(()) => { // the tree is empty; just substiture the other tree.
+            Err(()) => { // the tree is empty; just substitute the other tree.
                 drop(walker);
                 *self = other;
                 return;
             },
             Ok(false) => (),
-            Ok(true) => panic!(),
+            Ok(true) => unreachable!(),
         };
         walker.splay();
-        if let Some(node) = walker.inner_mut().node_mut() {
-            node.right = other.into_inner();
-            node.rebuild();
-        }
-        else {
-            panic!();
-        }
+        let node = walker.inner_mut().node_mut().unwrap();
+        assert!(node.right.is_empty() == true);
+        node.right = other.into_inner();
+        node.rebuild();
     }
 
     // TODO: isolate segment is probably not working correctly
@@ -154,25 +151,24 @@ impl<A : Data> std::default::Default for SplayTree<A> {
 
 
 #[derive(destructure)]
-pub struct SplayWalker<'a, A : Data> {
-    walker : BasicWalker<'a, A>,
+pub struct SplayWalker<'a, D : Data> {
+    walker : BasicWalker<'a, D>,
 }
 
-impl<'a, A : Data> SplayWalker<'a, A> {
-
-    pub fn inner(&self) -> &BasicTree<A> {
-        &*self.walker
+impl<'a, D : Data> SplayWalker<'a, D> {
+    pub fn inner(&self) -> &BasicTree<D> {
+        self.walker.inner()
     }
 
     // using this function can really mess up the structure
     // use wisely
     // this function shouldn't really be public
     // TODO: should this function exist?
-    pub fn inner_mut(&mut self) -> &mut BasicTree<A> {
-        &mut *self.walker
+    pub (super)  fn inner_mut(&mut self) -> &mut BasicTree<D> {
+        self.walker.inner_mut()
     }
 
-    pub fn into_inner(self) -> BasicWalker<'a, A> {
+    pub fn into_inner(self) -> BasicWalker<'a, D> {
         // this is a workaround for the problem that, 
         // we can't move out of a type implementing Drop
 
@@ -180,7 +176,7 @@ impl<'a, A : Data> SplayWalker<'a, A> {
         walker
     }
 
-    pub fn new(walker : BasicWalker<'a, A>) -> Self {
+    pub fn new(walker : BasicWalker<'a, D>) -> Self {
         SplayWalker { walker }
     }
     
@@ -300,7 +296,7 @@ impl<'a, A : Data> SplayWalker<'a, A> {
     /// assert_eq!(tree2.iter().cloned().collect::<Vec<_>>(), (24..88).collect::<Vec<_>>());
     /// # tree.assert_correctness();
     ///```
-    pub fn split(&mut self) -> Option<SplayTree<A>> {
+    pub fn split(&mut self) -> Option<SplayTree<D>> {
         if !self.is_empty() { return None }
         
         // to know which side we should cut

@@ -23,7 +23,6 @@ pub enum BasicTree<A : ?Sized + Data, T=()> {
 use BasicTree::*;
 
 impl<D : Data, T> BasicTree<D, T> {
-
 	/// Constructs a new non-empty tree from a node.
 	pub fn new(node : BasicNode<D, T>) -> BasicTree<D, T> {
 		Root(Box::new(node))
@@ -284,7 +283,7 @@ impl<D : Data, T> BasicNode<D, T> {
 	}
 
 	/// This function applies the given action only to the current value in this node.
-	/// Same as [`SomeTree::act_node`].
+	/// Same as [`SomeEntry::act_node`].
 	pub fn act_value(&mut self, action : D::Action) {
 		self.access();
 		D::act_value(action, &mut self.node_value);

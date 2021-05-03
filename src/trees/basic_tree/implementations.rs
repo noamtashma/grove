@@ -101,7 +101,7 @@ impl<'a, D : Data, T> SomeWalker<D> for BasicWalker<'a, D, T> {
 	}
 
 	fn depth(&self) -> usize {
-		self.depth()
+		self.is_left.len()
 	}
 
 	fn far_left_summary(&self) -> D::Summary {
@@ -116,7 +116,7 @@ impl<'a, D : Data, T> SomeWalker<D> for BasicWalker<'a, D, T> {
     // }
 
 	fn value(&self) -> Option<&D::Value> {
-		let value = self.node()?.node_value_clean();
+		let value = self.tel.node()?.node_value_clean();
 		Some(value)
 	}
 }
@@ -208,25 +208,25 @@ impl<'a, D : Data, T> SomeEntry<D> for BasicWalker<'a, D, T> {
 
     fn act_subtree(&mut self, action : D::Action) {
         self.tel.act_subtree(action);
-		self.access();
+		self.tel.access();
     }
 
     fn act_node(&mut self, action : D::Action) -> Option<()> {
-		let node = self.node_mut()?;
+		let node = self.tel.node_mut()?;
 		D::act_value(action, &mut node.node_value);
 		node.rebuild();
 		Some(())
     }
 
     fn act_left_subtree(&mut self, action : D::Action) -> Option<()> {
-        let node = self.node_mut()?;
+        let node = self.tel.node_mut()?;
 		node.left.act_subtree(action);
 		node.rebuild();
 		Some(())
     }
 
     fn act_right_subtree(&mut self, action : D::Action) -> Option<()> {
-        let node = self.node_mut()?;
+        let node = self.tel.node_mut()?;
 		node.right.act_subtree(action);
 		node.rebuild();
 		Some(())
@@ -245,7 +245,7 @@ impl<'a, D : Data> ModifiableWalker<D> for BasicWalker<'a, D> {
     }
 
     fn delete(&mut self) -> Option<D::Value> {
-        let tree = std::mem::replace(&mut **self, BasicTree::Empty);
+        let tree = std::mem::replace(&mut *self.tel, BasicTree::Empty);
 		let mut boxed_node = match tree {
 			Empty => return None,
 			Root(boxed_node) => boxed_node,
@@ -254,7 +254,7 @@ impl<'a, D : Data> ModifiableWalker<D> for BasicWalker<'a, D> {
 			false => {
 				let mut walker = boxed_node.right.walker();
 				methods::next_filled(&mut walker).unwrap();
-				let tree2 = std::mem::replace(&mut *walker, BasicTree::Empty);
+				let tree2 = std::mem::replace(&mut *walker.tel, BasicTree::Empty);
 				drop(walker);
 
 				let mut boxed_node2 = match tree2 {
@@ -266,10 +266,10 @@ impl<'a, D : Data> ModifiableWalker<D> for BasicWalker<'a, D> {
 				boxed_node2.left = boxed_node.left;
 				boxed_node2.right = boxed_node.right;
 				boxed_node2.rebuild();
-				**self = BasicTree::Root(boxed_node2);
+				*self.tel = BasicTree::Root(boxed_node2);
 			},
 			true => {
-				**self = boxed_node.left;
+				*self.tel = boxed_node.left;
 			},
 		}
 		Some(boxed_node.node_value)

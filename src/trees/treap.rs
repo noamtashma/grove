@@ -323,7 +323,7 @@ impl<'a, D : Data> TreapWalker<'a, D> {
         }
 
         if prev_side == true {
-            std::mem::swap(&mut *self.walker, &mut temp);
+            std::mem::swap(self.walker.inner_mut(), &mut temp);
         }
         Some(Treap {tree : temp})
     }
@@ -372,27 +372,27 @@ impl<'a, D : Data> ModifiableWalker<D> for TreapWalker<'a, D> {
         
         if prev_side == true {
             new.left = temp;
-            new.right = std::mem::replace(&mut *self.walker, BasicTree::Empty);
+            new.right = std::mem::replace(self.walker.inner_mut(), BasicTree::Empty);
         } else {
             new.right = temp;
-            new.left = std::mem::replace(&mut *self.walker, BasicTree::Empty);
+            new.left = std::mem::replace(self.walker.inner_mut(), BasicTree::Empty);
         }
         new.rebuild();
-        *self.walker = BasicTree::new(new);
+        *self.walker.inner_mut() = BasicTree::new(new);
         Some(())
     }
 
     /// Removes the current value from the tree, and returns it.
     /// If currently at an empty position, returns [`None`].
     fn delete(&mut self) -> Option<D::Value> {
-        let tree = std::mem::replace(&mut *self.walker, BasicTree::Empty);
+        let tree = std::mem::replace(self.walker.inner_mut(), BasicTree::Empty);
         let boxed_node = match tree {
             BasicTree::Root(boxed_node) => boxed_node,
             BasicTree::Empty => return None,
         };
         let left = Treap { tree : boxed_node.left };
         let right = Treap { tree : boxed_node.right };
-        *self.walker = concatenate(left, right).tree;
+        *self.walker.inner_mut() = concatenate(left, right).tree;
         Some(boxed_node.node_value)
     }
 } 
@@ -414,15 +414,15 @@ pub fn concatenate<D : Data>(mut tree1 : Treap<D>, tree2 : Treap<D>) -> Treap<D>
     let mut tree_r = tree2.tree;
     loop {
         match (walker.priority(), tree_r.alg_data().cloned()) {
-            (None, _) => { *walker.walker = tree_r; break },
+            (None, _) => { *walker.walker.inner_mut() = tree_r; break },
             (_, None) => break,
             (Some(a), Some(b)) if a < b => {
                 walker.go_right().unwrap();
             },
             _ => { 
-                std::mem::swap(&mut *walker.walker, &mut tree_r);
+                std::mem::swap(walker.walker.inner_mut(), &mut tree_r);
                 walker.go_left().unwrap();
-                std::mem::swap(&mut *walker.walker, &mut tree_r);
+                std::mem::swap(walker.walker.inner_mut(), &mut tree_r);
             },
         }
     }

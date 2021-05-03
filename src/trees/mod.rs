@@ -67,6 +67,7 @@ pub trait SomeWalker<D : Data> : SomeEntry<D> {
 
 
     /// Returns the current depth in the tree.
+	/// The convention is, the root is at depth zero
     fn depth(&self) -> usize;
 
     /// Returns a summary of all the values to the left of this point,

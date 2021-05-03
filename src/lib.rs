@@ -26,7 +26,7 @@
 //! * Reverse subsegments
 //!     * Must be part of the action type.
 //!     * Possible only with some balanced tree algorithms.
-//! * Search for specific elements. See [`locator`] module.
+//! * Search for specific elements. See [`methods`] module.
 //! * Split and concatenate segment trees
 //!     * Possible only with some balanced tree algorithms.
 //!
