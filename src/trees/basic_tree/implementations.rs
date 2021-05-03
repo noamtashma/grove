@@ -122,11 +122,6 @@ impl<'a, D : Data, T> SomeWalker<D> for BasicWalker<'a, D, T> {
 }
 
 impl<D : Data, T> SomeEntry<D> for BasicTree<D, T> {
-	fn value_mut(&mut self) -> Option<&mut D::Value> {
-		let value = &mut self.node_mut()?.node_value;
-		Some(value)
-	}
-
 	fn node_summary(&self) -> D::Summary {
 		match self.node() {
 			None => D::EMPTY,
@@ -152,8 +147,10 @@ impl<D : Data, T> SomeEntry<D> for BasicTree<D, T> {
 
     fn with_value<F, R>(&mut self, f : F) -> Option<R> where 
         F : FnOnce(&mut D::Value) -> R {
-        let res = f(self.value_mut()?);
-    	self.access();
+		self.access();
+		let value = &mut self.node_mut()?.node_value;
+        let res = f(value);
+    	self.rebuild();
     	Some(res)
     }
 
@@ -188,10 +185,6 @@ impl<D : Data, T> SomeEntry<D> for BasicTree<D, T> {
 }
 
 impl<'a, D : Data, T> SomeEntry<D> for BasicWalker<'a, D, T> {
-    fn value_mut(&mut self) -> Option<&mut D::Value> {
-        self.tel.value_mut()
-    }
-
 	fn node_summary(&self) -> D::Summary {
 		self.tel.node_summary()
 	}
@@ -210,9 +203,7 @@ impl<'a, D : Data, T> SomeEntry<D> for BasicWalker<'a, D, T> {
 
     fn with_value<F, R>(&mut self, f : F) -> Option<R> where 
         F : FnOnce(&mut D::Value) -> R {
-        let res = f(self.value_mut()?);
-		self.access();
-		Some(res)
+        self.tel.with_value(f)
     }
 
     fn act_subtree(&mut self, action : D::Action) {

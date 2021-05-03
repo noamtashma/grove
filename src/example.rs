@@ -143,11 +143,15 @@ impl SplayTree<RevData> {
         
 
         let left = walker.left_summary().size;
-        if let Some(val) = walker.value_mut() { // if we need to split a node
+        let v2option = walker.with_value( |val| {
             let (v1, v2) = val.split_at_index(index - left);
             *val = v1;
+            v2
+        });
+
+        if let Some(v2) = v2option {
             methods::next_empty(&mut walker).unwrap(); // not at an empty node
-            walker.insert(v2).unwrap(); // the position must be empty
+            walker.insert(v2).unwrap();
         }
     }
 

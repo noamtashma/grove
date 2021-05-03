@@ -349,10 +349,6 @@ impl<D : Data> SomeTree<D> for SplayTree<D> {
 }
 
 impl<D : Data> SomeEntry<D> for SplayTree<D> {
-    fn value_mut(&mut self) -> Option<&mut D::Value> {
-        self.tree.value_mut()
-    }
-
     fn node_summary(&self) -> D::Summary {
         self.tree.node_summary()
     }
@@ -451,10 +447,6 @@ impl<'a, A : Data> SomeWalker<A> for SplayWalker<'a, A> {
 }
 
 impl<'a, D : Data> SomeEntry<D> for SplayWalker<'a, D> {
-    fn value_mut(&mut self) -> Option<&mut D::Value> {
-        self.walker.value_mut()
-    }
-
     fn node_summary(&self) -> D::Summary {
         self.walker.node_summary()
     }

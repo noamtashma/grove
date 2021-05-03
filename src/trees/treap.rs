@@ -47,10 +47,6 @@ impl<'a, D : Data> SomeTreeRef<D> for &'a mut Treap<D> {
 }
 
 impl<D : Data> SomeEntry<D> for Treap<D> {
-    fn value_mut(&mut self) -> Option<&mut D::Value> {
-        self.tree.value_mut()
-    }
-
     fn with_value<F, R>(&mut self, f : F) -> Option<R> where 
         F : FnOnce(&mut D::Value) -> R {
         self.tree.with_value(f)
@@ -238,10 +234,6 @@ impl<'a, D : Data> SomeWalker<D> for TreapWalker<'a, D> {
 }
 
 impl<'a, D : Data> SomeEntry<D> for TreapWalker<'a, D> {
-    fn value_mut(&mut self) -> Option<&mut D::Value> {
-        self.walker.value_mut()
-    }
-
     fn with_value<F, R>(&mut self, f : F) -> Option<R> where 
         F : FnOnce(&mut D::Value) -> R {
         self.walker.with_value(f)

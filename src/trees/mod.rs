@@ -107,17 +107,8 @@ pub trait SomeWalker<D : Data> : SomeEntry<D> {
 /// Methods that ask to read the contents of the current tree/position.
 /// These methods are common to the trees themselves and to the walkers.
 pub trait SomeEntry<D : Data> {
-    // TODO: switch uses to `with_value`.
-    /// Note: this function can be used to violate the invariant that the current node of a walker
-    /// is "clean", which in fact means that the summary value is correct.
-    /// To prevent this, call `self.rebuild()` after modifying, or use
-    /// [`Self::with_value`] instead.
-    fn value_mut(&mut self) -> Option<&mut D::Value>;
-
-    // useful example implementation:
-    // let res = f(self.value_mut()?);
-    // self.access();
-    // Some(res)
+    /// Lets you modify the value, and after you modified it, rebuilds the node.
+    /// If the current position is empty, returns [`None`].
     fn with_value<F, R>(&mut self, f : F) -> Option<R> where 
         F : FnOnce(&mut D::Value) -> R;
     
