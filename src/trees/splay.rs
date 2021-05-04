@@ -132,17 +132,6 @@ impl<D : Data> SplayTree<D> {
     }
 }
 
-
-impl<A : Data + Reverse> SplayTree<A> {
-    pub fn reverse(&mut self) {
-        self.tree.reverse();
-        // This is necessary since the walker maintains the
-        // invariant that the current position is `clean`.
-        self.tree.access();
-    }
-}
-
-
 impl<A : Data> std::default::Default for SplayTree<A> {
     fn default() -> Self {
         SplayTree::new()

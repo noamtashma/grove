@@ -114,24 +114,12 @@ pub trait Data {
 	/// This function should be implemented if you want to be able to reverse subtrees of your tree,
 	/// i.e., if you also implement [`Reverse`].
 	///
+	/// Note that if the action reverses a segment, it shouldn't be used with [`methods::act_segment`].
+	/// Instead, use a tree type that supports reversals (e.g, SplayTree, Treap) and use its native
+	/// [`SomeTree::act_segment`] function.
+	///
 	/// This function should return whether this action reverses the segment it is applied to.
 	fn to_reverse(_action : Self::Action) -> bool {
 		false
 	}
-}
-
-/// Marker trait for Data that implement reverse.
-/// If you want your data structure to be able to reverse subtrees,
-/// implement this marker trait, and the [`Data::to_reverse`] function.
-
-/// Note that if the action reverses a segment, it shouldn't be used on the regular functions
-/// that apply an action to a segment, because that would reverse different parts of the segment
-/// separately. Instead, it should work with the split-then-apply variants. (TODO: implement)
-
-/// The [`Data::to_reverse`] function is part of the [`Data`] trait and not this trait,
-/// in order that the [`crate::basic_tree::BasicNode::access`] function can work for both reversible and non reversible
-/// actions uniformly.
-pub trait Reverse : Data {
-	/// Mark the action in the node that it should be reversed.
-	fn internal_reverse<T>(node : &mut crate::trees::basic_tree::BasicNode<Self, T>);
 }

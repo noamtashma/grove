@@ -208,24 +208,6 @@ impl<D : Data> Treap<D> {
     }
 }
 
-impl<D : Data + Reverse> Treap<D> {
-    /// Reverses the whole tree.
-	/// Complexity: O(log n).
-	///```
-	/// use orchard::basic_tree::*;
-	/// use orchard::example_data::StdNum;
-	///
-	/// let mut tree : BasicTree<StdNum> = (17..=89).collect();
-	/// tree.reverse();
-	///
-	/// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..=89).rev().collect::<Vec<_>>());
-	/// # tree.assert_correctness();
-	///```
-	pub fn reverse(&mut self) {
-		self.tree.reverse();
-	}
-}
-
 impl<D : Data> std::iter::FromIterator<D::Value> for Treap<D> {
     /// This takes [`O(n)`] worst-case time.
     fn from_iter<T: IntoIterator<Item = D::Value>>(iter: T) -> Self {

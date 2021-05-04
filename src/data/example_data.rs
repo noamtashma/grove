@@ -183,12 +183,6 @@ impl SizedData for StdNum {
     }
 }
 
-impl Reverse for StdNum {
-    fn internal_reverse<T>(node : &mut crate::trees::basic_tree::BasicNode<Self, T>) {
-        node.act(RevAddAction {to_reverse : true, add : 0});
-    }
-}
-
 
 
 // TODO: consider retiring this and just requiring Value : Ord instead.

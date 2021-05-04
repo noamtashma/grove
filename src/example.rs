@@ -121,12 +121,6 @@ impl Data for RevData {
     }
 }
 
-impl Reverse for RevData {
-    fn internal_reverse<T>(node : &mut basic_tree::BasicNode<Self, T>) {
-        node.act(RevAction{to_reverse : true})
-    }
-}
-
 impl SizedData for RevData {
     fn size(summary : Self::Summary) -> usize {
         summary.size

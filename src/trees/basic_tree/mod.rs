@@ -140,33 +140,6 @@ impl<D : Data, T> BasicTree<D, T> {
 	}
 }
 
-impl<D : Data + Reverse, T> BasicTree<D, T> {
-	/// Reverses the whole tree.
-	/// Complexity: O(log n).
-	///```
-	/// use orchard::basic_tree::*;
-	/// use orchard::example_data::StdNum;
-	///
-	/// let mut tree : BasicTree<StdNum> = (17..=89).collect();
-	/// tree.reverse();
-	///
-	/// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..=89).rev().collect::<Vec<_>>());
-	/// # tree.assert_correctness();
-	///```
-	pub fn reverse(&mut self) {
-		if let Root(node) = self {
-			node.reverse();
-		}
-	}
-}
-
-impl<D : Data + Reverse, T> BasicNode<D, T> {
-	/// Same as [`BasicTree::reverse`].
-	pub fn reverse(&mut self) {
-		Reverse::internal_reverse(self);
-	}
-}
-
 // TODO: decide if the fields should really be public
 /// A basic node. can be viewed as a non-empty basic tree: it always has at least one value.
 /// The `T` parameter is for algorithm-specific bookeeping data.
