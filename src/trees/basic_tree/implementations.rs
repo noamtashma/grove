@@ -9,12 +9,12 @@ use crate::telescope::NO_VALUE_ERROR;
 impl<D : Data> SomeTree<D> for BasicTree<D> {
     fn segment_summary<L>(&mut self, locator : L) -> D::Summary where
         L : Locator<D> {
-		methods::segment_summary(self, &locator)
+		methods::segment_summary(self, locator)
     }
 
     fn act_segment<L>(&mut self, action : D::Action, locator : L) where
         L : Locator<D> {
-       methods::act_segment(self, action, &locator);
+       methods::act_segment(self, action, locator);
     }
 }
 

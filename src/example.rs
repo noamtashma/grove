@@ -139,7 +139,7 @@ impl SplayTree<RevData> {
         let locator = methods::locate_by_index_range(index, index);
         let mut walker = // using an empty range so that we'll only end up at a node
             // if we actually need to split that node
-            methods::search_by_locator(self, &locator);
+            methods::search_by_locator(self, locator);
         
 
         let left = walker.left_summary().size;

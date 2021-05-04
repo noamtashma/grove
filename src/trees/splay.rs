@@ -115,13 +115,13 @@ impl<D : Data> SplayTree<D> {
 
         let left_edge = methods::LeftEdgeLocator(locator);
         // reborrows the tree for a shorter time
-        let mut walker = methods::search_by_locator(&mut *self, &left_edge);
+        let mut walker = methods::search_by_locator(&mut *self, left_edge);
         let b1 = methods::previous_filled(&mut walker).is_ok();
         // walker.splay(); already happens because of the drop
         drop(walker); // must drop here so that the next call to search can happen
 
         let right_edge = methods::RightEdgeLocator(left_edge.0);
-        let mut walker = methods::search_by_locator(&mut *self, &right_edge);
+        let mut walker = methods::search_by_locator(&mut *self, right_edge);
         let b2 = methods::next_filled(&mut walker).is_ok();
         if b2 {
             walker.splay_to_depth( if b1 {1} else {0});
@@ -288,7 +288,7 @@ impl<'a, D : Data> SplayWalker<'a, D> {
     /// use orchard::methods::*; 
     ///
     /// let mut tree : SplayTree<StdNum> = (17..88).collect();
-    /// let mut walker = search_by_locator(&mut tree, &IndexLocator{low : 7, high : 7});
+    /// let mut walker = search_by_locator(&mut tree, IndexLocator{low : 7, high : 7});
     /// let mut tree2 = walker.split().unwrap();
     /// drop(walker);
     ///

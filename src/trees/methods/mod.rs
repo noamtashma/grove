@@ -112,7 +112,7 @@ pub fn insert_by_key<D : Data, TR>(tree : TR, data : D::Value)
 
 // TODO: make this return an error instead
 /// Panics if the locator accepts a node.
-pub fn insert_by_locator<D : Data, L, TR> (tree : TR, locator : &L, value : D::Value)
+pub fn insert_by_locator<D : Data, L, TR> (tree : TR, locator : L, value : D::Value)
     -> TR::Walker where
     TR : SomeTreeRef<D>,
     TR::Walker : ModifiableWalker<D>,
@@ -139,7 +139,7 @@ pub fn search<TR, A : Data>(tree : TR, key : &<<A as Data>::Value as Keyed>::Key
 /// Finds any node that the locator `Accept`s.
 /// If there isn't any, it finds the empty location where that node would be instead.
 /// Returns a walker at the wanted position.
-pub fn search_by_locator<TR, A : Data, L>(tree : TR, locator : &L)
+pub fn search_by_locator<TR, A : Data, L>(tree : TR, locator : L)
     -> TR::Walker where
     TR : crate::trees::SomeTreeRef<A>,
     L : Locator<A>,
@@ -162,7 +162,7 @@ pub fn search_by_locator<TR, A : Data, L>(tree : TR, locator : &L)
 /// because it uses go_up().
 /// 
 /// Instead, use [`SomeTree::segment_summary`]
-pub fn segment_summary<TR, L, A : Data>(tree : TR, locator : &L) -> 
+pub fn segment_summary<TR, L, A : Data>(tree : TR, locator : L) -> 
         A::Summary where
     TR : SomeTreeRef<A>,
     L : Locator<A>,
@@ -197,7 +197,7 @@ pub fn segment_summary<TR, L, A : Data>(tree : TR, locator : &L) ->
     A::EMPTY
 }
 
-fn segment_summary_on_suffix<W, L, A : Data>(walker : &mut W, locator : &L) ->
+fn segment_summary_on_suffix<W, L, A : Data>(walker : &mut W, locator : L) ->
        A::Summary where
     W : SomeWalker<A>,
     L : Locator<A>,
@@ -219,7 +219,7 @@ fn segment_summary_on_suffix<W, L, A : Data>(walker : &mut W, locator : &L) ->
     res
 }
 
-fn segment_summary_on_prefix<W, L, A : Data>(walker : &mut W, locator : &L) ->
+fn segment_summary_on_prefix<W, L, A : Data>(walker : &mut W, locator : L) ->
         A::Summary where
     W : SomeWalker<A>,
     L : Locator<A>,
@@ -246,10 +246,11 @@ fn segment_summary_on_prefix<W, L, A : Data>(walker : &mut W, locator : &L) ->
 /// because it uses go_up().
 /// 
 /// Instead, use [`SomeTree::act_segment`]
-pub fn act_segment<TR, L, D : Data>(tree : TR, action : D::Action, locator : &L) where
+pub fn act_segment<TR, L, D : Data>(tree : TR, action : D::Action, locator : L) where
     TR : SomeTreeRef<D>,
     L : Locator<D>,
 {
+    assert!(D::to_reverse(action) == false);
     use LocResult::*;
 
     let mut walker = tree.walker();
@@ -277,7 +278,7 @@ pub fn act_segment<TR, L, D : Data>(tree : TR, action : D::Action, locator : &L)
 }
 
 // Only works if `action.to_reverse()` is false. does not check.
-fn act_on_suffix<W, L, D : Data>(walker : &mut W, action : D::Action, locator : &L) where
+fn act_on_suffix<W, L, D : Data>(walker : &mut W, action : D::Action, locator : L) where
     W : SomeWalker<D>,
     L : Locator<D>,
 {
@@ -298,7 +299,7 @@ fn act_on_suffix<W, L, D : Data>(walker : &mut W, action : D::Action, locator : 
 
 
 // Only works if `action.to_reverse()` is false. does not check.
-fn act_on_prefix<W, L, D : Data>(walker : &mut W, action : D::Action, locator : &L) where
+fn act_on_prefix<W, L, D : Data>(walker : &mut W, action : D::Action, locator : L) where
     W : SomeWalker<D>,
     L : Locator<D>,
 {

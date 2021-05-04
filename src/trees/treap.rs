@@ -8,6 +8,8 @@
 
 
 
+use crate::methods::search_by_locator;
+
 use super::*;
 use super::basic_tree::*;
 use rand;
@@ -23,12 +25,30 @@ pub struct Treap<D : Data> {
 impl<D : Data> SomeTree<D> for Treap<D> {
     fn segment_summary<L>(&mut self, locator : L) -> D::Summary where
         L : crate::Locator<D> {
-            methods::segment_summary(self, &locator)
+            methods::segment_summary(self, locator)
     }
 
     fn act_segment<L>(&mut self, action : D::Action, locator : L) where
-        L : crate::Locator<D> {
-            methods::act_segment(self, action, &locator)
+        L : crate::Locator<D>
+    {
+        if D::to_reverse(action) == false {
+            methods::act_segment(self, action, locator)
+        } else {
+            // split out the middle
+            let mut walker = search_by_locator(&mut *self, methods::LeftEdgeLocator(locator));
+            let mut mid = walker.split().unwrap();
+            drop(walker);
+            let mut walker = search_by_locator(&mut mid, methods::LeftEdgeLocator(locator));
+            let right = walker.split().unwrap();
+            drop(walker);
+            
+            // apply action
+            mid.act_subtree(action);
+
+            // glue back together
+            mid.concatenate( right);
+            self.concatenate(mid);
+        }
     }
 }
 
@@ -152,6 +172,39 @@ impl<D : Data> Treap<D> {
         D::Summary : Eq,
     {
         self.tree.assert_correctness()
+    }
+
+    /// Concatenates the trees together, in place.
+    ///```
+    /// use orchard::treap::*;
+    /// use orchard::example_data::StdNum;
+    ///
+    /// let mut tree : Treap<StdNum> = (17..=89).collect();
+    /// let tree2 : Treap<StdNum> = (13..=25).collect();
+    /// tree.concatenate(tree2);
+    ///
+    /// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..=89).chain(13..=25).collect::<Vec<_>>());
+    /// # tree.assert_correctness();
+    ///```
+    pub fn concatenate(&mut self, tree2 : Treap<D>) {
+        let mut walker = self.walker();
+        let mut tree_r = tree2.tree;
+        loop {
+            match (walker.priority(), tree_r.alg_data().cloned()) {
+                (None, _) => { *walker.walker.inner_mut() = tree_r; break },
+                (_, None) => break,
+                (Some(a), Some(b)) if a < b => {
+                    walker.go_right().unwrap();
+                },
+                _ => { 
+                    std::mem::swap(walker.walker.inner_mut(), &mut tree_r);
+                    walker.go_left().unwrap();
+                    std::mem::swap(walker.walker.inner_mut(), &mut tree_r);
+                },
+            }
+        }
+        // the walker is responsible for going up the tree
+        // and rebuilding all the nodes
     }
 }
 
@@ -293,7 +346,7 @@ impl<'a, D : Data> TreapWalker<'a, D> {
     /// use orchard::methods::*; 
     ///
     /// let mut tree : Treap<StdNum> = (17..88).collect();
-    /// let mut walker = search_by_locator(&mut tree, &IndexLocator{low : 7, high : 7});
+    /// let mut walker = search_by_locator(&mut tree, IndexLocator{low : 7, high : 7});
     /// let mut tree2 = walker.split().unwrap();
     /// drop(walker);
     ///
@@ -410,23 +463,6 @@ impl<'a, D : Data> ModifiableWalker<D> for TreapWalker<'a, D> {
 /// # tree.assert_correctness();
 ///```
 pub fn concatenate<D : Data>(mut tree1 : Treap<D>, tree2 : Treap<D>) -> Treap<D> {
-    let mut walker = tree1.walker();
-    let mut tree_r = tree2.tree;
-    loop {
-        match (walker.priority(), tree_r.alg_data().cloned()) {
-            (None, _) => { *walker.walker.inner_mut() = tree_r; break },
-            (_, None) => break,
-            (Some(a), Some(b)) if a < b => {
-                walker.go_right().unwrap();
-            },
-            _ => { 
-                std::mem::swap(walker.walker.inner_mut(), &mut tree_r);
-                walker.go_left().unwrap();
-                std::mem::swap(walker.walker.inner_mut(), &mut tree_r);
-            },
-        }
-    }
-    drop(walker); // the walker is responsible for going up the tree
-    // and rebuilding all the nodes
+    tree1.concatenate(tree2);
     tree1
 }
