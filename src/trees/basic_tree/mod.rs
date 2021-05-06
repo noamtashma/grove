@@ -68,7 +68,7 @@ impl<D : Data, T> BasicTree<D, T> {
 	/// # tree.assert_correctness();
 	///```
 	pub fn iter(&mut self) -> impl Iterator<Item=&D::Value> {
-		iterators::ImmIterator::new(self, methods::locator::all::<D>)
+		iterators::ImmIterator::new(self, ..)
 	}
 
 	/// Iterates over the given segment.

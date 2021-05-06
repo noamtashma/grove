@@ -233,10 +233,10 @@ impl<D : Data> std::iter::FromIterator<D::Value> for Treap<D> {
 
 impl<D : Data> IntoIterator for Treap<D> {
     type Item = D::Value;
-    type IntoIter = iterators::OwningIterator<D, fn(D::Summary, &D::Value, D::Summary) -> methods::LocResult, T>;
+    type IntoIter = iterators::OwningIterator<D, std::ops::RangeFull, T>;
 
     fn into_iter(self) -> Self::IntoIter {
-        iterators::OwningIterator::new(self.tree, methods::all::<D>)
+        iterators::OwningIterator::new(self.tree, ..)
     }
 }
 
