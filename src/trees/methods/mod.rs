@@ -127,33 +127,56 @@ pub fn insert_by_locator<D : Data, L, TR> (tree : TR, locator : L, value : D::Va
 /// Finds any node by key.
 /// If there isn't any, it finds the empty location where that node would be instead.
 /// Returns a walker at the wanted position.
-pub fn search<TR, A : Data>(tree : TR, key : &<<A as Data>::Value as Keyed>::Key) ->  TR::Walker where
-    TR : SomeTreeRef<A>,
-    A : Data,
-    A::Value : crate::data::example_data::Keyed,
+pub fn search_walker<W, D : Data>(walker : &mut W, key : &<<D as Data>::Value as Keyed>::Key) where
+    W : SomeWalker<D>,
+    D : Data,
+    D::Value : crate::data::example_data::Keyed,
     //<A as data::Data>::Value : std::fmt::Debug,
 {
-    search_by_locator(tree, &locate_by_key::<A>(key))
+    search_walker_by_locator(walker, &locate_by_key::<D>(key));
+}
+
+/// Finds any node by key.
+/// If there isn't any, it finds the empty location where that node would be instead.
+/// Returns a walker at the wanted position.
+pub fn search<TR, D : Data>(tree : TR, key : &<<D as Data>::Value as Keyed>::Key) -> TR::Walker where
+    TR : SomeTreeRef<D>,
+    D : Data,
+    D::Value : crate::data::example_data::Keyed,
+    //<A as data::Data>::Value : std::fmt::Debug,
+{
+    let mut walker = tree.walker();
+    search_walker(&mut walker, key);
+    return walker;
 }
 
 /// Finds any node that the locator `Accept`s.
 /// If there isn't any, it finds the empty location where that node would be instead.
 /// Returns a walker at the wanted position.
-pub fn search_by_locator<TR, A : Data, L>(tree : TR, locator : L)
-    -> TR::Walker where
-    TR : crate::trees::SomeTreeRef<A>,
-    L : Locator<A>,
+pub fn search_walker_by_locator<W, D : Data, L>(walker : &mut W, locator : L) where
+    W : crate::trees::SomeWalker<D>,
+    L : Locator<D>,
 {
     use LocResult::*;
 
-    let mut walker = tree.walker();
-    while let Some(res) = walker_locate(&mut walker, locator) {
+    while let Some(res) = walker_locate(walker, locator) {
         match res {
             Accept => break,
             GoRight => walker.go_right().unwrap(),
             GoLeft => walker.go_left().unwrap(),
         };
     }
+}
+
+/// Finds any node that the locator `Accept`s.
+/// If there isn't any, it finds the empty location where that node would be instead.
+/// Returns a walker at the wanted position.
+pub fn search_by_locator<TR, D : Data, L>(tree : TR, locator : L) -> TR::Walker where
+    TR : crate::trees::SomeTreeRef<D>,
+    L : Locator<D>,
+{
+    let mut walker = tree.walker();
+    search_walker_by_locator(&mut walker, locator);
     return walker;
 }
 
@@ -162,10 +185,10 @@ pub fn search_by_locator<TR, A : Data, L>(tree : TR, locator : L)
 /// because it uses go_up().
 /// 
 /// Instead, use [`SomeTree::segment_summary`]
-pub fn segment_summary<TR, L, A : Data>(tree : TR, locator : L) -> 
-        A::Summary where
-    TR : SomeTreeRef<A>,
-    L : Locator<A>,
+pub fn segment_summary<TR, L, D : Data>(tree : TR, locator : L) -> 
+        D::Summary where
+    TR : SomeTreeRef<D>,
+    L : Locator<D>,
 {
     use LocResult::*;
 
@@ -173,28 +196,28 @@ pub fn segment_summary<TR, L, A : Data>(tree : TR, locator : L) ->
     while let Some(res) = walker_locate(&mut walker, locator) {
         match res {
             GoRight => walker.go_right().unwrap(),
-            GoLeft => walker.go_right().unwrap(),
+            GoLeft => walker.go_left().unwrap(),
 
             // at this point, we split into the two sides
             Accept => {
                 let node_value = walker.node_summary();
                 let depth = walker.depth();
                 walker.go_left().unwrap();
-                let prefix = segment_summary_on_prefix(&mut walker, locator);
+                let first_half = segment_summary_on_suffix(&mut walker, locator);
                 // get back to the original node
                 for _ in 0..walker.depth() - depth {
                     walker.go_up().unwrap();
                 }
                 walker.go_right().unwrap();
-                let suffix = segment_summary_on_suffix(&mut walker, locator);
+                let second_half = segment_summary_on_prefix(&mut walker, locator);
 
-                return prefix + node_value + suffix;
+                return first_half + node_value + second_half;
             },
         }
     }
 
     // empty segment case
-    A::EMPTY
+    D::EMPTY
 }
 
 fn segment_summary_on_suffix<W, L, A : Data>(walker : &mut W, locator : L) ->
@@ -257,20 +280,20 @@ pub fn act_segment<TR, L, D : Data>(tree : TR, action : D::Action, locator : L) 
     while let Some(res) = walker_locate(&mut walker, locator) {
         match res {
             GoRight => walker.go_right().unwrap(),
-            GoLeft => walker.go_right().unwrap(),
+            GoLeft => walker.go_left().unwrap(),
 
             // at this point, we split into the two sides
             Accept => {
                 walker.act_node(action);
                 let depth = walker.depth();
                 walker.go_left().unwrap();
-                act_on_prefix(&mut walker, action, locator);
+                act_on_suffix(&mut walker, action, locator);
                 // get back to the original node
                 for _ in 0..walker.depth() - depth {
                     walker.go_up().unwrap();
                 }
                 walker.go_right().unwrap();
-                act_on_suffix(&mut walker, action, locator);
+                act_on_prefix(&mut walker, action, locator);
                 return;
             },
         }

@@ -119,6 +119,7 @@ impl<'a, D : Data, L : Locator<D>, T> Iterator for ImmIterator<'a, D, L, T> {
 pub fn build<D : Data, I>(mut iter : I) -> BasicTree<D> where
     I : Iterator<Item = D::Value>
 {
+    // TODO: rewrite using boxed nodes.
     // the code is a bit messy because we don't know in advance the size of the tree.
     // the stack holds nodes, each of which has no right son, and a left son which is
     // a perfect binary tree. the trees correspond to the binary digits of `count`:

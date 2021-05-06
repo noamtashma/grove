@@ -36,15 +36,14 @@ use LocResult::*;
 /// by taking a reference.
 
 /// Locators must be copy. This can always be achieved using references.
-pub trait Locator<A : Data> : Copy {
-    fn locate(&self, left : A::Summary, node : &A::Value, right : A::Summary) -> LocResult;
+pub trait Locator<D : Data> : Copy {
+    fn locate(&self, left : D::Summary, node : &D::Value, right : D::Summary) -> LocResult;
 }
 
 /// A locator that chooses the whole tree
 pub fn all<D : Data>(_left : D::Summary, _val : &D::Value, _right : D::Summary) -> LocResult {
     Accept
 }
-
 
 impl<D : Data, F> Locator<D> for F where
     F : Fn(D::Summary, &D::Value, D::Summary) -> LocResult + Copy
@@ -93,45 +92,23 @@ pub fn locate_by_key<'a, A>(key : &'a <A::Value as crate::data::example_data::Ke
 // TODO: Splitter. locators that can't `Accept`. used for splitting trees
 // and for insertions.
 
-/// represents the segment of indices [low, high)
-#[derive(Clone, Copy)]
-pub struct IndexLocator {
-    pub low : usize,
-    pub high : usize,
-}
-
-
-impl<A : Data + SizedData> Locator<A> for IndexLocator {
-    fn locate(&self, left : A::Summary, node : &A::Value, _right : A::Summary) -> LocResult {
+/// Locator instance for [`std::ops::Range<usize>`] representing an index range.
+/// Since [`std::ops::Range<usize>`] is not [`Copy`], the instance is actually for a
+/// `& std::ops::Range<usize>`.
+impl<D : SizedData> Locator<D> for &std::ops::Range<usize> {
+    fn locate(&self, left : D::Summary, node : &D::Value, _right : D::Summary) -> LocResult {
         // find the index of the current node
-        let s = A::size(left);
+        let s = D::size(left);
 
-        if s >= self.high {
+        if s >= self.end {
             GoLeft
-        } else if s + A::size(A::to_summary(node)) <= self.low {
+        } else if s + D::size(D::to_summary(node)) <= self.start {
             GoRight
         } else {
             Accept
         }
     }
 }
-
-// TODO: range by keyes, inclusive and exclusive on both sides, etc.
-// also, versions for inserting with duplicate keys, that skip any elements that have the same key.
-
-/// Returns the locator corresponding to the interval [a, b).
-/// With regards to wide nodes: a node is considered accepted if its interval intersects
-/// [a, b).
-pub fn locate_by_index_range(low : usize, high : usize) -> 
-    IndexLocator {
-    IndexLocator {low, high}
-}
-
-pub fn locate_by_index(index : usize) -> 
-    IndexLocator {
-    locate_by_index_range(index, index+1)
-}
-
 
 /// A Wrapper for other locators what will find exactly the left edge
 /// of the previous locator. So, this is always a splitting locator.

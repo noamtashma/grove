@@ -88,7 +88,7 @@ impl std::ops::Add for RevAction {
 
 
 type I = i32;
-#[derive(PartialEq, Eq, Clone, Copy, Hash)]
+#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug)]
 pub struct NumSummary {
     pub max : Option<I>,
     pub min : Option<I>,
@@ -116,7 +116,7 @@ impl Add for NumSummary {
 }
 
 /// Actions of reversals and adding a constant
-#[derive(PartialEq, Eq, Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug)]
 pub struct RevAddAction{
     pub to_reverse : bool,
     pub add : I,

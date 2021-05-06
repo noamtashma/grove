@@ -130,7 +130,7 @@ impl SizedData for RevData {
 impl SplayTree<RevData> {
     // splits a segment inside the tree
     fn search_split(&mut self, index : usize) {
-        let locator = methods::locate_by_index_range(index, index);
+        let locator = &(index..index);
         let mut walker = // using an empty range so that we'll only end up at a node
             // if we actually need to split that node
             methods::search_by_locator(self, locator);
@@ -153,7 +153,7 @@ impl SplayTree<RevData> {
     fn reverse_segment(&mut self, low : usize, high : usize) {
         self.search_split(low);
         self.search_split(high);
-        self.act_segment(RevAction { to_reverse : true }, methods::locate_by_index_range(low, high));
+        self.act_segment(RevAction { to_reverse : true }, &(low..high));
     }
 }
 

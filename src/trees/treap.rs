@@ -34,13 +34,19 @@ impl<D : Data> SomeTree<D> for Treap<D> {
         if D::to_reverse(action) == false {
             methods::act_segment(self, action, locator)
         } else {
+            // TODO: bug: the locators return incorrect results, since they're
+            // run on subtree instead of the full tree.
             // split out the middle
             let mut walker = search_by_locator(&mut *self, methods::LeftEdgeLocator(locator));
             let mut mid = walker.split().unwrap();
             drop(walker);
-            let mut walker = search_by_locator(&mut mid, methods::LeftEdgeLocator(locator));
-            let right = walker.split().unwrap();
-            drop(walker);
+
+            let mut walker2 = TreapWalker {
+                walker : BasicWalker::new_with_context(&mut mid.tree, self.subtree_summary(), D::EMPTY)
+            };
+            methods::search_walker_by_locator(&mut walker2, methods::RightEdgeLocator(locator));
+            let right = walker2.split().unwrap();
+            drop(walker2);
             
             // apply action
             mid.act_subtree(action);
@@ -135,7 +141,7 @@ impl<D : Data> Treap<D> {
 	/// use orchard::methods;
 	///
 	/// let mut tree : BasicTree<StdNum> = (20..80).collect();
-	/// let segment_iter = tree.iter_locator(methods::locate_by_index_range(3,13)); // should also try 3..5
+	/// let segment_iter = tree.iter_locator(&(3..13));
 	///
 	/// assert_eq!(segment_iter.cloned().collect::<Vec<_>>(), (23..33).collect::<Vec<_>>());
 	/// # tree.assert_correctness();
@@ -328,7 +334,7 @@ impl<'a, D : Data> TreapWalker<'a, D> {
     /// use orchard::methods::*; 
     ///
     /// let mut tree : Treap<StdNum> = (17..88).collect();
-    /// let mut walker = search_by_locator(&mut tree, IndexLocator{low : 7, high : 7});
+    /// let mut walker = search_by_locator(&mut tree, &(7..7));
     /// let mut tree2 = walker.split().unwrap();
     /// drop(walker);
     ///
