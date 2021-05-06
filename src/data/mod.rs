@@ -40,7 +40,7 @@ use std::ops::Add;
 ///
 /// In addition for the compositions to be associative,
 /// the instance should obey the following rules:
-///```rust,compile
+///```notrust
 /// # use orchard::*;
 /// # use orchard::Data;
 /// # fn test<D : Data>(
@@ -74,15 +74,15 @@ pub trait Data {
 	/// The values that reside in trees.
 	type Value;
 	/// The actions you can perform on the values
-	type Action : Copy + Add<Output=Self::Action>;
+	type Action : Copy + Default + Add<Output=Self::Action> + Acts<Self::Value> + Acts<Self::Summary>;
 	/// The summaries of values over segments. When querying a segment,
 	/// you get a "summary" of the segment.
-	type Summary : Copy + Add<Output=Self::Summary>;
+	type Summary : Copy + Default + Add<Output=Self::Summary>;
 
-	/// The identity action.
-	const IDENTITY : Self::Action;
-	/// The empty summary
-	const EMPTY : Self::Summary;
+	// The identity action.
+	//const IDENTITY : Self::Action;
+	// The empty summary
+	//const EMPTY : Self::Summary;
 
 	fn is_identity(action : Self::Action) -> bool;
 
@@ -104,13 +104,19 @@ pub trait Data {
 	///
 	/// Therefore, This is essentially a monoid action by the monoid of actions
 	/// on the monoid of values.
-	fn act_summary(_act : Self::Action, other : Self::Summary) -> Self::Summary {
-		other
+	/*
+	fn act_summary(act : Self::Action, other : Self::Summary) -> Self::Summary {
+		act.act(other)
 	}
+	*/
 	
+	/*
 	/// The action, but on values instead of summaries.
 	/// Must commute with [`Data::to_summary`].
-	fn act_value(_act : Self::Action, _other : &mut Self::Value) {}
+	fn act_value(act : Self::Action, other : &mut Self::Value) {
+		act.act_inplace(other);
+	}
+	*/
 
 	/// This function should be implemented if you want to be able to reverse subtrees of your tree.
 	///
@@ -121,5 +127,13 @@ pub trait Data {
 	/// This function should return whether this action reverses the segment it is applied to.
 	fn to_reverse(_action : Self::Action) -> bool {
 		false
+	}
+}
+
+pub trait Acts<V> {
+	fn act_inplace(&self, object : &mut V);
+	fn act(&self, mut object : V) -> V where V : Copy {
+		self.act_inplace(&mut object);
+		object
 	}
 }

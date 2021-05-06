@@ -158,7 +158,7 @@ impl<D : Data> BasicNode<D> {
 	pub fn new(value : D::Value) -> BasicNode<D> {
 		let subtree_summary = D::to_summary(&value);
 		BasicNode {
-			action : D::IDENTITY,
+			action : Default::default(),
 			node_value : value,
 			subtree_summary,
 			left : Empty,
@@ -173,7 +173,7 @@ impl<D : Data, T> BasicNode<D, T> {
 	pub fn new_alg(value : D::Value, alg_data : T) -> BasicNode<D, T> {
 		let subtree_summary = D::to_summary(&value);
 		BasicNode {
-			action : D::IDENTITY,
+			action : Default::default(),
 			node_value : value,
 			subtree_summary,
 			left : Empty,
@@ -184,14 +184,14 @@ impl<D : Data, T> BasicNode<D, T> {
 	/// Returns the summary of all values in this node's subtree.
 	/// Same as [`BasicTree::subtree_summary`].
 	pub fn subtree_summary(&self) -> D::Summary {
-		return D::act_summary(self.action, self.subtree_summary);
+		return self.action.act(self.subtree_summary);
 	}
 
 	/// Returns a summary for the value in this node specifically,
 	/// and not the subtree.
 	pub fn node_summary(&self) -> D::Summary {
 		let summary = D::to_summary(&self.node_value);
-		D::act_summary(self.action, summary)
+		self.action.act(summary)
 	}
 
 	/// Returns a reference to the value stored in this node specifically.
@@ -233,9 +233,9 @@ impl<D : Data, T> BasicNode<D, T> {
 		if let Root(node) = &mut self.right {
 			node.act(self.action);
 		}
-		self.subtree_summary = D::act_summary(self.action, self.subtree_summary);
-		D::act_value(self.action, &mut self.node_value);
-		self.action = D::IDENTITY;
+		self.action.act_inplace(&mut self.subtree_summary);
+		self.action.act_inplace(&mut self.node_value);
+		self.action = Default::default();
 	}
 
 	/// Remakes the data that is stored in this node, based on its sons.
@@ -259,6 +259,6 @@ impl<D : Data, T> BasicNode<D, T> {
 	/// Same as [`SomeEntry::act_node`].
 	pub fn act_value(&mut self, action : D::Action) {
 		self.access();
-		D::act_value(action, &mut self.node_value);
+		action.act_inplace(&mut self.node_value);
 	}
 }

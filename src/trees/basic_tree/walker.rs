@@ -20,7 +20,7 @@ impl<D : ?Sized + Data> Clone for Frame<D> where D::Summary : Clone {
 
 impl<D : Data> Frame<D> {
 	pub fn empty() -> Frame<D> {
-		Frame {left : D::EMPTY, right : D::EMPTY}
+		Frame {left : Default::default(), right : Default::default()}
 	}
 }
 

@@ -42,7 +42,7 @@ impl<D : Data> SomeTree<D> for Treap<D> {
             drop(walker);
 
             let mut walker2 = TreapWalker {
-                walker : BasicWalker::new_with_context(&mut mid.tree, self.subtree_summary(), D::EMPTY)
+                walker : BasicWalker::new_with_context(&mut mid.tree, self.subtree_summary(), Default::default())
             };
             methods::search_walker_by_locator(&mut walker2, methods::RightEdgeLocator(locator));
             let right = walker2.split().unwrap();

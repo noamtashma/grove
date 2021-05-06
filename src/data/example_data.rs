@@ -5,6 +5,10 @@ use std::marker::PhantomData;
 #[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, Default, PartialOrd, Ord)]
 pub struct Unit {}
 
+impl<V> Acts<V> for Unit {
+    fn act_inplace(&self, _ref : &mut V) {}
+}
+
 impl Add for Unit {
 	type Output = Unit;
 	fn add(self, _b : Unit) -> Unit {
@@ -25,6 +29,12 @@ impl Add for Size {
     }
 }
 
+impl Default for Size {
+    fn default() -> Size {
+        Size {size : 0}
+    }
+}
+
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
 struct SizeData<V> {phantom : PhantomData<V>}
 
@@ -35,12 +45,10 @@ impl<V> Data for SizeData<V> {
 
     fn is_identity(action : Self::Action) -> bool
     {
-		action == Self::IDENTITY
+		action == Default::default()
 	}
 
-    const IDENTITY : Self::Action = Unit{};
-    const EMPTY : Size = Size {size : 0};
-    fn act_summary(_ : Unit, b : Size) -> Size { b }
+    //fn act_summary(_ : Unit, b : Size) -> Size { b }
     fn to_summary(_val : &Self::Value) -> Self::Summary {
         Size {size : 1}
     }
@@ -72,12 +80,8 @@ impl<V : Eq + Copy> Data for NoAction<V> {
 
     fn is_identity(action : Self::Action) -> bool
     {
-		action == Self::IDENTITY
+		action == Default::default()
 	}
-
-    const IDENTITY : Self::Action = Unit{};
-
-    const EMPTY : Unit = Unit{};
 
     fn to_summary(_val : &Self::Value) -> Self::Summary {
         Unit{}
@@ -127,6 +131,17 @@ impl Add for NumSummary {
     }
 }
 
+impl Default for NumSummary {
+    fn default() -> NumSummary {
+        NumSummary {
+            max : None,
+            min : None,
+            size : 0,
+            sum : 0,
+        }
+    }
+}
+
 /// Actions of reversals and adding a constant
 #[derive(PartialEq, Eq, Clone, Copy, Hash, Debug)]
 pub struct RevAddAction{
@@ -144,6 +159,26 @@ impl Add for RevAddAction {
     }
 }
 
+impl Default for RevAddAction {
+    fn default() -> Self {
+        RevAddAction { to_reverse : false, add : 0 }
+    }
+}
+
+impl Acts<I> for RevAddAction {
+    fn act_inplace(&self, val : &mut I) {
+        *val += self.add;
+    }
+}
+
+impl Acts<NumSummary> for RevAddAction {
+    fn act_inplace(&self, summary : &mut NumSummary) {
+        summary.max = summary.max.map(|max : I| { max + self.add });
+        summary.min = summary.min.map(|max : I| { max + self.add });
+        summary.sum += self.add * summary.size;
+    }
+}
+
 /// A Data marker for a standard set of summaries and actions used for numbers. Specifically,
 /// one can reverse or add a constant to a whole segment at once, and one can query
 /// the maximum, minimum, size and sum of a whole segment at once.
@@ -156,16 +191,8 @@ impl Data for StdNum {
 
     fn is_identity(action : Self::Action) -> bool
     {
-		action == Self::IDENTITY
+		action == Default::default()
 	}
-
-    const IDENTITY : Self::Action = RevAddAction { to_reverse : false, add : 0 };
-    const EMPTY : Self::Summary = NumSummary {
-        max : None,
-        min : None,
-        size : 0,
-        sum : 0,
-    };
 
     fn to_reverse(act : Self::Action) -> bool {
         act.to_reverse
@@ -180,6 +207,7 @@ impl Data for StdNum {
         }
     }
 
+    /*
     fn act_summary(action : Self::Action, summary : Self::Summary) -> Self::Summary {
         Self::Summary {
             max : summary.max.map(|max : I| { max + action.add }),
@@ -188,10 +216,7 @@ impl Data for StdNum {
             sum : summary.sum + action.add*summary.size,
         }
     }
-
-    fn act_value(action : Self::Action, val : &mut I) {
-        *val += action.add;
-    }
+    */
 }
 
 impl SizedData for StdNum {

@@ -84,7 +84,7 @@ impl Interval {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug)]
 struct RevAction {
     to_reverse : bool,
 }
@@ -96,6 +96,24 @@ impl std::ops::Add for RevAction {
     }
 }
 
+impl Default for RevAction {
+    fn default() -> Self {
+        RevAction{ to_reverse : false }
+    }
+}
+
+impl Acts<Size> for RevAction {
+    fn act_inplace(&self, _val : &mut Size) {}
+}
+
+impl Acts<Interval> for RevAction {
+    fn act_inplace(&self, val : &mut Interval) {
+        if self.to_reverse {
+            val.flip();
+        }
+    }
+}
+
 struct RevData {}
 
 impl Data for RevData {
@@ -103,14 +121,13 @@ impl Data for RevData {
     type Summary = Size;
     type Value = Interval;
 
-    const IDENTITY : RevAction = RevAction { to_reverse : false };
-    const EMPTY : Size = Size {size : 0};
-
+    /*
     fn act_value(act : Self::Action, val : &mut Interval) {
         if act.to_reverse {
             val.flip();
         }
     }
+    */
 
     fn to_summary(val : &Interval) -> Size {
         Size {size : val.size()}
@@ -118,6 +135,10 @@ impl Data for RevData {
 
     fn to_reverse(act : Self::Action) -> bool {
         act.to_reverse
+    }
+
+    fn is_identity(action : Self::Action) -> bool {
+        action.to_reverse == false
     }
 }
 

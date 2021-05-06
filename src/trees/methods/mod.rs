@@ -217,7 +217,7 @@ pub fn segment_summary<TR, L, D : Data>(tree : TR, locator : L) ->
     }
 
     // empty segment case
-    D::EMPTY
+    Default::default()
 }
 
 fn segment_summary_on_suffix<W, L, A : Data>(walker : &mut W, locator : L) ->
@@ -225,7 +225,7 @@ fn segment_summary_on_suffix<W, L, A : Data>(walker : &mut W, locator : L) ->
     W : SomeWalker<A>,
     L : Locator<A>,
 {
-    let mut res = A::EMPTY;
+    let mut res = Default::default();
     use LocResult::*;
 
     while let Some(dir) = walker_locate(walker, locator) {
@@ -247,7 +247,7 @@ fn segment_summary_on_prefix<W, L, A : Data>(walker : &mut W, locator : L) ->
     W : SomeWalker<A>,
     L : Locator<A>,
 {
-    let mut res = A::EMPTY;
+    let mut res = Default::default();
     use LocResult::*;
 
     while let Some(dir) = walker_locate(walker, locator) {
