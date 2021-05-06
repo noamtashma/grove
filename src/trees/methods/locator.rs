@@ -40,11 +40,6 @@ pub trait Locator<D : Data> : Copy {
     fn locate(&self, left : D::Summary, node : &D::Value, right : D::Summary) -> LocResult;
 }
 
-/// A locator that chooses the whole tree
-pub fn all<D : Data>(_left : D::Summary, _val : &D::Value, _right : D::Summary) -> LocResult {
-    Accept
-}
-
 impl<D : Data, F> Locator<D> for F where
     F : Fn(D::Summary, &D::Value, D::Summary) -> LocResult + Copy
 {
@@ -55,9 +50,9 @@ impl<D : Data, F> Locator<D> for F where
 
 /// Returns the result of the locator at the walker
 /// Returns None if the walker is at an empty position
-pub fn walker_locate<W, A : Data, L> (walker : &mut W, locator : L) -> Option<LocResult> where
-    W : crate::trees::SomeWalker<A>,
-    L : Locator<A>,
+pub fn walker_locate<W, D : Data, L> (walker : &mut W, locator : L) -> Option<LocResult> where
+    W : crate::trees::SomeWalker<D>,
+    L : Locator<D>,
 {
     if let Some(value) = walker.value() {
         let left = walker.left_summary();
@@ -71,12 +66,12 @@ pub fn walker_locate<W, A : Data, L> (walker : &mut W, locator : L) -> Option<Lo
 
 
 /// Locator for finding an element using a key.
-pub fn locate_by_key<'a, A>(key : &'a <A::Value as crate::data::example_data::Keyed>::Key) -> 
-    impl Fn(A::Summary, &A::Value, A::Summary) -> LocResult + 'a where
-    A : Data,
-    A::Value : crate::data::example_data::Keyed,
+pub fn locate_by_key<'a, D>(key : &'a <D::Value as crate::data::example_data::Keyed>::Key) -> 
+    impl Fn(D::Summary, &D::Value, D::Summary) -> LocResult + 'a where
+    D : Data,
+    D::Value : crate::data::example_data::Keyed,
 {
-    move |_, node : &A::Value, _| -> LocResult {
+    move |_, node : &D::Value, _| -> LocResult {
         use std::cmp::Ordering::*;
         let res = match node.get_key().cmp(key) {
             Equal => Accept,
@@ -91,6 +86,21 @@ pub fn locate_by_key<'a, A>(key : &'a <A::Value as crate::data::example_data::Ke
 
 // TODO: Splitter. locators that can't `Accept`. used for splitting trees
 // and for insertions.
+
+
+/// Locator instance for [`std::ops::RangeFull`].
+impl<D : Data> Locator<D> for std::ops::RangeFull {
+    fn locate(&self, _left : D::Summary, _node : &D::Value, _right : D::Summary) -> LocResult {
+        Accept
+    }
+}
+
+/// Locator instance for a reference to [`std::ops::RangeFull`].
+impl<D : Data> Locator<D> for &std::ops::RangeFull {
+    fn locate(&self, _left : D::Summary, _node : &D::Value, _right : D::Summary) -> LocResult {
+        Accept
+    }
+}
 
 /// Locator instance for [`std::ops::Range<usize>`] representing an index range.
 /// Since [`std::ops::Range<usize>`] is not [`Copy`], the instance is actually for a
@@ -110,15 +120,108 @@ impl<D : SizedData> Locator<D> for &std::ops::Range<usize> {
     }
 }
 
+/// Locator instance for [`std::ops::RangeInclusive<usize>`] representing an index range.
+/// Since [`std::ops::RangeInclusive<usize>`] is not [`Copy`], the instance is actually for a
+/// `& std::ops::RangeInclusive<usize>`.
+/// Do not use with ranges that have been iterated on to exhaustion.
+impl<D : SizedData> Locator<D> for &std::ops::RangeInclusive<usize> {
+    fn locate(&self, left : D::Summary, node : &D::Value, _right : D::Summary) -> LocResult {
+        // find the index of the current node
+        let s = D::size(left);
+
+        if s > *self.end() {
+            GoLeft
+        } else if s + D::size(D::to_summary(node)) <= *self.start() {
+            GoRight
+        } else {
+            Accept
+        }
+    }
+}
+
+/// Locator instance for [`std::ops::RangeFrom<usize>`] representing an index range.
+/// Since [`std::ops::RangeFrom<usize>`] is not [`Copy`], the instance is actually for a
+/// `& std::ops::RangeFrom<usize>`.
+impl<D : SizedData> Locator<D> for &std::ops::RangeFrom<usize> {
+    fn locate(&self, left : D::Summary, node : &D::Value, _right : D::Summary) -> LocResult {
+        // find the index of the current node
+        let s = D::size(left);
+
+        if s + D::size(D::to_summary(node)) <= self.start {
+            GoRight
+        } else {
+            Accept
+        }
+    }
+}
+
+/// Locator instance for [`std::ops::RangeTo<usize>`] representing an index range.
+impl<D : SizedData> Locator<D> for std::ops::RangeTo<usize> {
+    fn locate(&self, left : D::Summary, _node : &D::Value, _right : D::Summary) -> LocResult {
+        // find the index of the current node
+        let s = D::size(left);
+
+        if s >= self.end {
+            GoLeft
+        } else {
+            Accept
+        }
+    }
+}
+
+/// Locator instance for a referencfe to [`std::ops::RangeTo<usize>`] representing an index range.
+impl<D : SizedData> Locator<D> for &std::ops::RangeTo<usize> {
+    fn locate(&self, left : D::Summary, _node : &D::Value, _right : D::Summary) -> LocResult {
+        // find the index of the current node
+        let s = D::size(left);
+
+        if s >= self.end {
+            GoLeft
+        } else {
+            Accept
+        }
+    }
+}
+
+/// Locator instance for [`std::ops::RangeToInclusive<usize>`] representing an index range.
+/// Do not use with ranges that have been iterated on to exhaustion.
+impl<D : SizedData> Locator<D> for std::ops::RangeToInclusive<usize> {
+    fn locate(&self, left : D::Summary, _node : &D::Value, _right : D::Summary) -> LocResult {
+        // find the index of the current node
+        let s = D::size(left);
+
+        if s > self.end {
+            GoLeft
+        } else {
+            Accept
+        }
+    }
+}
+
+/// Locator instance for a reference to [`std::ops::RangeToInclusive<usize>`] representing an index range.
+/// Do not use with ranges that have been iterated on to exhaustion.
+impl<D : SizedData> Locator<D> for &std::ops::RangeToInclusive<usize> {
+    fn locate(&self, left : D::Summary, _node : &D::Value, _right : D::Summary) -> LocResult {
+        // find the index of the current node
+        let s = D::size(left);
+
+        if s > self.end {
+            GoLeft
+        } else {
+            Accept
+        }
+    }
+}
+
 /// A Wrapper for other locators what will find exactly the left edge
 /// of the previous locator. So, this is always a splitting locator.
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct LeftEdgeLocator<L> (
     pub L,
 );
 /// A Wrapper for other locators what will find exactly the right edge
 /// of the previous locator. So, this is always a splitting locator.
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct RightEdgeLocator<L> (
     pub L,
 );
@@ -134,8 +237,8 @@ impl<D : Data, L : Locator<D>> Locator<D> for LeftEdgeLocator<L> {
     }
 }
 
-impl<A : Data, L : Locator<A>> Locator<A> for RightEdgeLocator<L> {
-    fn locate(&self, left : A::Summary, node : &A::Value, right : A::Summary) -> 
+impl<D : Data, L : Locator<D>> Locator<D> for RightEdgeLocator<L> {
+    fn locate(&self, left : D::Summary, node : &D::Value, right : D::Summary) -> 
         LocResult
     {
         match self.0.locate(left, node, right) {
@@ -147,7 +250,7 @@ impl<A : Data, L : Locator<A>> Locator<A> for RightEdgeLocator<L> {
 
 /// A Wrapper for two other locators, that finds the smallest segment containing both of them.
 /// For example, the Union of ranges `[3,6)` and `[7,12)` will  be `[3,12)`.
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct UnionLocator<L1, L2> (
     pub L1, pub L2
 );
