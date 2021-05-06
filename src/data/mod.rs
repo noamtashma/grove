@@ -69,7 +69,7 @@ use std::ops::Add;
 /// };
 /// # }
 ///```
-/// If the action also implements [`Reverse`], it should also satisfy that composing two actions
+/// If the action can reverse segments, it should also satisfy that composing two actions
 /// xor's their [`Data::to_reverse()`] results.
 pub trait Data {
 	/// The values that reside in trees.
@@ -111,12 +111,11 @@ pub trait Data {
 	/// Must commute with [`Data::to_summary`].
 	fn act_value(_act : Self::Action, _other : &mut Self::Value) {}
 
-	/// This function should be implemented if you want to be able to reverse subtrees of your tree,
-	/// i.e., if you also implement [`Reverse`].
+	/// This function should be implemented if you want to be able to reverse subtrees of your tree.
 	///
-	/// Note that if the action reverses a segment, it shouldn't be used with [`methods::act_segment`].
+	/// Note that if the action reverses a segment, it shouldn't be used with [`crate::methods::act_segment`].
 	/// Instead, use a tree type that supports reversals (e.g, SplayTree, Treap) and use its native
-	/// [`SomeTree::act_segment`] function.
+	/// [`crate::SomeTree::act_segment`] function.
 	///
 	/// This function should return whether this action reverses the segment it is applied to.
 	fn to_reverse(_action : Self::Action) -> bool {

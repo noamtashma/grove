@@ -33,9 +33,6 @@ impl<D : Data> Frame<D> {
 /// The walker may also be in a position which is the son of a node, but doesn't contain
 /// a node by itself, and then it is said to be in an empty position.
 ///
-/// The walker implements [`Deref`] and [`DerefMut`] with [`BasicTree`] as the target type,
-/// as the walker acts as a smart pointer to a subtree of the original tree.
-///
 /// Walkers for other kinds of trees may be built by wrapping around the [`BasicWalker`] type,
 /// as tree types can be built by wrapping around the [`BasicTree`] type.
 /// 
