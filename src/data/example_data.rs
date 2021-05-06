@@ -32,6 +32,12 @@ impl<V> Data for SizeData<V> {
     type Action = Unit;
     type Summary = Size;
     type Value = V;
+
+    fn is_identity(action : Self::Action) -> bool
+    {
+		action == Self::IDENTITY
+	}
+
     const IDENTITY : Self::Action = Unit{};
     const EMPTY : Size = Size {size : 0};
     fn act_summary(_ : Unit, b : Size) -> Size { b }
@@ -63,6 +69,12 @@ impl<V : Eq + Copy> Data for NoAction<V> {
     type Summary = Unit;
     type Action = Unit;
     type Value = V;
+
+    fn is_identity(action : Self::Action) -> bool
+    {
+		action == Self::IDENTITY
+	}
+
     const IDENTITY : Self::Action = Unit{};
 
     const EMPTY : Unit = Unit{};
@@ -141,6 +153,11 @@ impl Data for StdNum {
     type Value = I;
     type Summary = NumSummary;
     type Action = RevAddAction;
+
+    fn is_identity(action : Self::Action) -> bool
+    {
+		action == Self::IDENTITY
+	}
 
     const IDENTITY : Self::Action = RevAddAction { to_reverse : false, add : 0 };
     const EMPTY : Self::Summary = NumSummary {

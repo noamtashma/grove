@@ -211,7 +211,7 @@ impl<D : Data, T> BasicNode<D, T> {
 	/// Returns the value stored in this node specifically.
 	/// Assumes that the node has been accessed. Panics otherwise.
 	pub(crate) fn node_value_clean(&self) -> &D::Value {
-		assert!(self.action == D::IDENTITY);
+		assert!(D::is_identity(self.action));
 		&self.node_value
 	}
 
@@ -244,7 +244,7 @@ impl<D : Data, T> BasicNode<D, T> {
 	/// must be rebuilt, in order for the segment values accumulated over the whole
 	/// subtree to be accurate.
 	pub(crate) fn rebuild(&mut self) {
-		assert!(self.action == D::IDENTITY);
+		assert!(D::is_identity(self.action));
 		let temp = D::to_summary(&self.node_value);
 		self.subtree_summary = self.left.subtree_summary() + temp + self.right.subtree_summary();
 	}

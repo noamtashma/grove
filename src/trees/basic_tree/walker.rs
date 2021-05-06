@@ -133,7 +133,7 @@ impl<'a, D : Data, T> BasicWalker<'a, D, T> {
 			BasicTree::Empty => return Err(()),
 			Root(bn) => bn,
 		};
-		assert!(bn1.action == D::IDENTITY);
+		assert!(D::is_identity(bn1.action));
 		bn1.right.access();
 
 		let mut bn2 : Box<BasicNode<D, T>> = match bn1.right {
@@ -160,7 +160,7 @@ impl<'a, D : Data, T> BasicWalker<'a, D, T> {
 			BasicTree::Empty => return Err(()),
 			Root(bn) => bn,
 		};
-		assert!(bn1.action == D::IDENTITY);
+		assert!(D::is_identity(bn1.action));
 		bn1.left.access();
 
 		let mut bn2 : Box<BasicNode<D, T>> = match bn1.left {

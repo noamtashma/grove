@@ -14,7 +14,6 @@ pub use example_data::{SizedData, Keyed};
 
 use std::ops::Add;
 
-// TODO: remove Eq requirement from Self::Action
 /// This trait represents the data that will be stored inside the tree.
 ///
 /// Every node in the tree will contain an action to be performed on the node's subtree,
@@ -75,7 +74,7 @@ pub trait Data {
 	/// The values that reside in trees.
 	type Value;
 	/// The actions you can perform on the values
-	type Action : Eq + Copy + Add<Output=Self::Action>;
+	type Action : Copy + Add<Output=Self::Action>;
 	/// The summaries of values over segments. When querying a segment,
 	/// you get a "summary" of the segment.
 	type Summary : Copy + Add<Output=Self::Summary>;
@@ -84,6 +83,8 @@ pub trait Data {
 	const IDENTITY : Self::Action;
 	/// The empty summary
 	const EMPTY : Self::Summary;
+
+	fn is_identity(action : Self::Action) -> bool;
 
 	/// creates the summary of a single value.
 	fn to_summary(val : &Self::Value) -> Self::Summary;
