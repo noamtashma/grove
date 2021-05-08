@@ -22,11 +22,11 @@ pub struct MutIterator<'a, D : Data, L, T=()> {
 impl<'a, D : Data, L, T> MutIterator<'a, D, L, T> {
     pub fn new(tree : &'a mut BasicTree<D, T>, locator : L) -> Self {
         let mut res = MutIterator {
-            left : D::EMPTY,
+            left : Default::default(),
             stack : vec![],
             locator
         };
-        res.push(tree, D::EMPTY);
+        res.push(tree, Default::default());
         res
     }
 
@@ -172,11 +172,11 @@ pub struct OwningIterator<D : Data, L, T=()> {
 impl<D : Data, L, T> OwningIterator<D, L, T> {
     pub fn new(tree : BasicTree<D, T>, locator : L) -> Self {
         let mut res = OwningIterator {
-            left : D::EMPTY,
+            left : Default::default(),
             stack : vec![],
             locator
         };
-        res.push(tree, D::EMPTY);
+        res.push(tree, Default::default());
         res
     }
 

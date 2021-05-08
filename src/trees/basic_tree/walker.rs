@@ -20,7 +20,7 @@ impl<D : ?Sized + Data> Clone for Frame<D> where D::Summary : Clone {
 
 impl<D : Data> Frame<D> {
 	pub fn empty() -> Frame<D> {
-		Frame {left : D::EMPTY, right : D::EMPTY}
+		Frame {left : Default::default(), right : Default::default()}
 	}
 }
 
@@ -133,7 +133,7 @@ impl<'a, D : Data, T> BasicWalker<'a, D, T> {
 			BasicTree::Empty => return Err(()),
 			Root(bn) => bn,
 		};
-		assert!(bn1.action == D::IDENTITY);
+		assert!(bn1.action.is_identity());
 		bn1.right.access();
 
 		let mut bn2 : Box<BasicNode<D, T>> = match bn1.right {
@@ -160,7 +160,7 @@ impl<'a, D : Data, T> BasicWalker<'a, D, T> {
 			BasicTree::Empty => return Err(()),
 			Root(bn) => bn,
 		};
-		assert!(bn1.action == D::IDENTITY);
+		assert!(bn1.action.is_identity());
 		bn1.left.access();
 
 		let mut bn2 : Box<BasicNode<D, T>> = match bn1.left {

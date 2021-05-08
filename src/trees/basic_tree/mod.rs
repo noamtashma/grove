@@ -124,13 +124,13 @@ impl<D : Data, T> BasicTree<D, T> {
 	/// this you might need to call access, to push the action to this node's sons.
 	///```
 	/// use orchard::basic_tree::*;
-	/// use orchard::example_data::{StdNum, RevAddAction};
+	/// use orchard::example_data::{StdNum, RevAffineAction};
 	///
 	/// let mut tree : BasicTree<StdNum> = (1..=8).collect();
-	/// tree.act(RevAddAction {to_reverse : false, add : 5});
+	/// tree.act(RevAffineAction {to_reverse : false, mul : -1, add : 5});
 	/// # tree.assert_correctness();
 	///
-	/// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (6..=13).collect::<Vec<_>>());
+	/// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (-3..=4).rev().collect::<Vec<_>>());
 	/// # tree.assert_correctness();
 	///```
 	pub fn act(&mut self, action : D::Action) {
@@ -158,7 +158,7 @@ impl<D : Data> BasicNode<D> {
 	pub fn new(value : D::Value) -> BasicNode<D> {
 		let subtree_summary = D::to_summary(&value);
 		BasicNode {
-			action : D::IDENTITY,
+			action : Default::default(),
 			node_value : value,
 			subtree_summary,
 			left : Empty,
@@ -173,7 +173,7 @@ impl<D : Data, T> BasicNode<D, T> {
 	pub fn new_alg(value : D::Value, alg_data : T) -> BasicNode<D, T> {
 		let subtree_summary = D::to_summary(&value);
 		BasicNode {
-			action : D::IDENTITY,
+			action : Default::default(),
 			node_value : value,
 			subtree_summary,
 			left : Empty,
@@ -184,14 +184,14 @@ impl<D : Data, T> BasicNode<D, T> {
 	/// Returns the summary of all values in this node's subtree.
 	/// Same as [`BasicTree::subtree_summary`].
 	pub fn subtree_summary(&self) -> D::Summary {
-		return D::act_summary(self.action, self.subtree_summary);
+		return self.action.act(self.subtree_summary);
 	}
 
 	/// Returns a summary for the value in this node specifically,
 	/// and not the subtree.
 	pub fn node_summary(&self) -> D::Summary {
 		let summary = D::to_summary(&self.node_value);
-		D::act_summary(self.action, summary)
+		self.action.act(summary)
 	}
 
 	/// Returns a reference to the value stored in this node specifically.
@@ -211,7 +211,7 @@ impl<D : Data, T> BasicNode<D, T> {
 	/// Returns the value stored in this node specifically.
 	/// Assumes that the node has been accessed. Panics otherwise.
 	pub(crate) fn node_value_clean(&self) -> &D::Value {
-		assert!(self.action == D::IDENTITY);
+		assert!(self.action.is_identity());
 		&self.node_value
 	}
 
@@ -223,7 +223,7 @@ impl<D : Data, T> BasicNode<D, T> {
 		// reversing
 		// for data that doesn't implement reversing, this becomes a no-op
 		// and hopefully optimized away
-		if D::to_reverse(self.action) {
+		if self.action.to_reverse() {
 			std::mem::swap(&mut self.left, &mut self.right);
 		}
 
@@ -233,9 +233,9 @@ impl<D : Data, T> BasicNode<D, T> {
 		if let Root(node) = &mut self.right {
 			node.act(self.action);
 		}
-		self.subtree_summary = D::act_summary(self.action, self.subtree_summary);
-		D::act_value(self.action, &mut self.node_value);
-		self.action = D::IDENTITY;
+		self.action.act_inplace(&mut self.subtree_summary);
+		self.action.act_inplace(&mut self.node_value);
+		self.action = Default::default();
 	}
 
 	/// Remakes the data that is stored in this node, based on its sons.
@@ -244,7 +244,7 @@ impl<D : Data, T> BasicNode<D, T> {
 	/// must be rebuilt, in order for the segment values accumulated over the whole
 	/// subtree to be accurate.
 	pub(crate) fn rebuild(&mut self) {
-		assert!(self.action == D::IDENTITY);
+		assert!(self.action.is_identity());
 		let temp = D::to_summary(&self.node_value);
 		self.subtree_summary = self.left.subtree_summary() + temp + self.right.subtree_summary();
 	}
@@ -259,6 +259,6 @@ impl<D : Data, T> BasicNode<D, T> {
 	/// Same as [`SomeEntry::act_node`].
 	pub fn act_value(&mut self, action : D::Action) {
 		self.access();
-		D::act_value(action, &mut self.node_value);
+		action.act_inplace(&mut self.node_value);
 	}
 }

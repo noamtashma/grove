@@ -14,7 +14,7 @@ impl<D : Data> Simulator<D> {
 */
 
 
-use orchard::example_data::RevAddAction;
+use orchard::example_data::RevAffineAction;
 use rand::{self, Rng};
 use example_data::StdNum;
 pub fn check_consistency<T1, T2>() where
@@ -25,6 +25,8 @@ pub fn check_consistency<T1, T2>() where
 {
     const LEN : usize = 200;
     const MAX_ADD : i32 = 200;
+    const MAX_MUL : i32 = 2;
+
     fn random_range() -> std::ops::Range<usize> {
         let mut rng = rand::thread_rng();
         let res = (rng.gen_range(0..LEN+1), rng.gen_range(0..LEN+1));
@@ -35,10 +37,11 @@ pub fn check_consistency<T1, T2>() where
         }
     }
 
-    fn random_action() -> RevAddAction {
+    fn random_action() -> RevAffineAction {
         let mut rng = rand::thread_rng();
-        RevAddAction {
+        RevAffineAction {
             to_reverse : rng.gen(),
+            mul : rng.gen_range(-MAX_MUL..MAX_MUL),
             add : rng.gen_range(-MAX_ADD..MAX_ADD),
         }
     }

@@ -124,7 +124,7 @@ impl<'a, D : Data, T> SomeWalker<D> for BasicWalker<'a, D, T> {
 impl<D : Data, T> SomeEntry<D> for BasicTree<D, T> {
 	fn node_summary(&self) -> D::Summary {
 		match self.node() {
-			None => D::EMPTY,
+			None => Default::default(),
 			Some(node) => node.node_summary()
 		}
 	}
@@ -132,7 +132,7 @@ impl<D : Data, T> SomeEntry<D> for BasicTree<D, T> {
 	fn subtree_summary(&self) -> D::Summary {
 		if let Some(node) = self.node() {
 			node.subtree_summary()
-		} else { D::EMPTY }
+		} else { Default::default() }
 	}
 
     fn left_subtree_summary(&self) -> Option<D::Summary> {
@@ -213,7 +213,7 @@ impl<'a, D : Data, T> SomeEntry<D> for BasicWalker<'a, D, T> {
 
     fn act_node(&mut self, action : D::Action) -> Option<()> {
 		let node = self.tel.node_mut()?;
-		D::act_value(action, &mut node.node_value);
+		action.act_inplace(&mut node.node_value);
 		node.rebuild();
 		Some(())
     }

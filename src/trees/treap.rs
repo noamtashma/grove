@@ -31,7 +31,7 @@ impl<D : Data> SomeTree<D> for Treap<D> {
     fn act_segment<L>(&mut self, action : D::Action, locator : L) where
         L : crate::Locator<D>
     {
-        if D::to_reverse(action) == false {
+        if action.to_reverse() == false {
             methods::act_segment(self, action, locator)
         } else {
             // TODO: bug: the locators return incorrect results, since they're
@@ -42,7 +42,7 @@ impl<D : Data> SomeTree<D> for Treap<D> {
             drop(walker);
 
             let mut walker2 = TreapWalker {
-                walker : BasicWalker::new_with_context(&mut mid.tree, self.subtree_summary(), D::EMPTY)
+                walker : BasicWalker::new_with_context(&mut mid.tree, self.subtree_summary(), Default::default())
             };
             methods::search_walker_by_locator(&mut walker2, methods::RightEdgeLocator(locator));
             let right = walker2.split().unwrap();
@@ -158,13 +158,13 @@ impl<D : Data> Treap<D> {
 	/// this you might need to call access, to push the action to this node's sons.
 	///```
 	/// use orchard::basic_tree::*;
-	/// use orchard::example_data::{StdNum, RevAddAction};
+	/// use orchard::example_data::{StdNum, RevAffineAction};
 	///
 	/// let mut tree : BasicTree<StdNum> = (1..=8).collect();
-	/// tree.act(RevAddAction {to_reverse : false, add : 5});
+	/// tree.act(RevAffineAction {to_reverse : false, mul : -1, add : 5});
 	/// # tree.assert_correctness();
 	///
-	/// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (6..=13).collect::<Vec<_>>());
+	/// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (-3..=4).rev().collect::<Vec<_>>());
 	/// # tree.assert_correctness();
 	///```
 	pub fn act(&mut self, action : D::Action) {

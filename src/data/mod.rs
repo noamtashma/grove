@@ -5,120 +5,153 @@
 //! In order for a choice of types for `Value`, `Summary` and `Action`, to work
 //! in a segment tree, they must be an instance of the [`Data`] trait.
 //!
-//! In addition, this module provides the [`SizedData`] and [`Keyed`] traits,
+//! In addition, this module provides the [`SizedSummary`] and [`Keyed`] traits,
 //! and some common possible instantiations in the [`example_data`] module.
 
 
 pub mod example_data;
-pub use example_data::{SizedData, Keyed};
+pub use example_data::{SizedSummary, Keyed};
 
 use std::ops::Add;
 
-// TODO: remove Eq requirement from Self::Action
 /// This trait represents the data that will be stored inside the tree.
 ///
 /// Every node in the tree will contain an action to be performed on the node's subtree,
 /// a summary of the node's subtree, and a value.
 /// The action will be of type [`Self::Action`], the summary of type [`Self::Summary`], and the value will be of type [`Self::Value`].
 ///
-/// [`Self::Summary`] can include: indices, heights, sizes, sums, maximums
-/// and minimums of subtrees, and more. It is the type of summaries of values
-/// you can have in your tree. This is the result of querying for information about a segment.
+/// * [`Self::Value`] is the type of values in your tree, which can be anything at all. The tree
+/// representes a sequence of values of type [`Self::Value`].
 ///
-/// [`Self::Action`] is the type of actions that can be performed on segments. for example,
-/// reverse a subtree, add a constant to a subtree, apply `max` with a constant on a subtree,
-/// and so on.
+/// * [`Self::Summary`] can include: indices, sizes, sums, maximums
+/// and minimums of subtrees, and more. It is the type of information you can gather about a subsegment
+/// of your tree. This is the result of querying for information about a segment.
 ///
-/// Action composition is done by requiring that the action implement [`Add`].
-/// i.e., applying `a + b` should be equivalent to applying `b` and then applying `a`.
-/// This composition must be associative. 
-/// Composition is right to left. i.e., what chronologically happens first, is on the right.
+/// * [`Self::Action`] is the type of actions that can be performed on subsegments. for example,
+/// reverse a subsegment, add a constant to all values in a subsegment, apply `max` with a
+/// constant on all values in a subsegment, and so on.
 ///
-/// Summary composition is done by requiring that the summary implement [`Add`]. i.e.,
-/// if the summary for a list `vals1` is `summary1`, and the summary for a list `vals2`
-/// is `summary2`, the summary of the concatenation `vals1 + vals2` should be `summary1 + summary2`.
-/// This composition must be associative.
+/// # Requirements
 ///
-/// In addition for the compositions to be associative,
-/// the instance should obey the following rules:
-///```rust,compile
-/// # use orchard::*;
-/// # use orchard::Data;
-/// # fn test<D : Data>(
-///	# action : D::Action, action1 : D::Action, action2 : D::Action,
-/// # summary : D::Summary, summary1 : D::Summary, summary2 : D::Summary,
-/// # mut value : D::Value)  where D::Summary : Eq {
-/// // composition of actions
-/// D::act_summary(action2 + action1, summary) == D::act_summary(action2, D::act_summary(action1, summary));
-/// // composition of actions
-/// D::act_value(action2 + action1, &mut value) == {
-/// 	D::act_value(action1, &mut value);
-/// 	D::act_value(action2, &mut value);
-/// };
-/// // the action respects the monoid structure
-/// D::act_summary(action, summary1 + summary2) == D::act_summary(action, summary1) + D::act_summary(action, summary2);
-/// // the action respects `to_summary`
-/// # let _ = 
-/// {
-/// 	D::act_value(action, &mut value); // first act on value
-/// 	D::to_summary(&value)             // take summary
-/// } == {                               // vs
-/// 	let sum = D::to_summary(&value);  // first take summary
-/// 	D::act_value(action, &mut value); // act on value
-/// 	D::act_summary(action, sum)               // act on summary to reflect acting on the value
-/// };
-/// # }
-///```
-/// If the action can reverse segments, it should also satisfy that composing two actions
-/// xor's their [`Data::to_reverse()`] results.
+/// In order for everything to work, we must know how to:
+/// * Compose actions together:
+///    >  Action composition is done by an [`Add`] instance.
+///    >  i.e., applying `a + b` should be equivalent to applying `b` and then applying `a`.
+///    >  Composition is right to left. What chronologically happens first, is on the right.
+///
+/// * Compute the summary of a single value, and add up summaries of two subsegments together:
+///  > Summaries of segments are created by converting single values into their singletone
+///  > summaries using `to_summary()`, and summaries can be added together to obtain bigger summaries, using an
+///  > [`Add`] instance. i.e.,
+///  > if the summary for a list `vals_list1` is `summary1`, and the summary for a list `vals_list2`
+///  > is `summary2`, the summary of the concatenation `vals_list1 + vals_list2` should be `summary1 + summary2`.
+///
+/// * Apply an action on a single value, and apply an action on a summary of a segment
+///  > Applying actions on values and on summaries is required by the bounds
+///  > [`Self::Action`]` : `[`Acts`]`<`[`Self::Value`]`> + `[`Acts`]`<`[`Self::Summary`]`>`.
+///  > This means that in order to update a segment summary `summary : `[`Self::Summary`] after
+///  > action `action : `[`Self::Action`] has been applied to it,
+///  > you could execute `summary = action.act(summary);` or `action.act_inplace(&mut summary);`,
+///  > and similarly as well for [`Self::Value`].
+///
+/// Additional requirements:
+/// * Decide whether to reverse the subsegment it is acted upon. This is done by implementing the
+/// [`Action::to_reverse()`] function. If you do not want to reverse segments, you can use the default implementation,
+/// which always returns false.
+/// * Have an identity action and empty summary: These are represented by the bounds [`Self::Action`]` : `[`Default`],
+/// [`Self::Summary`]` : `[`Default`].
+/// * Test actions for being the identity. This is represented by [`Action::is_identity()`]. 
+///
+/// # Rules
+/// In order for the segment trees to work correctly, all of these operations must play nicely with each other.
+/// * composition of actions: action composition must be associative, and the
+///   identity action should actually be the identity.
+///   ```notrust
+///   (action3 + action2) + action1 === action3 + (action2 + action1)
+///   default() + summary === action + default() === action
+///   ```
+///
+/// * Action composition must actually be action composition, and the identity must actually be the identity.
+///   ```notrust
+///   (action2 + action1).act(value) == action2.act(action1.act(value))
+///   (action2 + action1).act(summary) == action2.act(action1.act(summary))
+///   default().act(value) === value
+///   default().act(summary) === summary
+///   ```
+///
+/// * Summary addition must be associative, so that we get the same summary regardless of the tree structure,
+///   and the empty summary must be the identity.
+///   ```notrust
+///   (summary1 + summary2) + summary3 === summary1 + (summary2 + summary3)
+///   default() + action === summary + default() === summary
+///   ```
+///
+/// * Adding up summaries and then applying an action must be equal to applying the
+///   action separately and then summing the parts:
+///   ```notrust
+///   action.act(summary1 + summary2) == action.act(summary1) + action.act(summary2)
+///   ```
+///   This property is used so that the summary values can be updated without
+///   updating the whole tree.
+///   This means that the action respects the monoid structure of the summaries.
+///   If the action reverses segments, (i.e, if `D::to_reverse(action) == true`), then it has to satisfy a 'cross'
+///   version instead:
+///   ```notrust
+///   action.act(summary1 + summary2) == action.act(summary2) + action.act(summary1)
+///   ```
+///
+/// * The action should respect [`Self::to_summary()`]:
+///   ```notrust
+///   D::to_summary(&action.act(value)) === action.act(D::to_summary(&value))
+///   ```
+///
+/// * If the action can reverse segments, it should also satisfy that composing two actions
+///   xor's their [`Action::to_reverse()`] results:
+///   ```notrust
+///   D::to_reverse(action2 + action1) === D::to_reverse(action2) ^ D::to_reverse(action1)
+///   ```
 pub trait Data {
 	/// The values that reside in trees.
 	type Value;
-	/// The actions you can perform on the values
-	type Action : Eq + Copy + Add<Output=Self::Action>;
 	/// The summaries of values over segments. When querying a segment,
-	/// you get a "summary" of the segment.
-	type Summary : Copy + Add<Output=Self::Summary>;
+	/// you get a summary of the segment, represented by a value of type `Self::Summary`.
+	type Summary : Copy + Default + Add<Output=Self::Summary>;
+	/// The actions you can perform on the values
+	type Action : Action + Acts<Self::Value> + Acts<Self::Summary>;
 
-	/// The identity action.
-	const IDENTITY : Self::Action;
-	/// The empty summary
-	const EMPTY : Self::Summary;
-
-	/// creates the summary of a single value.
+	/// Creates the summary of a single value.
 	fn to_summary(val : &Self::Value) -> Self::Summary;
+}
 
-	/// Applying an action to a value.
-	/// The default implementation just returns the value, since
-	/// this is always a legal implementation.
-	///
-	/// Applying an action on a summary value must be equal to applying the
-	/// action separately and then summing the values:
-	///```rust,ignore
-	///action.act(summary_1 + summary_2)
-	///== action.act(summary_1) + action.act(summary_2)
-	///```
-	/// Indeed, this property is used so that the summary values can be updated without
-	/// updating the whole tree.
-	///
-	/// Therefore, This is essentially a monoid action by the monoid of actions
-	/// on the monoid of values.
-	fn act_summary(_act : Self::Action, other : Self::Summary) -> Self::Summary {
-		other
-	}
-	
-	/// The action, but on values instead of summaries.
-	/// Must commute with [`Data::to_summary`].
-	fn act_value(_act : Self::Action, _other : &mut Self::Value) {}
+/// Trait representing actions. this entailes having an identity action ([`Default`]), being able to compose actions
+/// ([`Add<Output=Self>`]), checking whether an action is the identity action, and checking whether this action
+/// reverses subsegments.
+pub trait Action : Copy + Default + Add<Output=Self> {	
+	/// Test whether this action is the identity action.
+	fn is_identity(self) -> bool;
 
-	/// This function should be implemented if you want to be able to reverse subtrees of your tree.
+	/// This function should be implemented if you want to be able to reverse subsegments of your tree.
+	/// The default implementation always returns `false`.
 	///
 	/// Note that if the action reverses a segment, it shouldn't be used with [`crate::methods::act_segment`].
 	/// Instead, use a tree type that supports reversals (e.g, SplayTree, Treap) and use its native
 	/// [`crate::SomeTree::act_segment`] function.
 	///
 	/// This function should return whether this action reverses the segment it is applied to.
-	fn to_reverse(_action : Self::Action) -> bool {
+	fn to_reverse(self) -> bool {
 		false
+	}
+}
+
+/// Trait representation actions on a type `V`. If `A : Acts<V>` that means that given any `action : A`,
+/// we can apply it to any `val : V`. This trait is used to represent the actions on
+/// values and summaries used by segment trees.
+pub trait Acts<V> {
+	/// Act on a value in-place.
+	fn act_inplace(&self, object : &mut V);
+	/// Act on a value and return the result. `V : Copy` as a lint.
+	fn act(&self, mut object : V) -> V where V : Copy {
+		self.act_inplace(&mut object);
+		object
 	}
 }
