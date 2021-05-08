@@ -14,11 +14,3 @@ rand = "*"
 [lib]
 name = "orchard"
 path = "src/lib.rs"
-
-[[bin]]
-name = "orchard"
-path = "src/bin.rs"
-
-[[test]]
-name = "integration"
-path = "tests/common.rs"

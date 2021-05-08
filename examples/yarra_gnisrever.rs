@@ -142,7 +142,7 @@ pub fn yarra_treap(n : usize, k : usize) -> I {
         }
         */
 
-        if round % 2000 == 0 {
+        if round % 8000 == 0 {
             dbg!(round);
             /*
             if round % 16000 == 0 {
@@ -203,7 +203,7 @@ pub fn yarra_splay(n : usize, k : usize) -> I {
         }
         */
 
-        if round % 2000 == 0 {
+        if round % 8000 == 0 {
             dbg!(round);
             /*
             if round % 16000 == 0 {
@@ -249,8 +249,21 @@ pub fn yarra_splay(n : usize, k : usize) -> I {
 }
 
 pub fn main() {
-    println!("Hello, world!");
+    
+    println!("splay:");
+    let res = yarra_splay(1000_000_000_000_000_000, 1000_000);
+    assert_eq!(res, 563917241);
+    println!("done splay");
+    
+    println!("treap:");
+    let res = yarra_splay(1000_000_000_000_000_000, 1000_000);
+    assert_eq!(res, 563917241);
+    println!("done treap");
+}
 
+
+#[test]
+pub fn test() {
     let res = yarra_treap(100, 100);
     assert_eq!(res, 246597);
     let res = yarra_splay(100, 100);
@@ -259,9 +272,6 @@ pub fn main() {
     assert_eq!(res, 275481640);
     let res = yarra_splay(10000, 10000);
     assert_eq!(res, 275481640);
-    // too slow
-    // let res = yarra_splay(1000_000_000_000_000_000, 1000_000);
-    // assert_eq!(res, 563917241);
 
     use std::io::Write;
     use std::io::stdout;
@@ -287,10 +297,4 @@ pub fn main() {
     }
     println!("done!");
     */
-}
-
-
-#[test]
-pub fn test() {
-    main();
 }
