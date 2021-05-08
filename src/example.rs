@@ -1,7 +1,8 @@
 use crate::*;
 
-use super::trees::splay::*;
-use super::data::example_data::Size;
+use trees::splay::*;
+use example_data::Size;
+use example_data::RevAction;
 
 const MODULUS : I = 1_000_000_000;
 
@@ -84,31 +85,9 @@ impl Interval {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug)]
-struct RevAction {
-    to_reverse : bool,
-}
-
-impl std::ops::Add for RevAction {
-    type Output = RevAction;
-    fn add(self, b : RevAction) -> RevAction {
-        RevAction {to_reverse : self.to_reverse != b.to_reverse}
-    }
-}
-
-impl Default for RevAction {
-    fn default() -> Self {
-        RevAction{ to_reverse : false }
-    }
-}
-
-impl Acts<Size> for RevAction {
-    fn act_inplace(&self, _val : &mut Size) {}
-}
-
 impl Acts<Interval> for RevAction {
     fn act_inplace(&self, val : &mut Interval) {
-        if self.to_reverse {
+        if self.to_reverse() {
             val.flip();
         }
     }
@@ -131,20 +110,6 @@ impl Data for RevData {
 
     fn to_summary(val : &Interval) -> Size {
         Size {size : val.size()}
-    }
-
-    fn to_reverse(act : Self::Action) -> bool {
-        act.to_reverse
-    }
-
-    fn is_identity(action : Self::Action) -> bool {
-        action.to_reverse == false
-    }
-}
-
-impl SizedData for RevData {
-    fn size(summary : Self::Summary) -> usize {
-        summary.size
     }
 }
 

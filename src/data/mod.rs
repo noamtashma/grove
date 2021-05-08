@@ -5,12 +5,12 @@
 //! In order for a choice of types for `Value`, `Summary` and `Action`, to work
 //! in a segment tree, they must be an instance of the [`Data`] trait.
 //!
-//! In addition, this module provides the [`SizedData`] and [`Keyed`] traits,
+//! In addition, this module provides the [`SizedSummary`] and [`Keyed`] traits,
 //! and some common possible instantiations in the [`example_data`] module.
 
 
 pub mod example_data;
-pub use example_data::{SizedData, Keyed};
+pub use example_data::{SizedSummary, Keyed};
 
 use std::ops::Add;
 
@@ -117,13 +117,15 @@ pub trait Data {
 	/// you get a summary of the segment, represented by a value of type `Self::Summary`.
 	type Summary : Copy + Default + Add<Output=Self::Summary>;
 	/// The actions you can perform on the values
-	type Action : Copy + Default + Add<Output=Self::Action> + Acts<Self::Value> + Acts<Self::Summary>;
-
-	/// Test whether this action is the identity action.
-	fn is_identity(action : Self::Action) -> bool;
+	type Action : Action + Acts<Self::Value> + Acts<Self::Summary>;
 
 	/// Creates the summary of a single value.
 	fn to_summary(val : &Self::Value) -> Self::Summary;
+}
+
+pub trait Action : Sized + Copy + Default + Add<Output=Self> {	
+	/// Test whether this action is the identity action.
+	fn is_identity(self) -> bool;
 
 	/// This function should be implemented if you want to be able to reverse subsegments of your tree.
 	/// The default implementation always returns `false`.
@@ -133,7 +135,7 @@ pub trait Data {
 	/// [`crate::SomeTree::act_segment`] function.
 	///
 	/// This function should return whether this action reverses the segment it is applied to.
-	fn to_reverse(_action : Self::Action) -> bool {
+	fn to_reverse(self) -> bool {
 		false
 	}
 }

@@ -124,13 +124,13 @@ impl<D : Data, T> BasicTree<D, T> {
 	/// this you might need to call access, to push the action to this node's sons.
 	///```
 	/// use orchard::basic_tree::*;
-	/// use orchard::example_data::{StdNum, RevAddAction};
+	/// use orchard::example_data::{StdNum, RevAffineAction};
 	///
 	/// let mut tree : BasicTree<StdNum> = (1..=8).collect();
-	/// tree.act(RevAddAction {to_reverse : false, add : 5});
+	/// tree.act(RevAffineAction {to_reverse : false, mul : -1, add : 5});
 	/// # tree.assert_correctness();
 	///
-	/// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (6..=13).collect::<Vec<_>>());
+	/// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (-3..=4).rev().collect::<Vec<_>>());
 	/// # tree.assert_correctness();
 	///```
 	pub fn act(&mut self, action : D::Action) {
@@ -211,7 +211,7 @@ impl<D : Data, T> BasicNode<D, T> {
 	/// Returns the value stored in this node specifically.
 	/// Assumes that the node has been accessed. Panics otherwise.
 	pub(crate) fn node_value_clean(&self) -> &D::Value {
-		assert!(D::is_identity(self.action));
+		assert!(self.action.is_identity());
 		&self.node_value
 	}
 
@@ -223,7 +223,7 @@ impl<D : Data, T> BasicNode<D, T> {
 		// reversing
 		// for data that doesn't implement reversing, this becomes a no-op
 		// and hopefully optimized away
-		if D::to_reverse(self.action) {
+		if self.action.to_reverse() {
 			std::mem::swap(&mut self.left, &mut self.right);
 		}
 
@@ -244,7 +244,7 @@ impl<D : Data, T> BasicNode<D, T> {
 	/// must be rebuilt, in order for the segment values accumulated over the whole
 	/// subtree to be accurate.
 	pub(crate) fn rebuild(&mut self) {
-		assert!(D::is_identity(self.action));
+		assert!(self.action.is_identity());
 		let temp = D::to_summary(&self.node_value);
 		self.subtree_summary = self.left.subtree_summary() + temp + self.right.subtree_summary();
 	}

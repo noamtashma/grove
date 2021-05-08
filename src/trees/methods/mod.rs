@@ -273,7 +273,7 @@ pub fn act_segment<TR, L, D : Data>(tree : TR, action : D::Action, locator : L) 
     TR : SomeTreeRef<D>,
     L : Locator<D>,
 {
-    assert!(D::to_reverse(action) == false);
+    assert!(action.to_reverse() == false);
     use LocResult::*;
 
     let mut walker = tree.walker();

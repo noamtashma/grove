@@ -105,14 +105,14 @@ impl<D : Data> Locator<D> for &std::ops::RangeFull {
 /// Locator instance for [`std::ops::Range<usize>`] representing an index range.
 /// Since [`std::ops::Range<usize>`] is not [`Copy`], the instance is actually for a
 /// `& std::ops::Range<usize>`.
-impl<D : SizedData> Locator<D> for &std::ops::Range<usize> {
+impl<D : Data> Locator<D> for &std::ops::Range<usize> where D::Summary : SizedSummary {
     fn locate(&self, left : D::Summary, node : &D::Value, _right : D::Summary) -> LocResult {
         // find the index of the current node
-        let s = D::size(left);
+        let s = left.size();
 
         if s >= self.end {
             GoLeft
-        } else if s + D::size(D::to_summary(node)) <= self.start {
+        } else if s + D::to_summary(node).size() <= self.start {
             GoRight
         } else {
             Accept
@@ -124,14 +124,14 @@ impl<D : SizedData> Locator<D> for &std::ops::Range<usize> {
 /// Since [`std::ops::RangeInclusive<usize>`] is not [`Copy`], the instance is actually for a
 /// `& std::ops::RangeInclusive<usize>`.
 /// Do not use with ranges that have been iterated on to exhaustion.
-impl<D : SizedData> Locator<D> for &std::ops::RangeInclusive<usize> {
+impl<D : Data> Locator<D> for &std::ops::RangeInclusive<usize> where D::Summary : SizedSummary {
     fn locate(&self, left : D::Summary, node : &D::Value, _right : D::Summary) -> LocResult {
         // find the index of the current node
-        let s = D::size(left);
+        let s = left.size();
 
         if s > *self.end() {
             GoLeft
-        } else if s + D::size(D::to_summary(node)) <= *self.start() {
+        } else if s + D::to_summary(node).size() <= *self.start() {
             GoRight
         } else {
             Accept
@@ -142,12 +142,12 @@ impl<D : SizedData> Locator<D> for &std::ops::RangeInclusive<usize> {
 /// Locator instance for [`std::ops::RangeFrom<usize>`] representing an index range.
 /// Since [`std::ops::RangeFrom<usize>`] is not [`Copy`], the instance is actually for a
 /// `& std::ops::RangeFrom<usize>`.
-impl<D : SizedData> Locator<D> for &std::ops::RangeFrom<usize> {
+impl<D : Data> Locator<D> for &std::ops::RangeFrom<usize> where D::Summary : SizedSummary {
     fn locate(&self, left : D::Summary, node : &D::Value, _right : D::Summary) -> LocResult {
         // find the index of the current node
-        let s = D::size(left);
+        let s = left.size();
 
-        if s + D::size(D::to_summary(node)) <= self.start {
+        if s + D::to_summary(node).size() <= self.start {
             GoRight
         } else {
             Accept
@@ -156,10 +156,10 @@ impl<D : SizedData> Locator<D> for &std::ops::RangeFrom<usize> {
 }
 
 /// Locator instance for [`std::ops::RangeTo<usize>`] representing an index range.
-impl<D : SizedData> Locator<D> for std::ops::RangeTo<usize> {
+impl<D : Data> Locator<D> for std::ops::RangeTo<usize> where D::Summary : SizedSummary {
     fn locate(&self, left : D::Summary, _node : &D::Value, _right : D::Summary) -> LocResult {
         // find the index of the current node
-        let s = D::size(left);
+        let s = left.size();
 
         if s >= self.end {
             GoLeft
@@ -170,10 +170,10 @@ impl<D : SizedData> Locator<D> for std::ops::RangeTo<usize> {
 }
 
 /// Locator instance for a referencfe to [`std::ops::RangeTo<usize>`] representing an index range.
-impl<D : SizedData> Locator<D> for &std::ops::RangeTo<usize> {
+impl<D : Data> Locator<D> for &std::ops::RangeTo<usize> where D::Summary : SizedSummary {
     fn locate(&self, left : D::Summary, _node : &D::Value, _right : D::Summary) -> LocResult {
         // find the index of the current node
-        let s = D::size(left);
+        let s = left.size();
 
         if s >= self.end {
             GoLeft
@@ -185,10 +185,10 @@ impl<D : SizedData> Locator<D> for &std::ops::RangeTo<usize> {
 
 /// Locator instance for [`std::ops::RangeToInclusive<usize>`] representing an index range.
 /// Do not use with ranges that have been iterated on to exhaustion.
-impl<D : SizedData> Locator<D> for std::ops::RangeToInclusive<usize> {
+impl<D : Data> Locator<D> for std::ops::RangeToInclusive<usize> where D::Summary : SizedSummary {
     fn locate(&self, left : D::Summary, _node : &D::Value, _right : D::Summary) -> LocResult {
         // find the index of the current node
-        let s = D::size(left);
+        let s = left.size();
 
         if s > self.end {
             GoLeft
@@ -200,10 +200,10 @@ impl<D : SizedData> Locator<D> for std::ops::RangeToInclusive<usize> {
 
 /// Locator instance for a reference to [`std::ops::RangeToInclusive<usize>`] representing an index range.
 /// Do not use with ranges that have been iterated on to exhaustion.
-impl<D : SizedData> Locator<D> for &std::ops::RangeToInclusive<usize> {
+impl<D : Data> Locator<D> for &std::ops::RangeToInclusive<usize> where D::Summary : SizedSummary {
     fn locate(&self, left : D::Summary, _node : &D::Value, _right : D::Summary) -> LocResult {
         // find the index of the current node
-        let s = D::size(left);
+        let s = left.size();
 
         if s > self.end {
             GoLeft
