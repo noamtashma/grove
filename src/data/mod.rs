@@ -94,6 +94,11 @@ use std::ops::Add;
 ///   This property is used so that the summary values can be updated without
 ///   updating the whole tree.
 ///   This means that the action respects the monoid structure of the summaries.
+///   If the action reverses segments, (i.e, if `D::to_reverse(action) == true`), then it has to satisfy a 'cross'
+///   version instead:
+///   ```notrust
+///   action.act(summary1 + summary2) == action.act(summary2) + action.act(summary1)
+///   ```
 ///
 /// * The action should respect [`Self::to_summary()`]:
 ///   ```notrust
