@@ -124,7 +124,7 @@ pub trait Data {
 }
 
 /// Trait representing actions. this entailes having an identity action ([`Default`]), being able to compose actions
-/// ([`Add<Output=Self>`]), checking whether an action is the identity action, and checking whether this action
+/// ([`Add`]`<Output=Self>`), checking whether an action is the identity action, and checking whether this action
 /// reverses subsegments.
 pub trait Action : Copy + Default + Add<Output=Self> {	
 	/// Test whether this action is the identity action.

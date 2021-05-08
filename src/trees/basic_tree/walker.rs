@@ -96,11 +96,13 @@ impl<'a, D : Data, T> BasicWalker<'a, D, T> {
 		self.is_left.last().cloned()
 	}
 
+	/*
 	/// Not public since the walker should maintain the invariant that the current position
 	/// is always clean. Ergo, for internal use.
 	pub (in super::super) fn access(&mut self) {
 		self.tel.access();
 	}
+	*/
 
 	/// Not public since the walker should maintain the invariant that the current position
 	/// is always clean. Ergo, for internal use.

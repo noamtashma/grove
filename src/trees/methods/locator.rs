@@ -216,17 +216,17 @@ impl<D : Data> Locator<D> for &std::ops::RangeToInclusive<usize> where D::Summar
 /// A Wrapper for other locators what will find exactly the left edge
 /// of the previous locator. So, this is always a splitting locator.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
-pub struct LeftEdgeLocator<L> (
+pub struct LeftEdgeOf<L> (
     pub L,
 );
 /// A Wrapper for other locators what will find exactly the right edge
 /// of the previous locator. So, this is always a splitting locator.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
-pub struct RightEdgeLocator<L> (
+pub struct RightEdgeOf<L> (
     pub L,
 );
 
-impl<D : Data, L : Locator<D>> Locator<D> for LeftEdgeLocator<L> {
+impl<D : Data, L : Locator<D>> Locator<D> for LeftEdgeOf<L> {
     fn locate(&self, left : D::Summary, node : &D::Value, right : D::Summary) -> 
         LocResult
     {
@@ -237,7 +237,7 @@ impl<D : Data, L : Locator<D>> Locator<D> for LeftEdgeLocator<L> {
     }
 }
 
-impl<D : Data, L : Locator<D>> Locator<D> for RightEdgeLocator<L> {
+impl<D : Data, L : Locator<D>> Locator<D> for RightEdgeOf<L> {
     fn locate(&self, left : D::Summary, node : &D::Value, right : D::Summary) -> 
         LocResult
     {
@@ -248,8 +248,45 @@ impl<D : Data, L : Locator<D>> Locator<D> for RightEdgeLocator<L> {
     }
 }
 
+
+/// A Wrapper for other locators what will find the segment to the left
+/// of the previous locator. So, `LeftOf(&(5..8))` is equivalent to `&(0..5)`.
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub struct LeftOf<L> (
+    pub L,
+);
+
+/// A Wrapper for other locators what will find the segment to the right
+/// of the previous locator. So, `RightOf(&(5..8))` is equivalent to `&(8..)`.
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub struct RightOf<L> (
+    pub L,
+);
+
+impl<D : Data, L : Locator<D>> Locator<D> for LeftOf<L> {
+    fn locate(&self, left : D::Summary, node : &D::Value, right : D::Summary) -> 
+        LocResult
+    {
+        match self.0.locate(left, node, right) {
+            GoRight => Accept,
+            _ => GoLeft,
+        }
+    }
+}
+
+impl<D : Data, L : Locator<D>> Locator<D> for RightOf<L> {
+    fn locate(&self, left : D::Summary, node : &D::Value, right : D::Summary) -> 
+        LocResult
+    {
+        match self.0.locate(left, node, right) {
+            GoLeft => Accept,
+            _ => GoRight,
+        }
+    }
+}
+
 /// A Wrapper for two other locators, that finds the smallest segment containing both of them.
-/// For example, the Union of ranges `[3,6)` and `[7,12)` will  be `[3,12)`.
+/// For example, the Union of ranges `[3,6)` and `[8,12)` will  be `[3,12)`.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct UnionLocator<L1, L2> (
     pub L1, pub L2

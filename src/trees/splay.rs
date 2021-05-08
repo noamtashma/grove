@@ -113,7 +113,7 @@ impl<D : Data> SplayTree<D> {
         L : crate::methods::locator::Locator<D>
     {
 
-        let left_edge = methods::LeftEdgeLocator(locator);
+        let left_edge = methods::LeftEdgeOf(locator);
         // reborrows the tree for a shorter time
         let mut walker = methods::search_by_locator(&mut *self, left_edge);
         // walker.splay() // to ensure complexity guarantees
@@ -121,7 +121,7 @@ impl<D : Data> SplayTree<D> {
         // walker.splay(); already happens because of the drop
         drop(walker); // must drop here so that the next call to search can happen
 
-        let right_edge = methods::RightEdgeLocator(locator);
+        let right_edge = methods::RightEdgeOf(locator);
         let mut walker2 = methods::search_by_locator(&mut *self, right_edge);
         let b2 = methods::next_filled(&mut walker2).is_ok();
         if b2 {

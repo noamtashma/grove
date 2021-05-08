@@ -46,14 +46,14 @@ impl Interval {
     // sum of i*A[i] if the array only starts at index `index` 
     fn sum_with_index(&self, index2 : usize) -> I {
         let index = (index2 as I) % MODULUS;
-        let bMODULUS = 6*(MODULUS as i128);
+        let b_modulus = 6*(MODULUS as i128);
         let size = (self.size() as I) % (2*MODULUS);
-        let size128 = (self.size() as i128) % bMODULUS;
+        let size128 = (self.size() as i128) % b_modulus;
         // denote i = index + j
         // i*A[i] = (index + j) * (inter.start + incr*j) = incr*j^2 + j*(incr*index + inter.start) + index*inter.start
         // sum (i < n) i^2 = n*(n-1)*(2n-1)/6
         // sum (i < n) i = n*(n-1)/2
-        let ap = ((size128*(size128-1)) % bMODULUS)*((2*size128-1) % bMODULUS);
+        let ap = ((size128*(size128-1)) % b_modulus)*((2*size128-1) % b_modulus);
         if ap % 6 != 0 {
             panic!();
         }

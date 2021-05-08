@@ -37,14 +37,14 @@ impl<D : Data> SomeTree<D> for Treap<D> {
             // TODO: bug: the locators return incorrect results, since they're
             // run on subtree instead of the full tree.
             // split out the middle
-            let mut walker = search_by_locator(&mut *self, methods::LeftEdgeLocator(locator));
+            let mut walker = search_by_locator(&mut *self, methods::LeftEdgeOf(locator));
             let mut mid = walker.split().unwrap();
             drop(walker);
 
             let mut walker2 = TreapWalker {
                 walker : BasicWalker::new_with_context(&mut mid.tree, self.subtree_summary(), Default::default())
             };
-            methods::search_walker_by_locator(&mut walker2, methods::RightEdgeLocator(locator));
+            methods::search_walker_by_locator(&mut walker2, methods::RightEdgeOf(locator));
             let right = walker2.split().unwrap();
             drop(walker2);
             
