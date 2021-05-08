@@ -56,11 +56,11 @@ use std::ops::Add;
 ///
 /// Additional requirements:
 /// * Decide whether to reverse the subsegment it is acted upon. This is done by implementing the
-/// [`Self::to_reverse()`] function. If you do not want to reverse segments, you can use the default implementation,
+/// [`Action::to_reverse()`] function. If you do not want to reverse segments, you can use the default implementation,
 /// which always returns false.
 /// * Have an identity action and empty summary: These are represented by the bounds [`Self::Action`]` : `[`Default`],
 /// [`Self::Summary`]` : `[`Default`].
-/// * Test actions for being the identity. This is represented by [`Self::is_identity()`]. 
+/// * Test actions for being the identity. This is represented by [`Action::is_identity()`]. 
 ///
 /// # Rules
 /// In order for the segment trees to work correctly, all of these operations must play nicely with each other.
@@ -106,7 +106,7 @@ use std::ops::Add;
 ///   ```
 ///
 /// * If the action can reverse segments, it should also satisfy that composing two actions
-///   xor's their [`Data::to_reverse()`] results:
+///   xor's their [`Action::to_reverse()`] results:
 ///   ```notrust
 ///   D::to_reverse(action2 + action1) === D::to_reverse(action2) ^ D::to_reverse(action1)
 ///   ```
@@ -123,7 +123,10 @@ pub trait Data {
 	fn to_summary(val : &Self::Value) -> Self::Summary;
 }
 
-pub trait Action : Sized + Copy + Default + Add<Output=Self> {	
+/// Trait representing actions. this entailes having an identity action ([`Default`]), being able to compose actions
+/// ([`Add<Output=Self>`]), checking whether an action is the identity action, and checking whether this action
+/// reverses subsegments.
+pub trait Action : Copy + Default + Add<Output=Self> {	
 	/// Test whether this action is the identity action.
 	fn is_identity(self) -> bool;
 
@@ -140,7 +143,7 @@ pub trait Action : Sized + Copy + Default + Add<Output=Self> {
 	}
 }
 
-/// Trait representation actions. If `A : Acts<V>` that means that given any `action : A`,
+/// Trait representation actions on a type `V`. If `A : Acts<V>` that means that given any `action : A`,
 /// we can apply it to any `val : V`. This trait is used to represent the actions on
 /// values and summaries used by segment trees.
 pub trait Acts<V> {
