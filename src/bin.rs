@@ -2,12 +2,14 @@ use orchard::example::*;
 
 pub fn main() {
     
-    use orchard::basic_tree::*;
+    use orchard::splay::*;
     use orchard::example_data::StdNum;
-    use orchard::methods;
-    let mut tree : BasicTree<StdNum> = (20..80).collect();
-    let part = tree.iter_locator(methods::locate_by_index_range(3,13)); // should also try 3..5
-    assert_eq!(part.cloned().collect::<Vec<_>>(), (23..33).collect::<Vec<_>>());
+    
+    let mut tree : SplayTree<StdNum> = (17..=89).collect();
+    let tree2 : SplayTree<StdNum> = (13..=25).collect();
+    tree.concatenate(tree2);
+    
+    assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..=89).chain(13..=25).collect::<Vec<_>>());
     tree.assert_correctness();
     
 

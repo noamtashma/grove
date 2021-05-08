@@ -100,14 +100,6 @@ impl Data for RevData {
     type Summary = Size;
     type Value = Interval;
 
-    /*
-    fn act_value(act : Self::Action, val : &mut Interval) {
-        if act.to_reverse {
-            val.flip();
-        }
-    }
-    */
-
     fn to_summary(val : &Interval) -> Size {
         Size {size : val.size()}
     }
@@ -184,7 +176,7 @@ pub fn yarra(n : usize, k : usize) -> I {
 
     let mut index = 0;
     let mut index_sum = 0;
-    for inter in tree.iter() { // coul use an owning iterator, bu we want to delay the tree's drop
+    for inter in tree.iter() { // could use an owning iterator, bu we want to delay the tree's drop
         index_sum += inter.sum_with_index(index);
         index_sum %= MODULUS;
         index += inter.size();

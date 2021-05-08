@@ -41,8 +41,8 @@ pub fn check_consistency<T1, T2>() where
         let mut rng = rand::thread_rng();
         RevAffineAction {
             to_reverse : rng.gen(),
-            mul : rng.gen_range(-MAX_MUL..MAX_MUL),
-            add : rng.gen_range(-MAX_ADD..MAX_ADD),
+            mul : if rng.gen() { 1 } else { -1 },
+            add : rng.gen_range(-MAX_ADD..=MAX_ADD),
         }
     }
 
@@ -58,10 +58,12 @@ pub fn check_consistency<T1, T2>() where
             let s1 = tree1.subtree_summary();
             let s2 = tree2.subtree_summary();
             assert_eq!(s1, s2);
+            assert_eq!(s1.size(), LEN);
         } else {
             let sum1 = tree1.segment_summary(range);
             let sum2 = tree2.segment_summary(range);
             assert_eq!(sum1, sum2);
+            assert_eq!(sum1.size(), range.len());
         }
     }
 }
