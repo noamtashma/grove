@@ -25,7 +25,6 @@ pub fn check_consistency<T1, T2>() where
 {
     const LEN : usize = 200;
     const MAX_ADD : i32 = 200;
-    const MAX_MUL : i32 = 2;
 
     fn random_range() -> std::ops::Range<usize> {
         let mut rng = rand::thread_rng();

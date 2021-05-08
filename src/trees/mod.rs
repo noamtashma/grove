@@ -99,10 +99,6 @@ pub trait SomeWalker<D : Data> : SomeEntry<D> {
     /// This function is here since only walkers can guarantee that the current value
     /// is clean.
     fn value(&self) -> Option<&D::Value>;
-
-    // // TODO: consider switching this function to a function that
-    // // returns the inner node directly.
-    // fn inner(&self) -> &basic_tree::BasicTree<D>;
 }
 
 /// Methods that ask to read the contents of the current tree/position.

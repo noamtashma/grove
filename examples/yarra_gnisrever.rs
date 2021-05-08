@@ -1,5 +1,6 @@
-use crate::*;
+use orchard::*;
 
+use trees::treap::*;
 use trees::splay::*;
 use example_data::Size;
 use example_data::RevAction;
@@ -105,38 +106,88 @@ impl Data for RevData {
     }
 }
 
-impl SplayTree<RevData> {
-    // splits a segment inside the tree
-    fn search_split(&mut self, index : usize) {
-        let locator = &(index..index);
-        let mut walker = // using an empty range so that we'll only end up at a node
-            // if we actually need to split that node
-            methods::search_by_locator(self, locator);
-        
+// splits a segment inside the tree
+fn search_split<TR : SomeTreeRef<RevData>>(tree : TR, index : usize) where TR::Walker : ModifiableWalker<RevData>
+{
+    // using an empty range so that we'll only end up at a node
+    // if we actually need to split that node
+    let mut walker = methods::search_by_locator(tree, &(index..index)); 
+    
+    let left = walker.left_summary().size;
+    let v2option = walker.with_value( |val| {
+        let (v1, v2) = val.split_at_index(index - left);
+        *val = v1;
+        v2
+    });
 
-        let left = walker.left_summary().size;
-        let v2option = walker.with_value( |val| {
-            let (v1, v2) = val.split_at_index(index - left);
-            *val = v1;
-            v2
-        });
-
-        if let Some(v2) = v2option {
-            methods::next_empty(&mut walker).unwrap(); // not at an empty node
-            walker.insert(v2).unwrap();
-        }
-    }
-
-    // reverse the segment [low, high)
-    fn reverse_segment(&mut self, low : usize, high : usize) {
-        self.search_split(low);
-        self.search_split(high);
-        self.act_segment(RevAction { to_reverse : true }, &(low..high));
+    if let Some(v2) = v2option {
+        methods::next_empty(&mut walker).unwrap(); // not at an empty node
+        walker.insert(v2).unwrap();
     }
 }
 
+pub fn yarra_treap(n : usize, k : usize) -> I {
+    let mut tree : Treap<RevData> = Treap::new();
+    let inter = Interval {start : 0, end : (n-1) as I};
+    tree.walker().insert(inter).unwrap();
 
-pub fn yarra(n : usize, k : usize) -> I {
+    let mut sn = 1;
+    let mut tn = 1;
+    for round in 0..k {
+        
+        /*
+        if round < 10 {
+            dbg!(round);
+            dbg!(to_array(&mut tree));
+        }
+        */
+
+        if round % 2000 == 0 {
+            dbg!(round);
+            /*
+            if round % 16000 == 0 {
+                tree.walker().inner().assert_correctness();
+            }
+            */
+        }
+        
+
+        
+        if sn != tn {
+            let (low, high) = if sn < tn {
+                (sn, tn+1)
+            } else {
+                (tn, sn+1)
+            };
+            
+            search_split(&mut tree, low);
+            search_split(&mut tree, high);
+            tree.act_segment(RevAction { to_reverse : true }, &(low..high));
+        }
+
+        sn += tn;
+        sn %= n;
+        tn += sn;
+        tn %= n;
+    }
+
+    let mut index = 0;
+    let mut index_sum = 0;
+    for inter in tree.iter() { // could use an owning iterator, bu we want to delay the tree's drop
+        index_sum += inter.sum_with_index(index);
+        index_sum %= MODULUS;
+        index += inter.size();
+        if index % 1000 == 0 {
+            dbg!(index);
+        }
+    }
+    dbg!(index_sum);
+    drop(tree);
+    println!("done drop");
+    index_sum
+}
+
+pub fn yarra_splay(n : usize, k : usize) -> I {
     let mut tree : SplayTree<RevData> = SplayTree::new();
     let inter = Interval {start : 0, end : (n-1) as I};
     tree.walker().insert(inter).unwrap();
@@ -162,10 +213,17 @@ pub fn yarra(n : usize, k : usize) -> I {
         }
         
 
-        if sn < tn {
-            tree.reverse_segment(sn, tn+1);
-        } else if sn > tn {
-            tree.reverse_segment(tn, sn+1);
+        
+        if sn != tn {
+            let (low, high) = if sn < tn {
+                (sn, tn+1)
+            } else {
+                (tn, sn+1)
+            };
+            
+            search_split(&mut tree, low);
+            search_split(&mut tree, high);
+            tree.act_segment(RevAction { to_reverse : true }, &(low..high));
         }
 
         sn += tn;
@@ -190,15 +248,21 @@ pub fn yarra(n : usize, k : usize) -> I {
     index_sum
 }
 
-
-pub fn test() {
+pub fn main() {
     println!("Hello, world!");
 
-    // correct answer: 563917241
-    let res = yarra(1000_000_000_000_000_000, 1000_000);
-    //let res = yarra(10000, 10000);
-    println!("{:?}", res);
-    dbg!(res);
+    let res = yarra_treap(100, 100);
+    assert_eq!(res, 246597);
+    let res = yarra_splay(100, 100);
+    assert_eq!(res, 246597);
+    let res = yarra_treap(10000, 10000);
+    assert_eq!(res, 275481640);
+    let res = yarra_splay(10000, 10000);
+    assert_eq!(res, 275481640);
+    // too slow
+    // let res = yarra_splay(1000_000_000_000_000_000, 1000_000);
+    // assert_eq!(res, 563917241);
+
     use std::io::Write;
     use std::io::stdout;
     stdout().flush().unwrap();
@@ -226,3 +290,7 @@ pub fn test() {
 }
 
 
+#[test]
+pub fn test() {
+    main();
+}
