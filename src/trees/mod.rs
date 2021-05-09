@@ -104,6 +104,9 @@ pub trait SomeWalker<D : Data> : SomeEntry<D> {
 /// Methods that ask to read the contents of the current tree/position.
 /// These methods are common to the trees themselves and to the walkers.
 pub trait SomeEntry<D : Data> {
+    // TODO: reconsider
+    // fn value_with_mut(&mut self) -> Option<&D::Value>;
+
     /// Lets you modify the value, and after you modified it, rebuilds the node.
     /// If the current position is empty, returns [`None`].
     fn with_value<F, R>(&mut self, f : F) -> Option<R> where 

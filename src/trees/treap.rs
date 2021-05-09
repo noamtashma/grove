@@ -212,6 +212,24 @@ impl<D : Data> Treap<D> {
         // the walker is responsible for going up the tree
         // and rebuilding all the nodes
     }
+
+    /// Computes the union of two splay trees, ordered by keys.
+    /// We order the resulting tree based on the `D::Value : Keyed` instance, assuming that
+    /// the values in the existing trees are also in the correct order.
+    /// This is different from concatenate, because concatenate puts first all elements of the first tree,
+    /// and then all of the elements of the second tree.
+    ///
+    /// If elements with equal keys are found, they are placed in an arbitrary order.
+    ///
+    /// # Complexity
+    /// If the sizes of the two trees are `n,k`, with `n < k`, then the complexity is
+    /// `O(n*log(1+k/n))` in the average case. It is aolso equal to `O(log(n+k 'choose' n))`.
+    /// This has the effect that if you start with `n` different singletone trees,
+    /// and you united them together in any way whatsoever, the overall complexity would be
+    /// `O(n*log(n))`.
+    pub fn union(&mut self, tree2 : Treap<D>) where D::Value : Keyed {
+        union_internal(&mut self.tree, tree2);
+    }
 }
 
 impl<D : Data> std::iter::FromIterator<D::Value> for Treap<D> {
@@ -314,7 +332,6 @@ impl<'a, D : Data> SomeEntry<D> for TreapWalker<'a, D> {
 }
 
 impl<'a, D : Data> TreapWalker<'a, D> {
-    
     /// Returns the priority of the current node. Lower numbers means 
     /// The node is closer to the root.
     pub fn priority(&self) -> Option<T> {
@@ -369,7 +386,6 @@ impl<'a, D : Data> TreapWalker<'a, D> {
         Some(Treap {tree : temp})
     }
 }
-
 
 impl<'a, D : Data> ModifiableWalker<D> for TreapWalker<'a, D> {
     /// Inserts the value into the tree at the current empty position.
@@ -452,5 +468,70 @@ impl<'a, D : Data> ModifiableWalker<D> for TreapWalker<'a, D> {
 ///```
 pub fn concatenate<D : Data>(mut tree1 : Treap<D>, tree2 : Treap<D>) -> Treap<D> {
     tree1.concatenate(tree2);
+    tree1
+}
+
+/// Computes the union of two splay trees, ordered by keys.
+/// We order the resulting tree based on the `D::Value : Keyed` instance, assuming that
+/// the values in the existing trees are also in the correct order.
+/// This is different from concatenate, because concatenate puts first all elements of the first tree,
+/// and then all of the elements of the second tree.
+///
+/// If elements with equal keys are found, they are placed in an arbitrary order.
+///
+/// # Complexity
+/// If the sizes of the two trees are `n,k`, with `n < k`, then the complexity is
+/// `O(n*log(1+k/n))` in the average case. It is aolso equal to `O(log(n+k 'choose' n))`.
+/// This has the effect that if you start with `n` different singletone trees,
+/// and you united them together in any way whatsoever, the overall complexity would be
+/// `O(n*log(n))`.
+fn union_internal<D : Data>(tree1 : &mut BasicTree<D, T>, mut tree2 : Treap<D>) where D::Value : Keyed {
+    if tree2.is_empty() {
+        return;
+    }
+    if tree1.is_empty() {
+        *tree1 = tree2.tree;
+        return;
+    }
+    if tree1.alg_data().unwrap() > &tree2.priority().unwrap() {
+        std::mem::swap(tree1, &mut tree2.tree);
+    }
+    let node = tree1.node_mut().unwrap();
+
+    let key = &node.node_value().get_key(); // this performs access()
+
+    // TODO: replace by a locator that does the handling of the equality case by itself
+    let mut split_walker = methods::search(&mut tree2, key);
+    // if an element with the same key was found, arbitrarily decide to put it more to the right
+    if split_walker.is_empty() == false {
+        methods::previous_empty(&mut split_walker).unwrap();
+    }
+    // split
+    let right = split_walker.split().unwrap();
+    drop(split_walker);
+    let left = tree2;
+
+    // TODO: nice possible location for parrallelization
+    union_internal(&mut node.left, left);
+    union_internal(&mut node.right, right);
+    node.rebuild();
+}
+
+/// Computes the union of two splay trees, ordered by keys.
+/// We order the resulting tree based on the `D::Value : Keyed` instance, assuming that
+/// the values in the existing trees are also in the correct order.
+/// This is different from concatenate, because concatenate puts first all elements of the first tree,
+/// and then all of the elements of the second tree.
+///
+/// If elements with equal keys are found, they are placed in an arbitrary order.
+///
+/// # Complexity
+/// If the sizes of the two trees are `n,k`, with `n < k`, then the complexity is
+/// `O(n*log(1+k/n))` in the average case. It is aolso equal to `O(log(n+k 'choose' n))`.
+/// This has the effect that if you start with `n` different singletone trees,
+/// and you united them together in any way whatsoever, the overall complexity would be
+/// `O(n*log(n))`.
+pub fn union<D : Data>(mut tree1 : Treap<D>, tree2 : Treap<D>) -> Treap<D> where D::Value : Keyed {
+    tree1.union(tree2);
     tree1
 }
