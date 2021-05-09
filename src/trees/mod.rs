@@ -17,6 +17,7 @@ pub mod treap;
 use std::iter::FromIterator;
 
 use crate::data::*;
+use crate::locators;
 
 /// This trait is the top-level trait that the different trees implement.
 /// Every tree that implements this trait can be used directly by the functions
@@ -28,11 +29,11 @@ pub trait SomeTree<D : Data> :
 {
     /// Compute the summary of a subsegment.
     fn segment_summary<L>(&mut self, locator : L) -> D::Summary where
-        L : methods::Locator<D>;
+        L : locators::Locator<D>;
 
     /// Apply an action on a subsegment.
     fn act_segment<L>(&mut self, action : D::Action, locator : L) where
-        L : methods::Locator<D>;
+        L : locators::Locator<D>;
 }
 
 /// This is a workaround for not having Generic Associated Types in Rust yet.

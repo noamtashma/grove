@@ -1,4 +1,5 @@
-//! Module defining a trait for a way to locatee a node or group of nodes in a tree.
+//! The locator module provides an interface for locating a specific value
+//! or a segment, generalizing the search in a binary search tree.
 //! 
 //! Locators are supposed to represent a segment of the tree. See [`Locator`].
 //!
@@ -6,6 +7,8 @@
 //! will use any node that is accepted.
 //! Functions like insertions, will expect a locator that doesn't accept any node,
 //! but leads the locator into a space between nodes, where the node will be inserted.
+
+
 use crate::*;
 
 #[derive(PartialEq, Eq, Debug)]

@@ -84,7 +84,7 @@ impl<D : Data, T> BasicTree<D, T> {
 	/// # tree.assert_correctness();
 	///```
 	pub fn iter_locator<L>(&mut self, loc : L) -> impl Iterator<Item=&D::Value> where
-		L : methods::Locator<D>
+		L : locators::Locator<D>
 	{
 		iterators::ImmIterator::new(self, loc)
 	}

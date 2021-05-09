@@ -27,6 +27,7 @@
 
 use super::*;
 use super::basic_tree::*;
+use crate::locators;
 
 
 
@@ -110,10 +111,10 @@ impl<D : Data> SplayTree<D> {
     /// Gets the tree into a state in which the locator's segment
     /// is a single subtree, and returns a walker at that subtree.
     pub fn isolate_segment<L>(&mut self, locator : L) -> SplayWalker<D> where
-        L : crate::methods::locator::Locator<D>
+        L : crate::Locator<D>
     {
 
-        let left_edge = methods::LeftEdgeOf(locator);
+        let left_edge = locators::LeftEdgeOf(locator);
         // reborrows the tree for a shorter time
         let mut walker = methods::search_by_locator(&mut *self, left_edge);
         // walker.splay() // to ensure complexity guarantees
@@ -121,7 +122,7 @@ impl<D : Data> SplayTree<D> {
         // walker.splay(); already happens because of the drop
         drop(walker); // must drop here so that the next call to search can happen
 
-        let right_edge = methods::RightEdgeOf(locator);
+        let right_edge = locators::RightEdgeOf(locator);
         let mut walker2 = methods::search_by_locator(&mut *self, right_edge);
         let b2 = methods::next_filled(&mut walker2).is_ok();
         if b2 {
@@ -324,7 +325,7 @@ impl<'a, A : Data> Drop for SplayWalker<'a, A> {
 impl<D : Data> SomeTree<D> for SplayTree<D> {
     
     fn segment_summary<L>(&mut self, locator : L) -> D::Summary where
-    L : methods::Locator<D>
+    L : locators::Locator<D>
     {
         let walker = self.isolate_segment(locator);
         walker.subtree_summary()

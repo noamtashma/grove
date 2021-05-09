@@ -9,6 +9,7 @@
 
 
 use crate::methods::search_by_locator;
+use crate::locators;
 
 use super::*;
 use super::basic_tree::*;
@@ -37,14 +38,14 @@ impl<D : Data> SomeTree<D> for Treap<D> {
             // TODO: bug: the locators return incorrect results, since they're
             // run on subtree instead of the full tree.
             // split out the middle
-            let mut walker = search_by_locator(&mut *self, methods::LeftEdgeOf(locator));
+            let mut walker = search_by_locator(&mut *self, locators::LeftEdgeOf(locator));
             let mut mid = walker.split().unwrap();
             drop(walker);
 
             let mut walker2 = TreapWalker {
                 walker : BasicWalker::new_with_context(&mut mid.tree, self.subtree_summary(), Default::default())
             };
-            methods::search_walker_by_locator(&mut walker2, methods::RightEdgeOf(locator));
+            methods::search_walker_by_locator(&mut walker2, locators::RightEdgeOf(locator));
             let right = walker2.split().unwrap();
             drop(walker2);
             
@@ -147,7 +148,7 @@ impl<D : Data> Treap<D> {
 	/// # tree.assert_correctness();
 	///```
 	pub fn iter_locator<L>(&mut self, loc : L) -> impl Iterator<Item=&D::Value> where
-        L : methods::Locator<D>
+        L : locators::Locator<D>
     {
         self.tree.iter_locator(loc)
     }

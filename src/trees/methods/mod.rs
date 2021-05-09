@@ -3,20 +3,16 @@
 //! search functions, querying on a segment of the tree, applying an
 //! action on a segment of the tree, and so on.
 //!
-//! The locator module provides an interface for locating a specific value
-//! or a segment, generalizing the search in a binary search tree.
-//!
 //! Since different balanced tree algorithms are different, the generic functions
 //! may not work as intended. For example, splay trees shouldn't use the `go_up` method too much,
 //! and so some generic functions which use `go_up` may have linear complexity when used with
 //! splay trees.
 
-pub mod locator;
 
-pub use locator::*;
 use data::example_data::Keyed;
 
 use crate::*;
+use locators::*;
 // use std::iter::Iterator;
 
 
