@@ -142,7 +142,7 @@ impl<D : Data> Treap<D> {
 	/// use orchard::methods;
 	///
 	/// let mut tree : BasicTree<StdNum> = (20..80).collect();
-	/// let segment_iter = tree.iter_locator(&(3..13));
+	/// let segment_iter = tree.iter_locator(3..13);
 	///
 	/// assert_eq!(segment_iter.cloned().collect::<Vec<_>>(), (23..33).collect::<Vec<_>>());
 	/// # tree.assert_correctness();
@@ -352,7 +352,7 @@ impl<'a, D : Data> TreapWalker<'a, D> {
     /// use orchard::methods::*; 
     ///
     /// let mut tree : Treap<StdNum> = (17..88).collect();
-    /// let mut walker = search_by_locator(&mut tree, &(7..7));
+    /// let mut walker = search_by_locator(&mut tree, 7..7);
     /// let mut tree2 = walker.split().unwrap();
     /// drop(walker);
     ///

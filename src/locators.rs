@@ -106,8 +106,22 @@ impl<D : Data> Locator<D> for &std::ops::RangeFull {
 }
 
 /// Locator instance for [`std::ops::Range<usize>`] representing an index range.
-/// Since [`std::ops::Range<usize>`] is not [`Copy`], the instance is actually for a
-/// `& std::ops::Range<usize>`.
+impl<D : Data> Locator<D> for std::ops::Range<usize> where D::Summary : SizedSummary {
+    fn locate(&self, left : D::Summary, node : &D::Value, _right : D::Summary) -> LocResult {
+        // find the index of the current node
+        let s = left.size();
+
+        if s >= self.end {
+            GoLeft
+        } else if s + D::to_summary(node).size() <= self.start {
+            GoRight
+        } else {
+            Accept
+        }
+    }
+}
+
+/// Locator instance for a reference to [`std::ops::Range<usize>`] representing an index range.
 impl<D : Data> Locator<D> for &std::ops::Range<usize> where D::Summary : SizedSummary {
     fn locate(&self, left : D::Summary, node : &D::Value, _right : D::Summary) -> LocResult {
         // find the index of the current node
@@ -124,8 +138,23 @@ impl<D : Data> Locator<D> for &std::ops::Range<usize> where D::Summary : SizedSu
 }
 
 /// Locator instance for [`std::ops::RangeInclusive<usize>`] representing an index range.
-/// Since [`std::ops::RangeInclusive<usize>`] is not [`Copy`], the instance is actually for a
-/// `& std::ops::RangeInclusive<usize>`.
+/// Do not use with ranges that have been iterated on to exhaustion.
+impl<D : Data> Locator<D> for std::ops::RangeInclusive<usize> where D::Summary : SizedSummary {
+    fn locate(&self, left : D::Summary, node : &D::Value, _right : D::Summary) -> LocResult {
+        // find the index of the current node
+        let s = left.size();
+
+        if s > *self.end() {
+            GoLeft
+        } else if s + D::to_summary(node).size() <= *self.start() {
+            GoRight
+        } else {
+            Accept
+        }
+    }
+}
+
+/// Locator instance fora reference to [`std::ops::RangeInclusive<usize>`] representing an index range.
 /// Do not use with ranges that have been iterated on to exhaustion.
 impl<D : Data> Locator<D> for &std::ops::RangeInclusive<usize> where D::Summary : SizedSummary {
     fn locate(&self, left : D::Summary, node : &D::Value, _right : D::Summary) -> LocResult {
@@ -143,8 +172,20 @@ impl<D : Data> Locator<D> for &std::ops::RangeInclusive<usize> where D::Summary 
 }
 
 /// Locator instance for [`std::ops::RangeFrom<usize>`] representing an index range.
-/// Since [`std::ops::RangeFrom<usize>`] is not [`Copy`], the instance is actually for a
-/// `& std::ops::RangeFrom<usize>`.
+impl<D : Data> Locator<D> for std::ops::RangeFrom<usize> where D::Summary : SizedSummary {
+    fn locate(&self, left : D::Summary, node : &D::Value, _right : D::Summary) -> LocResult {
+        // find the index of the current node
+        let s = left.size();
+
+        if s + D::to_summary(node).size() <= self.start {
+            GoRight
+        } else {
+            Accept
+        }
+    }
+}
+
+/// Locator instance for a reference to [`std::ops::RangeFrom<usize>`] representing an index range.
 impl<D : Data> Locator<D> for &std::ops::RangeFrom<usize> where D::Summary : SizedSummary {
     fn locate(&self, left : D::Summary, node : &D::Value, _right : D::Summary) -> LocResult {
         // find the index of the current node
@@ -217,14 +258,14 @@ impl<D : Data> Locator<D> for &std::ops::RangeToInclusive<usize> where D::Summar
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, PartialOrd, Ord)]
-struct KeyLocator<T> (
+struct ByKey<T> (
     pub T,
 );
 
 // TODO: reconsider. this conflicts with the range implementations,
 // and we could always use `key..=key`.
-/// Locator instance for [`KeyLocator`]`<D::Value::Key>` representing searching by a key.
-impl<D : Data> Locator<D> for KeyLocator<<D::Value as Keyed>::Key> where
+/// Locator instance for [`ByKey`]`<D::Value::Key>` representing searching by a key.
+impl<D : Data> Locator<D> for ByKey<<D::Value as Keyed>::Key> where
     D::Value : Keyed,
     <D::Value as Keyed>::Key : Copy,
 {
@@ -238,8 +279,8 @@ impl<D : Data> Locator<D> for KeyLocator<<D::Value as Keyed>::Key> where
     }
 }
 
-/// Locator instance for `&`[`KeyLocator`]`<D::Value::Key>` representing searching by a key.
-impl<D : Data> Locator<D> for &KeyLocator<<D::Value as Keyed>::Key> where
+/// Locator instance for `&`[`ByKey`]`<D::Value::Key>` representing searching by a key.
+impl<D : Data> Locator<D> for &ByKey<<D::Value as Keyed>::Key> where
     D::Value : Keyed,
 {
     fn locate(&self, _left : D::Summary, node : &D::Value, _right : D::Summary) -> LocResult {
@@ -290,14 +331,14 @@ impl<D : Data, L : Locator<D>> Locator<D> for RightEdgeOf<L> {
 
 
 /// A Wrapper for other locators what will find the segment to the left
-/// of the previous locator. So, `LeftOf(&(5..8))` is equivalent to `&(0..5)`.
+/// of the previous locator. So, `LeftOf(5..8)` is equivalent to `0..5`.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct LeftOf<L> (
     pub L,
 );
 
 /// A Wrapper for other locators what will find the segment to the right
-/// of the previous locator. So, `RightOf(&(5..8))` is equivalent to `&(8..)`.
+/// of the previous locator. So, `RightOf(5..8)` is equivalent to `8..`.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct RightOf<L> (
     pub L,

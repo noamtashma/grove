@@ -111,7 +111,7 @@ fn search_split<TR : SomeTreeRef<RevData>>(tree : TR, index : usize) where TR::W
 {
     // using an empty range so that we'll only end up at a node
     // if we actually need to split that node
-    let mut walker = methods::search_by_locator(tree, &(index..index)); 
+    let mut walker = methods::search_by_locator(tree, index..index); 
     
     let left = walker.left_summary().size;
     let v2option = walker.with_value( |val| {
@@ -162,7 +162,7 @@ pub fn yarra_treap(n : usize, k : usize) -> I {
             
             search_split(&mut tree, low);
             search_split(&mut tree, high);
-            tree.act_segment(RevAction { to_reverse : true }, &(low..high));
+            tree.act_segment(RevAction { to_reverse : true }, low..high);
         }
 
         sn += tn;
@@ -223,7 +223,7 @@ pub fn yarra_splay(n : usize, k : usize) -> I {
             
             search_split(&mut tree, low);
             search_split(&mut tree, high);
-            tree.act_segment(RevAction { to_reverse : true }, &(low..high));
+            tree.act_segment(RevAction { to_reverse : true }, low..high);
         }
 
         sn += tn;

@@ -78,7 +78,7 @@ impl<D : Data, T> BasicTree<D, T> {
 	/// use orchard::methods;
 	///
 	/// let mut tree : BasicTree<StdNum> = (20..80).collect();
-	/// let segment_iter = tree.iter_locator(&(3..13)); // should also try 3..5
+	/// let segment_iter = tree.iter_locator(3..13); // should also try 3..5
 	///
 	/// assert_eq!(segment_iter.cloned().collect::<Vec<_>>(), (23..33).collect::<Vec<_>>());
 	/// # tree.assert_correctness();
