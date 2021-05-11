@@ -281,7 +281,7 @@ impl<'a, D : Data> SplayWalker<'a, D> {
     /// use orchard::methods::*; 
     ///
     /// let mut tree : SplayTree<StdNum> = (17..88).collect();
-    /// let mut walker = search(&mut tree, 7..7);
+    /// let mut walker = search(&mut tree, (7,));
     /// let mut tree2 = walker.split().unwrap();
     /// drop(walker);
     ///

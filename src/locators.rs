@@ -71,6 +71,22 @@ pub fn walker_locate<W, D : Data, L> (walker : &mut W, locator : &L) -> Option<L
 // and for insertions.
 
 
+/// Locator instance for `(usize,)` representing a single index.
+impl<D : Data> Locator<D> for (usize,) where D::Summary : SizedSummary {
+    fn locate(&self, left : D::Summary, node : &D::Value, _right : D::Summary) -> LocResult {
+        // find the index of the current node
+        let s = left.size();
+
+        if s >= self.0 {
+            GoLeft
+        } else if s + D::to_summary(node).size() <= self.0 {
+            GoRight
+        } else {
+            Accept
+        }
+    }
+}
+
 /// Locator instance for [`std::ops::RangeFull`].
 impl<D : Data> Locator<D> for std::ops::RangeFull {
     fn locate(&self, _left : D::Summary, _node : &D::Value, _right : D::Summary) -> LocResult {
@@ -241,6 +257,18 @@ impl<D : Data> Locator<D> for &std::ops::RangeToInclusive<usize> where D::Summar
 pub struct ByKey<T> (
     pub T,
 );
+
+impl<D : Data> Locator<D> for ByKey<(<D::Value as Keyed>::Key, )> where
+    D::Value : Keyed,
+{
+    fn locate(&self, _left : D::Summary, node : &D::Value, _right : D::Summary) -> LocResult {
+        match node.get_key().cmp(&self.0.0) {
+            std::cmp::Ordering::Less => GoLeft,
+            std::cmp::Ordering::Equal => Accept,
+            std::cmp::Ordering::Greater => GoRight,
+        }
+    }
+}
 
 /// Locator instance for [`ByKey`]`<`[`std::ops::RangeFull`]`>`.
 impl<D : Data> Locator<D> for ByKey<std::ops::RangeFull> {

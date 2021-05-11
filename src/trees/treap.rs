@@ -351,7 +351,7 @@ impl<'a, D : Data> TreapWalker<'a, D> {
     /// use orchard::methods::*; 
     ///
     /// let mut tree : Treap<StdNum> = (17..88).collect();
-    /// let mut walker = search(&mut tree, 7..7);
+    /// let mut walker = search(&mut tree, (7,));
     /// let mut tree2 = walker.split().unwrap();
     /// drop(walker);
     ///
@@ -501,7 +501,7 @@ fn union_internal<D : Data>(tree1 : &mut BasicTree<D, T>, mut tree2 : Treap<D>) 
     let key = node.node_value().get_key(); // this performs access()
 
     // TODO: replace by a locator that does the handling of the equality case by itself
-    let mut split_walker = methods::search(&mut tree2, locators::ByKey(key.clone()..=key));
+    let mut split_walker = methods::search(&mut tree2, locators::ByKey((key,)));
     // if an element with the same key was found, arbitrarily decide to put it more to the right
     if split_walker.is_empty() == false {
         methods::previous_empty(&mut split_walker).unwrap();
