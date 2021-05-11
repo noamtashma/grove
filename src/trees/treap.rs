@@ -8,7 +8,6 @@
 
 
 
-use crate::methods::search_by_locator;
 use crate::locators;
 
 use super::*;
@@ -38,14 +37,14 @@ impl<D : Data> SomeTree<D> for Treap<D> {
             // TODO: bug: the locators return incorrect results, since they're
             // run on subtree instead of the full tree.
             // split out the middle
-            let mut walker = search_by_locator(&mut *self, locators::LeftEdgeOf(locator.clone()));
+            let mut walker = methods::search(&mut *self, locators::LeftEdgeOf(locator.clone()));
             let mut mid = walker.split().unwrap();
             drop(walker);
 
             let mut walker2 = TreapWalker {
                 walker : BasicWalker::new_with_context(&mut mid.tree, self.subtree_summary(), Default::default())
             };
-            methods::search_walker_by_locator(&mut walker2, locators::RightEdgeOf(locator));
+            methods::search_walker(&mut walker2, locators::RightEdgeOf(locator));
             let right = walker2.split().unwrap();
             drop(walker2);
             
@@ -352,7 +351,7 @@ impl<'a, D : Data> TreapWalker<'a, D> {
     /// use orchard::methods::*; 
     ///
     /// let mut tree : Treap<StdNum> = (17..88).collect();
-    /// let mut walker = search_by_locator(&mut tree, 7..7);
+    /// let mut walker = search(&mut tree, 7..7);
     /// let mut tree2 = walker.split().unwrap();
     /// drop(walker);
     ///
@@ -499,10 +498,10 @@ fn union_internal<D : Data>(tree1 : &mut BasicTree<D, T>, mut tree2 : Treap<D>) 
     }
     let node = tree1.node_mut().unwrap();
 
-    let key = &node.node_value().get_key(); // this performs access()
+    let key = node.node_value().get_key(); // this performs access()
 
     // TODO: replace by a locator that does the handling of the equality case by itself
-    let mut split_walker = methods::search(&mut tree2, key);
+    let mut split_walker = methods::search(&mut tree2, locators::ByKey(key.clone()..=key));
     // if an element with the same key was found, arbitrarily decide to put it more to the right
     if split_walker.is_empty() == false {
         methods::previous_empty(&mut split_walker).unwrap();

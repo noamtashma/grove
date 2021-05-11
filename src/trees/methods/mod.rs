@@ -9,11 +9,8 @@
 //! splay trees.
 
 
-use data::example_data::Keyed;
-
 use crate::*;
 use locators::*;
-// use std::iter::Iterator;
 
 
 
@@ -75,10 +72,10 @@ pub fn previous_filled<W : SomeWalker<A>, A : Data>(walker : &mut W) -> Result<(
 
 // TODO: make an iterator
 /// Returns a vector of all the values in the tree.
-pub fn to_array<A : Data, TR>(tree : TR)
--> Vec<A::Value> where
-TR : SomeTreeRef<A>,
-A::Value : Clone,
+pub fn to_array<D : Data, TR>(tree : TR)
+-> Vec<D::Value> where
+TR : SomeTreeRef<D>,
+D::Value : Clone,
 {
     let mut walker = tree.walker();
     let mut res = vec![];
@@ -93,63 +90,26 @@ A::Value : Clone,
     res
 }
 
-
-// TODO: make this return an error.
-/// Panics if a key was reused.
-pub fn insert_by_key<D : Data, TR>(tree : TR, data : D::Value)
-    -> TR::Walker where
-    TR : SomeTreeRef<D>,
-    TR::Walker : ModifiableWalker<D>,
-    D::Value : crate::data::example_data::Keyed,
-    //<A as data::Data>::Value : std::fmt::Debug,
-{
-    insert_by_locator(tree, &locate_by_key::<D>(&data.get_key()) , data)
-}
-
 // TODO: make this return an error instead
 /// Panics if the locator accepts a node.
-pub fn insert_by_locator<D : Data, L, TR> (tree : TR, locator : L, value : D::Value)
+pub fn insert<D : Data, L, TR> (tree : TR, locator : L, value : D::Value)
     -> TR::Walker where
     TR : SomeTreeRef<D>,
     TR::Walker : ModifiableWalker<D>,
     L : Locator<D>,
     //<A as data::Data>::Value : std::fmt::Debug,
 {
-    let mut walker = search_by_locator(tree, locator);
+    let mut walker = search(tree, locator);
     walker.insert(value).expect("tried to insert into an existing node"); // TODO
     walker
 }
 
-/// Finds any node by key.
-/// If there isn't any, it finds the empty location where that node would be instead.
-/// Returns a walker at the wanted position.
-pub fn search_walker<W, D : Data>(walker : &mut W, key : &<<D as Data>::Value as Keyed>::Key) where
-    W : SomeWalker<D>,
-    D : Data,
-    D::Value : crate::data::example_data::Keyed,
-    //<A as data::Data>::Value : std::fmt::Debug,
-{
-    search_walker_by_locator(walker, &locate_by_key::<D>(key));
-}
-
-/// Finds any node by key.
-/// If there isn't any, it finds the empty location where that node would be instead.
-/// Returns a walker at the wanted position.
-pub fn search<TR, D : Data>(tree : TR, key : &<<D as Data>::Value as Keyed>::Key) -> TR::Walker where
-    TR : SomeTreeRef<D>,
-    D : Data,
-    D::Value : crate::data::example_data::Keyed,
-    //<A as data::Data>::Value : std::fmt::Debug,
-{
-    let mut walker = tree.walker();
-    search_walker(&mut walker, key);
-    return walker;
-}
-
+// TODO: finger searching. currently searches the subtree,
+// but it's not intended behavior.
 /// Finds any node that the locator `Accept`s.
 /// If there isn't any, it finds the empty location where that node would be instead.
 /// Returns a walker at the wanted position.
-pub fn search_walker_by_locator<W, D : Data, L>(walker : &mut W, locator : L) where
+pub fn search_walker<W, D : Data, L>(walker : &mut W, locator : L) where
     W : crate::trees::SomeWalker<D>,
     L : Locator<D>,
 {
@@ -167,12 +127,12 @@ pub fn search_walker_by_locator<W, D : Data, L>(walker : &mut W, locator : L) wh
 /// Finds any node that the locator `Accept`s.
 /// If there isn't any, it finds the empty location where that node would be instead.
 /// Returns a walker at the wanted position.
-pub fn search_by_locator<TR, D : Data, L>(tree : TR, locator : L) -> TR::Walker where
+pub fn search<TR, D : Data, L>(tree : TR, locator : L) -> TR::Walker where
     TR : crate::trees::SomeTreeRef<D>,
     L : Locator<D>,
 {
     let mut walker = tree.walker();
-    search_walker_by_locator(&mut walker, locator);
+    search_walker(&mut walker, locator);
     return walker;
 }
 
@@ -180,7 +140,7 @@ pub fn search_by_locator<TR, D : Data, L>(tree : TR, locator : L) -> TR::Walker 
 /// Do not use with splay trees - it might mess up the complexity,
 /// because it uses go_up().
 /// 
-/// Instead, use [`SomeTree::segment_summary`]
+/// Instead, use the specific [`SomeTree::segment_summary`]
 pub fn segment_summary<TR, L, D : Data>(tree : TR, locator : L) -> 
         D::Summary where
     TR : SomeTreeRef<D>,
@@ -260,9 +220,11 @@ fn segment_summary_on_prefix<W, L, A : Data>(walker : &mut W, locator : L) ->
     res
 }
 
-/// Returns the accumulated values on the locator's segment
+/// Applies an action on the locator's segment.
 /// Do not use with splay trees - it might mess up the complexity,
 /// because it uses go_up().
+///
+/// Don't use with actions that reverse segments. Panics otherwise.
 /// 
 /// Instead, use [`SomeTree::act_segment`]
 pub fn act_segment<TR, L, D : Data>(tree : TR, action : D::Action, locator : L) where

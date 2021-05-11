@@ -67,26 +67,6 @@ pub fn walker_locate<W, D : Data, L> (walker : &mut W, locator : &L) -> Option<L
 }
 
 
-
-/// Locator for finding an element using a key.
-pub fn locate_by_key<'a, D>(key : &'a <D::Value as crate::data::example_data::Keyed>::Key) -> 
-    impl Fn(D::Summary, &D::Value, D::Summary) -> LocResult + 'a where
-    D : Data,
-    D::Value : crate::data::example_data::Keyed,
-{
-    move |_, node : &D::Value, _| -> LocResult {
-        use std::cmp::Ordering::*;
-        let res = match node.get_key().cmp(key) {
-            Equal => Accept,
-            Less => GoLeft,
-            Greater => GoRight,
-        };
-        res
-    }
-}
-
-
-
 // TODO: Splitter. locators that can't `Accept`. used for splitting trees
 // and for insertions.
 
@@ -258,40 +238,143 @@ impl<D : Data> Locator<D> for &std::ops::RangeToInclusive<usize> where D::Summar
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, PartialOrd, Ord)]
-struct ByKey<T> (
+pub struct ByKey<T> (
     pub T,
 );
 
-// TODO: reconsider. this conflicts with the range implementations,
-// and we could always use `key..=key`.
-/// Locator instance for [`ByKey`]`<D::Value::Key>` representing searching by a key.
-impl<D : Data> Locator<D> for ByKey<<D::Value as Keyed>::Key> where
+/// Locator instance for [`ByKey`]`<`[`std::ops::RangeFull`]`>`.
+impl<D : Data> Locator<D> for ByKey<std::ops::RangeFull> {
+    fn locate(&self, _left : D::Summary, _node : &D::Value, _right : D::Summary) -> LocResult {
+        Accept
+    }
+}
+
+/// Locator instance for [`ByKey`]`<std::ops::Range<D::Value::Key>>` representing searching by a key.
+impl<D : Data> Locator<D> for ByKey<std::ops::Range<<D::Value as Keyed>::Key>> where
+    D::Value : Keyed,
+{
+    fn locate(&self, _left : D::Summary, node : &D::Value, _right : D::Summary) -> LocResult {
+        // find the index of the current node
+        let key = node.get_key();
+        if key < self.0.start {
+            GoLeft
+        } else if self.0.end <= key {
+            GoRight
+        } else {
+            Accept
+        }
+    }
+}
+
+/*
+/// Locator instance for a reference to [`ByKey`]`<std::ops::Range<D::Value::Key>>` representing searching by a key.
+impl<D : Data> Locator<D> for &ByKey<std::ops::Range<<D::Value as Keyed>::Key>> where
     D::Value : Keyed,
     <D::Value as Keyed>::Key : Copy,
 {
     fn locate(&self, _left : D::Summary, node : &D::Value, _right : D::Summary) -> LocResult {
         // find the index of the current node
-        match node.get_key().cmp(&self.0) {
-            std::cmp::Ordering::Less => GoLeft,
-            std::cmp::Ordering::Equal => Accept,
-            std::cmp::Ordering::Greater => GoRight,
+        let key = node.get_key();
+        if key < self.0.start {
+            GoLeft
+        } else if self.0.end <= key {
+            GoRight
+        } else {
+            Accept
         }
     }
 }
+*/
 
-/// Locator instance for `&`[`ByKey`]`<D::Value::Key>` representing searching by a key.
-impl<D : Data> Locator<D> for &ByKey<<D::Value as Keyed>::Key> where
+/// Locator instance for [`ByKey`]`<std::ops::RangeInclusive<D::Value::Key>>` representing searching by a key.
+/// Do not use with ranges that have been iterated on to exhaustion.
+impl<D : Data> Locator<D> for ByKey<std::ops::RangeInclusive<<D::Value as Keyed>::Key>> where
     D::Value : Keyed,
 {
     fn locate(&self, _left : D::Summary, node : &D::Value, _right : D::Summary) -> LocResult {
         // find the index of the current node
-        match node.get_key().cmp(&self.0) {
-            std::cmp::Ordering::Less => GoLeft,
-            std::cmp::Ordering::Equal => Accept,
-            std::cmp::Ordering::Greater => GoRight,
+        let key = &node.get_key();
+        if key < self.0.start() {
+            GoLeft
+        } else if self.0.end() < key {
+            GoRight
+        } else {
+            Accept
         }
     }
 }
+
+/*
+/// Locator instance fora reference to [`ByKey`]`<std::ops::RangeInclusive<D::Value::Key>>` representing searching by a key.
+/// Do not use with ranges that have been iterated on to exhaustion.
+impl<D : Data> Locator<D> for &ByKey<std::ops::RangeInclusive<<D::Value as Keyed>::Key>> where
+    D::Value : Keyed,
+    <D::Value as Keyed>::Key : Copy,
+{
+    fn locate(&self, _left : D::Summary, node : &D::Value, _right : D::Summary) -> LocResult {
+        // find the index of the current node
+        let key = node.get_key();
+        if key < *self.0.start() {
+            GoLeft
+        } else if *self.0.end() < key {
+            GoRight
+        } else {
+            Accept
+        }
+    }
+}
+*/
+
+/// Locator instance for [`ByKey`]`<`[`std::ops::RangeFrom`]`<D::Value::Key>>` representing an index range.
+impl<D : Data> Locator<D> for ByKey<std::ops::RangeFrom<<D::Value as Keyed>::Key>> where
+    D::Value : Keyed,
+{
+    fn locate(&self, _left : D::Summary, node : &D::Value, _right : D::Summary) -> LocResult {
+        // find the index of the current node
+        let key = node.get_key();
+        if key < self.0.start {
+            GoLeft
+        } else {
+            Accept
+        }
+    }
+}
+
+/// Locator instance for [`ByKey`]`<std::ops::RangeTo<D::Value::Key>>` representing searching by a key.
+impl<D : Data> Locator<D> for ByKey<std::ops::RangeTo<<D::Value as Keyed>::Key>> where
+    D::Value : Keyed,
+{
+    fn locate(&self, _left : D::Summary, node : &D::Value, _right : D::Summary) -> LocResult {
+        // find the index of the current node
+        let key = node.get_key();
+        if self.0.end <= key {
+            GoRight
+        } else {
+            Accept
+        }
+    }
+}
+
+
+/// Locator instance for [`ByKey`]`<std::ops::RangeToInclusive<D::Value::Key>>` representing searching by a key.
+impl<D : Data> Locator<D> for ByKey<std::ops::RangeToInclusive<<D::Value as Keyed>::Key>> where
+    D::Value : Keyed,
+{
+    fn locate(&self, _left : D::Summary, node : &D::Value, _right : D::Summary) -> LocResult {
+        // find the index of the current node
+        let key = node.get_key();
+        if self.0.end < key {
+            GoRight
+        } else {
+            Accept
+        }
+    }
+}
+
+
+
+// TODO: finish all the range types
+// TODO: switch to ranges of references to keys
 
 
 /// A Wrapper for other locators what will find exactly the left edge
