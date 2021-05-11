@@ -35,16 +35,16 @@ use LocResult::*;
 /// Locators are immutable, and therefore it is assumed that they can be called in any order,
 /// i.e., earlier calls will not change the result of later calls. This is even though
 /// that might not be the case, using interior mutability.
-/// Locators must be [`Copy`], in order for usage to be comfortable. This can always be achieved
+/// Locators must be [`Clone`], in order for usage to be comfortable. This can always be achieved
 /// by taking a reference.
 
 /// Locators must be copy. This can always be achieved using references.
-pub trait Locator<D : Data> : Copy {
+pub trait Locator<D : Data> : Clone {
     fn locate(&self, left : D::Summary, node : &D::Value, right : D::Summary) -> LocResult;
 }
 
 impl<D : Data, F> Locator<D> for F where
-    F : Fn(D::Summary, &D::Value, D::Summary) -> LocResult + Copy
+    F : Fn(D::Summary, &D::Value, D::Summary) -> LocResult + Clone
 {
     fn locate(&self, left : D::Summary, node : &D::Value, right : D::Summary) -> LocResult {
         self(left, node, right)
@@ -53,7 +53,7 @@ impl<D : Data, F> Locator<D> for F where
 
 /// Returns the result of the locator at the walker
 /// Returns None if the walker is at an empty position
-pub fn walker_locate<W, D : Data, L> (walker : &mut W, locator : L) -> Option<LocResult> where
+pub fn walker_locate<W, D : Data, L> (walker : &mut W, locator : &L) -> Option<LocResult> where
     W : crate::trees::SomeWalker<D>,
     L : Locator<D>,
 {
@@ -215,6 +215,43 @@ impl<D : Data> Locator<D> for &std::ops::RangeToInclusive<usize> where D::Summar
         }
     }
 }
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, PartialOrd, Ord)]
+struct KeyLocator<T> (
+    pub T,
+);
+
+// TODO: reconsider. this conflicts with the range implementations,
+// and we could always use `key..=key`.
+/// Locator instance for [`KeyLocator`]`<D::Value::Key>` representing searching by a key.
+impl<D : Data> Locator<D> for KeyLocator<<D::Value as Keyed>::Key> where
+    D::Value : Keyed,
+    <D::Value as Keyed>::Key : Copy,
+{
+    fn locate(&self, _left : D::Summary, node : &D::Value, _right : D::Summary) -> LocResult {
+        // find the index of the current node
+        match node.get_key().cmp(&self.0) {
+            std::cmp::Ordering::Less => GoLeft,
+            std::cmp::Ordering::Equal => Accept,
+            std::cmp::Ordering::Greater => GoRight,
+        }
+    }
+}
+
+/// Locator instance for `&`[`KeyLocator`]`<D::Value::Key>` representing searching by a key.
+impl<D : Data> Locator<D> for &KeyLocator<<D::Value as Keyed>::Key> where
+    D::Value : Keyed,
+{
+    fn locate(&self, _left : D::Summary, node : &D::Value, _right : D::Summary) -> LocResult {
+        // find the index of the current node
+        match node.get_key().cmp(&self.0) {
+            std::cmp::Ordering::Less => GoLeft,
+            std::cmp::Ordering::Equal => Accept,
+            std::cmp::Ordering::Greater => GoRight,
+        }
+    }
+}
+
 
 /// A Wrapper for other locators what will find exactly the left edge
 /// of the previous locator. So, this is always a splitting locator.

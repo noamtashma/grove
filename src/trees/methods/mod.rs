@@ -155,7 +155,7 @@ pub fn search_walker_by_locator<W, D : Data, L>(walker : &mut W, locator : L) wh
 {
     use LocResult::*;
 
-    while let Some(res) = walker_locate(walker, locator) {
+    while let Some(res) = walker_locate(walker, &locator) {
         match res {
             Accept => break,
             GoRight => walker.go_right().unwrap(),
@@ -189,7 +189,7 @@ pub fn segment_summary<TR, L, D : Data>(tree : TR, locator : L) ->
     use LocResult::*;
 
     let mut walker = tree.walker();
-    while let Some(res) = walker_locate(&mut walker, locator) {
+    while let Some(res) = walker_locate(&mut walker, &locator) {
         match res {
             GoRight => walker.go_right().unwrap(),
             GoLeft => walker.go_left().unwrap(),
@@ -199,7 +199,7 @@ pub fn segment_summary<TR, L, D : Data>(tree : TR, locator : L) ->
                 let node_value = walker.node_summary();
                 let depth = walker.depth();
                 walker.go_left().unwrap();
-                let first_half = segment_summary_on_suffix(&mut walker, locator);
+                let first_half = segment_summary_on_suffix(&mut walker, locator.clone());
                 // get back to the original node
                 for _ in 0..walker.depth() - depth {
                     walker.go_up().unwrap();
@@ -224,7 +224,7 @@ fn segment_summary_on_suffix<W, L, A : Data>(walker : &mut W, locator : L) ->
     let mut res = Default::default();
     use LocResult::*;
 
-    while let Some(dir) = walker_locate(walker, locator) {
+    while let Some(dir) = walker_locate(walker, &locator) {
         match dir {
             Accept => {
                 res = walker.node_summary() + walker.right_subtree_summary().unwrap() + res;
@@ -246,7 +246,7 @@ fn segment_summary_on_prefix<W, L, A : Data>(walker : &mut W, locator : L) ->
     let mut res = Default::default();
     use LocResult::*;
 
-    while let Some(dir) = walker_locate(walker, locator) {
+    while let Some(dir) = walker_locate(walker, &locator) {
         match dir {
             Accept => {
                 res = res + walker.left_subtree_summary().unwrap() + walker.node_summary();
@@ -273,7 +273,7 @@ pub fn act_segment<TR, L, D : Data>(tree : TR, action : D::Action, locator : L) 
     use LocResult::*;
 
     let mut walker = tree.walker();
-    while let Some(res) = walker_locate(&mut walker, locator) {
+    while let Some(res) = walker_locate(&mut walker, &locator) {
         match res {
             GoRight => walker.go_right().unwrap(),
             GoLeft => walker.go_left().unwrap(),
@@ -283,7 +283,7 @@ pub fn act_segment<TR, L, D : Data>(tree : TR, action : D::Action, locator : L) 
                 walker.act_node(action);
                 let depth = walker.depth();
                 walker.go_left().unwrap();
-                act_on_suffix(&mut walker, action, locator);
+                act_on_suffix(&mut walker, action, locator.clone());
                 // get back to the original node
                 for _ in 0..walker.depth() - depth {
                     walker.go_up().unwrap();
@@ -303,7 +303,7 @@ fn act_on_suffix<W, L, D : Data>(walker : &mut W, action : D::Action, locator : 
 {
     use LocResult::*;
 
-    while let Some(dir) = walker_locate(walker, locator) {
+    while let Some(dir) = walker_locate(walker, &locator) {
         match dir {
             Accept => {
                 walker.act_node(action);
@@ -324,7 +324,7 @@ fn act_on_prefix<W, L, D : Data>(walker : &mut W, action : D::Action, locator : 
 {
     use LocResult::*;
 
-    while let Some(dir) = walker_locate(walker, locator) {
+    while let Some(dir) = walker_locate(walker, &locator) {
         match dir {
             Accept => {
                 walker.act_node(action);

@@ -38,7 +38,7 @@ impl<D : Data> SomeTree<D> for Treap<D> {
             // TODO: bug: the locators return incorrect results, since they're
             // run on subtree instead of the full tree.
             // split out the middle
-            let mut walker = search_by_locator(&mut *self, locators::LeftEdgeOf(locator));
+            let mut walker = search_by_locator(&mut *self, locators::LeftEdgeOf(locator.clone()));
             let mut mid = walker.split().unwrap();
             drop(walker);
 
