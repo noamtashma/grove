@@ -377,11 +377,15 @@ impl<D : Data> SomeEntry<D> for SplayTree<D> {
     }
 }
 
-impl<'a, A : Data> SomeTreeRef<A> for &'a mut SplayTree<A> {
-    type Walker = SplayWalker<'a, A>;
-    fn walker(self : &'a mut SplayTree<A>) -> SplayWalker<'a, A> {
+impl<'a, D : Data> SomeTreeRef<D> for &'a mut SplayTree<D> {
+    type Walker = SplayWalker<'a, D>;
+    fn walker(self : &'a mut SplayTree<D>) -> SplayWalker<'a, D> {
         SplayWalker { walker : self.basic_walker() }
     }
+}
+
+impl<'a, D : Data> ModifiableTreeRef<D> for &'a mut SplayTree<D> {
+    type ModifiableWalker = Self::Walker;
 }
 
 impl<D : Data> std::iter::FromIterator<D::Value> for SplayTree<D> {
@@ -398,7 +402,7 @@ impl<D : Data> IntoIterator for SplayTree<D> {
     }
 }
 
-impl<'a, A : Data> SomeWalker<A> for SplayWalker<'a, A> {
+impl<'a, D : Data> SomeWalker<D> for SplayWalker<'a, D> {
     fn go_left(&mut self) -> Result<(), ()> {
         self.walker.go_left()
     }
@@ -415,14 +419,18 @@ impl<'a, A : Data> SomeWalker<A> for SplayWalker<'a, A> {
         self.walker.go_up()
     }
 
+    fn go_to_root(&mut self) {
+        self.splay();
+    }
+
     fn depth(&self) -> usize {
         self.walker.depth()
     }
 
-    fn far_left_summary(&self) -> A::Summary {
+    fn far_left_summary(&self) -> D::Summary {
         self.walker.far_left_summary()
     }
-    fn far_right_summary(&self) -> A::Summary {
+    fn far_right_summary(&self) -> D::Summary {
         self.walker.far_right_summary()
     }
 
@@ -430,7 +438,7 @@ impl<'a, A : Data> SomeWalker<A> for SplayWalker<'a, A> {
     //     self.walker.inner()
     // }
 
-    fn value(&self) -> Option<&A::Value> {
+    fn value(&self) -> Option<&D::Value> {
         self.walker.value()
     }
 }

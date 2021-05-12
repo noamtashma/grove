@@ -107,11 +107,12 @@ impl Data for RevData {
 }
 
 // splits a segment inside the tree
-fn search_split<TR : SomeTreeRef<RevData>>(tree : TR, index : usize) where TR::Walker : ModifiableWalker<RevData>
+fn search_split<TR : ModifiableTreeRef<RevData>>(tree : TR, index : usize)
 {
+    let mut walker = tree.walker();
     // using an empty range so that we'll only end up at a node
     // if we actually need to split that node
-    let mut walker = methods::search(tree, index..index); 
+    methods::search_walker(&mut walker, index..index); 
     
     let left = walker.left_summary().size;
     let v2option = walker.with_value( |val| {
@@ -126,32 +127,21 @@ fn search_split<TR : SomeTreeRef<RevData>>(tree : TR, index : usize) where TR::W
     }
 }
 
-pub fn yarra_treap(n : usize, k : usize) -> I {
-    let mut tree : Treap<RevData> = Treap::new();
+fn yarra<'a, T : SomeTree<RevData>>(n : usize, k : usize) -> I where
+    for<'b> &'b mut T : ModifiableTreeRef<RevData>,
+    // for<'b> <&'b mut T as SomeTreeRef<RevData>>::Walker : ModifiableWalker<RevData>,
+    //T : 'a,
+    //<&'a mut T as SomeTreeRef<RevData>>::Walker : ModifiableWalker<RevData>,
+{
     let inter = Interval {start : 0, end : (n-1) as I};
-    tree.walker().insert(inter).unwrap();
+    let mut tree : T = vec![inter].into_iter().collect();
 
     let mut sn = 1;
     let mut tn = 1;
     for round in 0..k {
-        
-        /*
-        if round < 10 {
-            dbg!(round);
-            dbg!(to_array(&mut tree));
-        }
-        */
-
         if round % 8000 == 0 {
             dbg!(round);
-            /*
-            if round % 16000 == 0 {
-                tree.walker().inner().assert_correctness();
-            }
-            */
         }
-        
-
         
         if sn != tn {
             let (low, high) = if sn < tn {
@@ -171,81 +161,27 @@ pub fn yarra_treap(n : usize, k : usize) -> I {
         tn %= n;
     }
 
+    // compute the final sum:
     let mut index = 0;
     let mut index_sum = 0;
-    for inter in tree.iter() { // could use an owning iterator, bu we want to delay the tree's drop
+    for inter in tree.into_iter() {
         index_sum += inter.sum_with_index(index);
         index_sum %= MODULUS;
         index += inter.size();
-        if index % 1000 == 0 {
+        if index % 10000 == 0 {
             dbg!(index);
         }
     }
     dbg!(index_sum);
-    drop(tree);
-    println!("done drop");
     index_sum
 }
 
+pub fn yarra_treap(n : usize, k : usize) -> I {
+    yarra::<Treap<RevData>>(n, k)
+}
+
 pub fn yarra_splay(n : usize, k : usize) -> I {
-    let mut tree : SplayTree<RevData> = SplayTree::new();
-    let inter = Interval {start : 0, end : (n-1) as I};
-    tree.walker().insert(inter).unwrap();
-
-    let mut sn = 1;
-    let mut tn = 1;
-    for round in 0..k {
-        
-        /*
-        if round < 10 {
-            dbg!(round);
-            dbg!(to_array(&mut tree));
-        }
-        */
-
-        if round % 8000 == 0 {
-            dbg!(round);
-            /*
-            if round % 16000 == 0 {
-                tree.walker().inner().assert_correctness();
-            }
-            */
-        }
-        
-
-        
-        if sn != tn {
-            let (low, high) = if sn < tn {
-                (sn, tn+1)
-            } else {
-                (tn, sn+1)
-            };
-            
-            search_split(&mut tree, low);
-            search_split(&mut tree, high);
-            tree.act_segment(RevAction { to_reverse : true }, low..high);
-        }
-
-        sn += tn;
-        sn %= n;
-        tn += sn;
-        tn %= n;
-    }
-
-    let mut index = 0;
-    let mut index_sum = 0;
-    for inter in tree.iter() { // could use an owning iterator, bu we want to delay the tree's drop
-        index_sum += inter.sum_with_index(index);
-        index_sum %= MODULUS;
-        index += inter.size();
-        if index % 1000 == 0 {
-            dbg!(index);
-        }
-    }
-    dbg!(index_sum);
-    drop(tree);
-    println!("done drop");
-    index_sum
+    yarra::<SplayTree<RevData>>(n,k)
 }
 
 pub fn main() {
@@ -255,8 +191,10 @@ pub fn main() {
     assert_eq!(res, 563917241);
     println!("done splay");
     
+    // TODO: somehow saw poor performance in this commit. might have always been this way, since i now saw that
+    // previously this called yarra_splay instead of treap. investigate.
     println!("treap:");
-    let res = yarra_splay(1000_000_000_000_000_000, 1000_000);
+    let res = yarra_treap(1000_000_000_000_000_000, 1000_000);
     assert_eq!(res, 563917241);
     println!("done treap");
 }

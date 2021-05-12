@@ -72,6 +72,10 @@ impl<'a, D : Data> SomeTreeRef<D> for &'a mut Treap<D> {
     }
 }
 
+impl<'a, D : Data> ModifiableTreeRef<D> for &'a mut Treap<D> {
+    type ModifiableWalker = Self::Walker;
+}
+
 impl<D : Data> SomeEntry<D> for Treap<D> {
     fn with_value<F, R>(&mut self, f : F) -> Option<R> where 
         F : FnOnce(&mut D::Value) -> R {

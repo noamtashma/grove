@@ -44,6 +44,16 @@ pub trait SomeTreeRef<D : Data> {
     fn walker(self) -> Self::Walker;
 }
 
+/// This trait is a workaround for current rust type inference limitations.
+/// It allows to write generic code for a tree type that has a modifiable walker.
+/// Intuitively it should've been enough to require
+/// `T : SomeTree<D>, for<'a> &'a mut T : SomeTreeRef<D>, for<'a> <&'a mut T as SomeTreeRef<D>>::Walker : ModifiableWalker`.
+/// However, that doesn't work. Instead, use `for<'a> &'a mut T : ModifiableTreeRef<D>`.
+pub trait ModifiableTreeRef<D : Data> : SomeTreeRef<D, Walker = Self::ModifiableWalker> {
+    /// Inner type that ideally shouldn't be used - just use `Self::Walker`.
+    type ModifiableWalker : ModifiableWalker<D>;
+}
+
 
 
 /// The Walker trait implements walking through a tree.
@@ -65,6 +75,14 @@ pub trait SomeWalker<D : Data> : SomeEntry<D> {
     /// If successful, returns whether or not the previous current value was the left son.
     /// If already at the root of the tree, returns `Err(())`.
     fn go_up(&mut self) -> Result<bool, ()>;
+
+    /// Goes to the root.
+    /// May restructure the tree while doing so. For example, in splay trees,
+    /// this splays the current node.
+    fn go_to_root(&mut self) {
+        while let Ok(_) = self.go_up()
+            {}
+    }
 
 
     /// Returns the current depth in the tree.
