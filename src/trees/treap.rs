@@ -156,25 +156,6 @@ impl<D : Data> Treap<D> {
         self.tree.iter_locator(loc)
     }
 
-	/// This function applies the given action to its whole subtree.
-	///
-	/// This function leaves the [`self.action`] field "dirty" - after calling
-	/// this you might need to call access, to push the action to this node's sons.
-	///```
-	/// use orchard::basic_tree::*;
-	/// use orchard::example_data::{StdNum, RevAffineAction};
-	///
-	/// let mut tree : BasicTree<StdNum> = (1..=8).collect();
-	/// tree.act(RevAffineAction {to_reverse : false, mul : -1, add : 5});
-	/// # tree.assert_correctness();
-	///
-	/// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (-3..=4).rev().collect::<Vec<_>>());
-	/// # tree.assert_correctness();
-	///```
-	pub fn act(&mut self, action : D::Action) {
-		self.tree.act(action);
-	}
-
     /// Checks that invariants remain correct. i.e., that every node's summary
 	/// is the sum of the summaries of its children.
 	/// If it is not, panics.
@@ -355,7 +336,7 @@ impl<'a, D : Data> TreapWalker<'a, D> {
     /// use orchard::methods::*; 
     ///
     /// let mut tree : Treap<StdNum> = (17..88).collect();
-    /// let mut walker = search(&mut tree, (7,));
+    /// let mut walker = search(&mut tree, 7..7);
     /// let mut tree2 = walker.split().unwrap();
     /// drop(walker);
     ///
@@ -447,14 +428,11 @@ impl<'a, D : Data> ModifiableWalker<D> for TreapWalker<'a, D> {
     /// If currently at an empty position, returns [`None`].
     fn delete(&mut self) -> Option<D::Value> {
         let tree = std::mem::replace(self.walker.inner_mut(), BasicTree::Empty);
-        let boxed_node = match tree {
-            BasicTree::Root(boxed_node) => boxed_node,
-            BasicTree::Empty => return None,
-        };
-        let left = Treap { tree : boxed_node.left };
-        let right = Treap { tree : boxed_node.right };
+        let node = tree.into_node()?;
+        let left = Treap { tree : node.left };
+        let right = Treap { tree : node.right };
         *self.walker.inner_mut() = concatenate(left, right).tree;
-        Some(boxed_node.node_value)
+        Some(node.node_value)
     }
 } 
 
@@ -502,6 +480,23 @@ fn union_internal<D : Data>(tree1 : &mut BasicTree<D, T>, mut tree2 : Treap<D>) 
     }
     let node = tree1.node_mut().unwrap();
 
+    // formulation with less calls to panic, but less elegant
+    /*
+    let node = match (tree1.node_mut(), tree2.priority()) {
+        (None, _) => { *tree1 = tree2.tree; return; },
+        (_, None) => { return; },
+        (Some(node), Some(priority)) => {
+            if *node.alg_data() > priority {
+                std::mem::swap(tree1, &mut tree2.tree);
+                tree1.node_mut().unwrap()
+            } else {
+                node
+            }
+        },
+    };
+    */
+
+
     let key = node.node_value().get_key(); // this performs access()
 
     // TODO: replace by a locator that does the handling of the equality case by itself
@@ -538,4 +533,39 @@ fn union_internal<D : Data>(tree1 : &mut BasicTree<D, T>, mut tree2 : Treap<D>) 
 pub fn union<D : Data>(mut tree1 : Treap<D>, tree2 : Treap<D>) -> Treap<D> where D::Value : Keyed {
     tree1.union(tree2);
     tree1
+}
+
+#[test]
+fn treap_delete() {
+	for i in 0..9 {
+		let arr = vec![3,5,1,4,7,8,9,20,11];
+		let mut tree : Treap<example_data::StdNum> = arr.iter().cloned().collect();
+		let mut walker = methods::search(&mut tree, (i,));
+		assert_eq!(walker.value().cloned(), Some(arr[i]));
+		let res = walker.delete();
+		assert_eq!(res, Some(arr[i]));
+		drop(walker);
+		assert_eq!(tree.into_iter().collect::<Vec<_>>(),
+			arr[..i].iter()
+			.chain(arr[i+1..].iter())
+			.cloned().collect::<Vec<_>>());
+	}
+}
+
+#[test]
+fn treap_insert() {
+	for i in 0..10 {
+		let arr = vec![3,5,1,4,7,8,9,20,11];
+		let new_val = 13;
+		let mut tree : Treap<example_data::StdNum> = arr.iter().cloned().collect();
+		let mut walker = methods::search(&mut tree, i..i);
+		walker.insert(new_val);
+		assert_eq!(walker.value().cloned(), Some(new_val));
+		drop(walker);
+		assert_eq!(tree.into_iter().collect::<Vec<_>>(),
+			arr[..i].iter()
+			.chain([new_val].iter())
+			.chain(arr[i..].iter())
+			.cloned().collect::<Vec<_>>());
+	}
 }

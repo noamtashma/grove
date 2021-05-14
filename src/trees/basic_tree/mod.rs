@@ -30,7 +30,7 @@ impl<D : Data, T> BasicTree<D, T> {
 
 	/// Returns the algorithm-specific data
 	pub fn alg_data(&self) -> Option<&T> {
-		Some(&self.node()?.alg_data)
+		Some(self.node()?.alg_data())
 	}
 
 	/// Remakes the data that is stored in this node, based on its sons.
@@ -105,37 +105,47 @@ impl<D : Data, T> BasicTree<D, T> {
 		}
 	}
 
+	/// Returns The inner node.
 	pub fn node(&self) -> Option<&BasicNode<D, T>> {
 		match self {
 			Empty => None,
 			Root(node) => Some(node),
 		}
 	}
-
+	
+	/// Returns The inner node.
 	pub fn node_mut(&mut self) -> Option<&mut BasicNode<D, T>> {
 		match self {
 			Empty => None,
 			Root(node) => Some(node),
 		}
 	}
-	/// This function applies the given action to its whole subtree.
-	///
-	/// This function leaves the [`self.action`] field "dirty" - after calling
-	/// this you might need to call access, to push the action to this node's sons.
-	///```
-	/// use orchard::basic_tree::*;
-	/// use orchard::example_data::{StdNum, RevAffineAction};
-	///
-	/// let mut tree : BasicTree<StdNum> = (1..=8).collect();
-	/// tree.act(RevAffineAction {to_reverse : false, mul : -1, add : 5});
-	/// # tree.assert_correctness();
-	///
-	/// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (-3..=4).rev().collect::<Vec<_>>());
-	/// # tree.assert_correctness();
-	///```
-	pub fn act(&mut self, action : D::Action) {
-		if let Root(node) = self {
-			node.act(action);
+
+	/// Returns The inner node with its box. This is exposed in order
+	/// to allow easier coding while preventing from moving values of `BasicNode`,
+	/// because `BasicNode` is bigger than a single pointer.
+	pub fn node_boxed(&mut self) -> Option<&mut Box<BasicNode<D, T>>> {
+		match self {
+			Empty => None,
+			Root(node) => Some(node),
+		}
+	}
+
+	/// Returns The inner node.
+	pub fn into_node(self) -> Option<BasicNode<D, T>> {
+		match self {
+			Empty => None,
+			Root(node) => Some(*node),
+		}
+	}
+
+	/// Returns The inner node with its box. This is exposed in order
+	/// to allow easier coding while preventing from moving values of `BasicNode`,
+	/// because `BasicNode` is bigger than a single pointer.
+	pub fn into_node_boxed(self) -> Option<Box<BasicNode<D, T>>> {
+		match self {
+			Empty => None,
+			Root(node) => Some(node),
 		}
 	}
 }
@@ -181,6 +191,12 @@ impl<D : Data, T> BasicNode<D, T> {
 			alg_data,
 		}
 	}
+
+	/// Returns the algorithm-specific data
+	pub fn alg_data(&self) -> &T {
+		&self.alg_data
+	}
+
 	/// Returns the summary of all values in this node's subtree.
 	/// Same as [`BasicTree::subtree_summary`].
 	pub fn subtree_summary(&self) -> D::Summary {
@@ -227,12 +243,8 @@ impl<D : Data, T> BasicNode<D, T> {
 			std::mem::swap(&mut self.left, &mut self.right);
 		}
 
-		if let Root(node) = &mut self.left {
-			node.act(self.action);
-		}
-		if let Root(node) = &mut self.right {
-			node.act(self.action);
-		}
+		self.left.act_subtree(self.action);
+		self.right.act_subtree(self.action);
 		self.action.act_inplace(&mut self.subtree_summary);
 		self.action.act_inplace(&mut self.node_value);
 		self.action = Default::default();
@@ -250,7 +262,22 @@ impl<D : Data, T> BasicNode<D, T> {
 	}
 
 	/// This function applies the given action to its whole subtree.
-	/// Same as [`BasicTree::act`].
+	/// Same as [`SomeEntry::act_subtree`], but for [`BasicNode<D>`].
+	///
+	/// This function leaves the [`self.action`] field "dirty" - after calling
+	/// this you might need to call access, to push the action to this node's sons.
+	///```
+	/// use orchard::basic_tree::*;
+	/// use orchard::example_data::{StdNum, RevAffineAction};
+	///
+	/// let mut tree : BasicTree<StdNum> = (1..=8).collect();
+	/// let node : &mut BasicNode<StdNum> = tree.node_mut().unwrap();
+	/// node.act(RevAffineAction {to_reverse : false, mul : -1, add : 5});
+	/// # tree.assert_correctness();
+	///
+	/// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (-3..=4).rev().collect::<Vec<_>>());
+	/// # tree.assert_correctness();
+	///```
 	pub fn act(&mut self, action : D::Action) {
 		self.action = action + self.action;
 	}

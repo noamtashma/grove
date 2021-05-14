@@ -77,7 +77,7 @@ impl<D : Data> Locator<D> for (usize,) where D::Summary : SizedSummary {
         // find the index of the current node
         let s = left.size();
 
-        if s >= self.0 {
+        if s > self.0 {
             GoLeft
         } else if s + D::to_summary(node).size() <= self.0 {
             GoRight

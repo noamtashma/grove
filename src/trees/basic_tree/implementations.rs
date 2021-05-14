@@ -147,10 +147,10 @@ impl<D : Data, T> SomeEntry<D> for BasicTree<D, T> {
 
     fn with_value<F, R>(&mut self, f : F) -> Option<R> where 
         F : FnOnce(&mut D::Value) -> R {
-		self.access();
-		let value = &mut self.node_mut()?.node_value;
+		let node = self.node_mut()?;
+		let value = node.node_value_mut(); // performs `access()`
         let res = f(value);
-    	self.rebuild();
+    	node.rebuild();
     	Some(res)
     }
 
@@ -246,32 +246,61 @@ impl<'a, D : Data> ModifiableWalker<D> for BasicWalker<'a, D> {
 
     fn delete(&mut self) -> Option<D::Value> {
         let tree = std::mem::replace(&mut *self.tel, BasicTree::Empty);
-		let mut boxed_node = match tree {
-			Empty => return None,
-			Root(boxed_node) => boxed_node,
-		};
-		match boxed_node.right.is_empty() {
-			false => {
-				let mut walker = boxed_node.right.walker();
-				methods::next_filled(&mut walker).unwrap();
-				let tree2 = std::mem::replace(&mut *walker.tel, BasicTree::Empty);
-				drop(walker);
+		let mut node = tree.into_node()?;
+		if node.right.is_empty() {
+			*self.tel = node.left;
+		} else { // find the next node and move it to the current position
+			let mut walker = node.right.walker();
+			while let Ok(_) = walker.go_left()
+				{}
+			let _ = walker.go_up();
 
-				let mut boxed_node2 = match tree2 {
-					Empty => unreachable!(),
-					Root(boxed_node) => boxed_node,
-				};
-				assert!(boxed_node2.left.is_empty());
-				assert!(boxed_node2.right.is_empty());
-				boxed_node2.left = boxed_node.left;
-				boxed_node2.right = boxed_node.right;
-				boxed_node2.rebuild();
-				*self.tel = BasicTree::Root(boxed_node2);
-			},
-			true => {
-				*self.tel = boxed_node.left;
-			},
+			let tree2 = std::mem::replace(&mut *walker.tel, BasicTree::Empty);
+			drop(walker);
+
+			let mut boxed_replacement_node = tree2.into_node_boxed().unwrap();
+			assert!(boxed_replacement_node.left.is_empty());
+			assert!(boxed_replacement_node.right.is_empty());
+			boxed_replacement_node.left = node.left;
+			boxed_replacement_node.right = node.right;
+			boxed_replacement_node.rebuild();
+			*self.tel = BasicTree::Root(boxed_replacement_node);
 		}
-		Some(boxed_node.node_value)
+		Some(node.node_value)
     }
+}
+
+#[test]
+fn basic_tree_delete() {
+	for i in 0..9 {
+		let arr = vec![3,5,1,4,7,8,9,20,11];
+		let mut tree : BasicTree<example_data::StdNum> = arr.iter().cloned().collect();
+		let mut walker = methods::search(&mut tree, (i,));
+		assert_eq!(walker.value().cloned(), Some(arr[i]));
+		let res = walker.delete();
+		assert_eq!(res, Some(arr[i]));
+		drop(walker);
+		assert_eq!(tree.into_iter().collect::<Vec<_>>(),
+			arr[..i].iter()
+			.chain(arr[i+1..].iter())
+			.cloned().collect::<Vec<_>>());
+	}
+}
+
+#[test]
+fn basic_tree_insert() {
+	for i in 0..10 {
+		let arr = vec![3,5,1,4,7,8,9,20,11];
+		let new_val = 13;
+		let mut tree : BasicTree<example_data::StdNum> = arr.iter().cloned().collect();
+		let mut walker = methods::search(&mut tree, i..i);
+		walker.insert(new_val);
+		assert_eq!(walker.value().cloned(), Some(new_val));
+		drop(walker);
+		assert_eq!(tree.into_iter().collect::<Vec<_>>(),
+			arr[..i].iter()
+			.chain([new_val].iter())
+			.chain(arr[i..].iter())
+			.cloned().collect::<Vec<_>>());
+	}
 }

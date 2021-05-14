@@ -127,21 +127,15 @@ impl<'a, D : Data, T> BasicWalker<'a, D, T> {
 	}
 
 	/// Performs a left rotation
-	/// Returns [`Err(())`] if this is an empty tree or if it has no right son.
-	pub fn rot_left(&mut self) -> Result<(), ()> {
+	/// Returns [`None`] if this is an empty tree or if it has no right son.
+	pub fn rot_left(&mut self) -> Option<()> {
 		let owned_tree = std::mem::replace(&mut *self.tel, BasicTree::Empty);
 
-		let mut bn1 : Box<BasicNode<D, T>> = match owned_tree {
-			BasicTree::Empty => return Err(()),
-			Root(bn) => bn,
-		};
+		let mut bn1 : Box<BasicNode<D, T>> = owned_tree.into_node_boxed()?;
 		assert!(bn1.action.is_identity());
-		bn1.right.access();
 
-		let mut bn2 : Box<BasicNode<D, T>> = match bn1.right {
-			BasicTree::Empty => return Err(()),
-			Root(bn) => bn,
-		};
+		let mut bn2 : Box<BasicNode<D, T>> = bn1.right.into_node_boxed()?;
+		bn2.access();
 
 		bn1.right = bn2.left;
 		bn2.subtree_summary = bn1.subtree_summary; // this is insetad of bn2.rebuild(), since we already know the result
@@ -150,25 +144,19 @@ impl<'a, D : Data, T> BasicWalker<'a, D, T> {
 		//bn2.rebuild();
 
 		*self.tel = Root(bn2); // restore the node back
-		Ok(())
+		Some(())
 	}
 
 	/// Performs a right rotation
-	/// Returns [`Err(())`] if this node has no left son.
-	pub fn rot_right(&mut self) -> Result<(), ()> {
+	/// Returns [`None`] if this node has no left son.
+	pub fn rot_right(&mut self) -> Option<()> {
 		let owned_tree = std::mem::replace(&mut *self.tel, BasicTree::Empty);
 
-		let mut bn1 : Box<BasicNode<D, T>> = match owned_tree {
-			BasicTree::Empty => return Err(()),
-			Root(bn) => bn,
-		};
+		let mut bn1 : Box<BasicNode<D, T>> = owned_tree.into_node_boxed()?;
 		assert!(bn1.action.is_identity());
-		bn1.left.access();
 
-		let mut bn2 : Box<BasicNode<D, T>> = match bn1.left {
-			BasicTree::Empty => return Err(()),
-			Root(bn) => bn,
-		};
+		let mut bn2 : Box<BasicNode<D, T>> = bn1.left.into_node_boxed()?;
+		bn2.access();
 
 		bn1.left = bn2.right;
 		bn2.subtree_summary = bn1.subtree_summary; // this is insetad of bn2.rebuild(), since we already know the result
@@ -177,12 +165,12 @@ impl<'a, D : Data, T> BasicWalker<'a, D, T> {
 		//bn2.rebuild();
 
 		*self.tel = Root(bn2); // restore the node back
-		Ok(())
+		Some(())
 	}
 
 	/// Performs rot_left if b is true
 	/// rot_right otherwise
-	pub fn rot_side(&mut self, b : bool) -> Result<(), ()> {
+	pub fn rot_side(&mut self, b : bool) -> Option<()> {
 		if b {
 			self.rot_left()
 		} else {

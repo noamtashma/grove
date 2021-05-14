@@ -183,8 +183,8 @@ impl<D : Data, L, T> OwningIterator<D, L, T> {
     /// Internal method: same as stack.push(...), but deals with the [`Empty`] case.
     /// If empty, do nothing.
     fn push(&mut self, tree : BasicTree<D, T>, summary : D::Summary) {
-        if let BasicTree::Root(node) = tree {
-            self.stack.push((OFragment::Node(node), summary));
+        if let Some(boxed_node) = tree.into_node_boxed() {
+            self.stack.push((OFragment::Node(boxed_node), summary));
         }
     }
 }

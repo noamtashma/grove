@@ -281,7 +281,7 @@ impl<'a, D : Data> SplayWalker<'a, D> {
     /// use orchard::methods::*; 
     ///
     /// let mut tree : SplayTree<StdNum> = (17..88).collect();
-    /// let mut walker = search(&mut tree, (7,));
+    /// let mut walker = search(&mut tree, 7..7);
     /// let mut tree2 = walker.split().unwrap();
     /// drop(walker);
     ///
@@ -490,4 +490,39 @@ impl<'a, D : Data> ModifiableWalker<D> for SplayWalker<'a, D> {
     fn delete(&mut self) -> Option<D::Value> {
         self.walker.delete()
     }
+}
+
+#[test]
+fn splay_delete() {
+	for i in 0..9 {
+		let arr = vec![3,5,1,4,7,8,9,20,11];
+		let mut tree : SplayTree<example_data::StdNum> = arr.iter().cloned().collect();
+		let mut walker = methods::search(&mut tree, (i,));
+		assert_eq!(walker.value().cloned(), Some(arr[i]));
+		let res = walker.delete();
+		assert_eq!(res, Some(arr[i]));
+		drop(walker);
+		assert_eq!(tree.into_iter().collect::<Vec<_>>(),
+			arr[..i].iter()
+			.chain(arr[i+1..].iter())
+			.cloned().collect::<Vec<_>>());
+	}
+}
+
+#[test]
+fn splay_insert() {
+	for i in 0..10 {
+		let arr = vec![3,5,1,4,7,8,9,20,11];
+		let new_val = 13;
+		let mut tree : SplayTree<example_data::StdNum> = arr.iter().cloned().collect();
+		let mut walker = methods::search(&mut tree, i..i);
+		walker.insert(new_val);
+		assert_eq!(walker.value().cloned(), Some(new_val));
+		drop(walker);
+		assert_eq!(tree.into_iter().collect::<Vec<_>>(),
+			arr[..i].iter()
+			.chain([new_val].iter())
+			.chain(arr[i..].iter())
+			.cloned().collect::<Vec<_>>());
+	}
 }
