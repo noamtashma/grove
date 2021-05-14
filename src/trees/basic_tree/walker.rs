@@ -202,7 +202,7 @@ impl<'a, D : Data, T> BasicWalker<'a, D, T> {
 
 /// This implementation exists in order to rebuild the nodes
 /// when the walker gets dropped
-impl<'a, A : Data, T> Drop for BasicWalker<'a, A, T> {
+impl<'a, D : Data, T> Drop for BasicWalker<'a, D, T> {
 	fn drop(&mut self) {
 		self.go_to_root();
 	}

@@ -31,8 +31,8 @@ use crate::locators;
 
 
 
-pub struct SplayTree<A : Data> {
-    tree : BasicTree<A>,
+pub struct SplayTree<D : Data> {
+    tree : BasicTree<D>,
 }
 
 impl<D : Data> SplayTree<D> {
@@ -72,41 +72,6 @@ impl<D : Data> SplayTree<D> {
 		self.tree.iter()
 	}
 
-    // TODO: switch to a symmetric view, i.e.,
-    // `tree3 = union(tree1, tree2)`, not
-    // `tree1.concatenate(tree2)`.
-    /// Concatenates the other tree into this tree.
-    ///```
-    /// use orchard::splay::*;
-    /// use orchard::example_data::StdNum;
-    ///
-    /// let mut tree : SplayTree<StdNum> = (17..=89).collect();
-    /// let tree2 : SplayTree<StdNum> = (13..=25).collect();
-    /// tree.concatenate(tree2);
-    ///
-    /// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..=89).chain(13..=25).collect::<Vec<_>>());
-    /// # tree.assert_correctness();
-    ///```
-    pub fn concatenate(&mut self, other : Self) {
-        let mut walker = self.walker();
-        while let Ok(_) = walker.go_right()
-            {}
-        match walker.go_up() {
-            Err(()) => { // the tree is empty; just substitute the other tree.
-                drop(walker);
-                *self = other;
-                return;
-            },
-            Ok(false) => (),
-            Ok(true) => unreachable!(),
-        };
-        walker.splay();
-        let node = walker.inner_mut().node_mut().unwrap();
-        assert!(node.right.is_empty() == true);
-        node.right = other.into_inner();
-        node.rebuild();
-    }
-
     /// Gets the tree into a state in which the locator's segment
     /// is a single subtree, and returns a walker at that subtree.
     pub fn isolate_segment<L>(&mut self, locator : L) -> SplayWalker<D> where
@@ -136,7 +101,7 @@ impl<D : Data> SplayTree<D> {
     }
 }
 
-impl<A : Data> std::default::Default for SplayTree<A> {
+impl<D : Data> std::default::Default for SplayTree<D> {
     fn default() -> Self {
         SplayTree::new()
     }
@@ -267,55 +232,9 @@ impl<'a, D : Data> SplayWalker<'a, D> {
             self.splay_step_depth(depth);
         }
     }
-
-    // TODO: make a trait for splittable trees
-    /// Will only do anything if the current position is empty.
-    /// If it is empty, it will split the tree: the elements
-    /// to the left will remain, and the elements to the right
-    /// will be put in the new output tree.
-    /// The walker will be at the root after this operation, if it succeeds.
-    ///
-    ///```
-    /// use orchard::splay::*;
-    /// use orchard::example_data::StdNum;
-    /// use orchard::methods::*; 
-    ///
-    /// let mut tree : SplayTree<StdNum> = (17..88).collect();
-    /// let mut walker = search(&mut tree, 7..7);
-    /// let mut tree2 = walker.split().unwrap();
-    /// drop(walker);
-    ///
-    /// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..24).collect::<Vec<_>>());
-    /// assert_eq!(tree2.iter().cloned().collect::<Vec<_>>(), (24..88).collect::<Vec<_>>());
-    /// # tree.assert_correctness();
-    ///```
-    pub fn split(&mut self) -> Option<SplayTree<D>> {
-        if !self.is_empty() { return None }
-        
-        // to know which side we should cut
-        let b = match self.go_up() {
-            Err(()) => { return Some(SplayTree::new()) }, // this is the empty tree
-            Ok(b) => b,
-        };
-        self.splay();
-        let node = match self.inner_mut().node_mut() {
-            Some(node) => node,
-            _ => panic!(),
-        };
-        if b {
-            let mut tree = std::mem::replace(&mut node.left, BasicTree::Empty);
-            node.rebuild();
-            std::mem::swap(self.inner_mut(), &mut tree);
-            return Some(SplayTree{ tree });
-        } else {
-            let tree = std::mem::replace(&mut node.right, BasicTree::Empty);
-            node.rebuild();
-            return Some(SplayTree { tree });
-        }
-    }
 }
 
-impl<'a, A : Data> Drop for SplayWalker<'a, A> {
+impl<'a, D : Data> Drop for SplayWalker<'a, D> {
     fn drop(&mut self) {
         self.splay();
     }
@@ -489,6 +408,106 @@ impl<'a, D : Data> ModifiableWalker<D> for SplayWalker<'a, D> {
 
     fn delete(&mut self) -> Option<D::Value> {
         self.walker.delete()
+    }
+}
+
+
+impl<D : Data> ConcatenableTree<D> for SplayTree<D> {
+    // `tree3 = union(tree1, tree2)`, not
+    // `tree1.concatenate(tree2)`.
+    /// Concatenates the other tree into this tree.
+    ///```
+    /// use orchard::trees::*;
+    /// use orchard::splay::*;
+    /// use orchard::example_data::StdNum;
+    ///
+    /// let tree1 : SplayTree<StdNum> = (17..=89).collect();
+    /// let tree2 : SplayTree<StdNum> = (13..=25).collect();
+    /// let mut tree3 = ConcatenableTree::concatenate(tree1, tree2);
+    ///
+    /// assert_eq!(tree3.iter().cloned().collect::<Vec<_>>(), (17..=89).chain(13..=25).collect::<Vec<_>>());
+    /// # tree3.assert_correctness();
+    ///```
+    fn concatenate_right(&mut self, other : Self) {
+        let mut walker = self.walker();
+        while let Ok(_) = walker.go_right()
+            {}
+        match walker.go_up() {
+            Err(()) => { // the tree is empty; just substitute the other tree.
+                drop(walker);
+                *self = other;
+                return;
+            },
+            Ok(false) => (),
+            Ok(true) => unreachable!(),
+        };
+        walker.splay();
+        let node = walker.inner_mut().node_mut().unwrap();
+        assert!(node.right.is_empty() == true);
+        node.right = other.into_inner();
+        node.rebuild();
+    }
+}
+
+impl<'a, D : Data> SplittableTreeRef<D> for &'a mut SplayTree<D> {
+    type T = SplayTree<D>;
+
+    type SplittableWalker = SplayWalker<'a, D>;
+}
+
+impl<'a, D : Data> SplittableWalker<D> for SplayWalker<'a, D> {
+    type T = SplayTree<D>;
+
+    /// Will only do anything if the current position is empty.
+    /// If it is empty, it will split the tree: the elements
+    /// to the left will remain, and the elements to the right
+    /// will be put in the new output tree.
+    /// The walker will be at the root after this operation, if it succeeds.
+    ///
+    ///```
+    /// use orchard::trees::*;
+    /// use orchard::splay::*;
+    /// use orchard::example_data::StdNum;
+    /// use orchard::methods::*; 
+    ///
+    /// let mut tree : SplayTree<StdNum> = (17..88).collect();
+    /// let mut walker = search(&mut tree, 7..7);
+    /// let mut tree2 = walker.split_right().unwrap();
+    /// drop(walker);
+    ///
+    /// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..24).collect::<Vec<_>>());
+    /// assert_eq!(tree2.iter().cloned().collect::<Vec<_>>(), (24..88).collect::<Vec<_>>());
+    /// # tree.assert_correctness();
+    ///```
+    fn split_right(&mut self) -> Option<SplayTree<D>> {
+        if !self.is_empty() { return None }
+        
+        // to know which side we should cut
+        let b = match self.go_up() {
+            Err(()) => { return Some(SplayTree::new()) }, // this is the empty tree
+            Ok(b) => b,
+        };
+        self.splay();
+        let node = match self.inner_mut().node_mut() {
+            Some(node) => node,
+            _ => panic!(),
+        };
+        if b {
+            let mut tree = std::mem::replace(&mut node.left, BasicTree::Empty);
+            node.rebuild();
+            std::mem::swap(self.inner_mut(), &mut tree);
+            return Some(SplayTree{ tree });
+        } else {
+            let tree = std::mem::replace(&mut node.right, BasicTree::Empty);
+            node.rebuild();
+            return Some(SplayTree { tree });
+        }
+    }
+
+    fn split_left(&mut self) -> Option<Self::T> {
+        let mut right = self.split_right()?;
+        std::mem::swap(self.inner_mut(), &mut right.tree);
+        Some(right)
     }
 }
 

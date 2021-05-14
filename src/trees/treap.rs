@@ -34,26 +34,24 @@ impl<D : Data> SomeTree<D> for Treap<D> {
         if action.to_reverse() == false {
             methods::act_segment(self, action, locator)
         } else {
-            // TODO: bug: the locators return incorrect results, since they're
-            // run on subtree instead of the full tree.
             // split out the middle
             let mut walker = methods::search(&mut *self, locators::LeftEdgeOf(locator.clone()));
-            let mut mid = walker.split().unwrap();
+            let mut mid = walker.split_right().unwrap();
             drop(walker);
 
             let mut walker2 = TreapWalker {
                 walker : BasicWalker::new_with_context(&mut mid.tree, self.subtree_summary(), Default::default())
             };
             methods::search_walker(&mut walker2, locators::RightEdgeOf(locator));
-            let right = walker2.split().unwrap();
+            let right = walker2.split_right().unwrap();
             drop(walker2);
             
             // apply action
             mid.act_subtree(action);
 
             // glue back together
-            mid.concatenate( right);
-            self.concatenate(mid);
+            mid.concatenate_right( right);
+            self.concatenate_right(mid);
         }
     }
 }
@@ -73,7 +71,7 @@ impl<'a, D : Data> SomeTreeRef<D> for &'a mut Treap<D> {
 }
 
 impl<'a, D : Data> ModifiableTreeRef<D> for &'a mut Treap<D> {
-    type ModifiableWalker = Self::Walker;
+    type ModifiableWalker = TreapWalker<'a, D>;
 }
 
 impl<D : Data> SomeEntry<D> for Treap<D> {
@@ -145,15 +143,15 @@ impl<D : Data> Treap<D> {
 	/// use orchard::methods;
 	///
 	/// let mut tree : BasicTree<StdNum> = (20..80).collect();
-	/// let segment_iter = tree.iter_locator(3..13);
+	/// let segment_iter = tree.iter_segment(3..13);
 	///
 	/// assert_eq!(segment_iter.cloned().collect::<Vec<_>>(), (23..33).collect::<Vec<_>>());
 	/// # tree.assert_correctness();
 	///```
-	pub fn iter_locator<L>(&mut self, loc : L) -> impl Iterator<Item=&D::Value> where
+	pub fn iter_segment<L>(&mut self, loc : L) -> impl Iterator<Item=&D::Value> where
         L : locators::Locator<D>
     {
-        self.tree.iter_locator(loc)
+        self.tree.iter_segment(loc)
     }
 
     /// Checks that invariants remain correct. i.e., that every node's summary
@@ -163,39 +161,6 @@ impl<D : Data> Treap<D> {
         D::Summary : Eq,
     {
         self.tree.assert_correctness()
-    }
-
-    /// Concatenates the trees together, in place.
-    ///```
-    /// use orchard::treap::*;
-    /// use orchard::example_data::StdNum;
-    ///
-    /// let mut tree : Treap<StdNum> = (17..=89).collect();
-    /// let tree2 : Treap<StdNum> = (13..=25).collect();
-    /// tree.concatenate(tree2);
-    ///
-    /// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..=89).chain(13..=25).collect::<Vec<_>>());
-    /// # tree.assert_correctness();
-    ///```
-    pub fn concatenate(&mut self, tree2 : Treap<D>) {
-        let mut walker = self.walker();
-        let mut tree_r = tree2.tree;
-        loop {
-            match (walker.priority(), tree_r.alg_data().cloned()) {
-                (None, _) => { *walker.walker.inner_mut() = tree_r; break },
-                (_, None) => break,
-                (Some(a), Some(b)) if a < b => {
-                    walker.go_right().unwrap();
-                },
-                _ => { 
-                    std::mem::swap(walker.walker.inner_mut(), &mut tree_r);
-                    walker.go_left().unwrap();
-                    std::mem::swap(walker.walker.inner_mut(), &mut tree_r);
-                },
-            }
-        }
-        // the walker is responsible for going up the tree
-        // and rebuilding all the nodes
     }
 
     /// Computes the union of two splay trees, ordered by keys.
@@ -323,52 +288,8 @@ impl<'a, D : Data> TreapWalker<'a, D> {
         Some(self.walker.node()?.alg_data)
     }
 
-     // TODO: make a trait for splittable trees
-    /// Will only do anything if the current position is empty.
-    /// If it is empty, it will split the tree: the elements
-    /// to the left will remain, and the elements to the right
-    /// will be put in the new output tree.
-    /// The walker will be at the root after this operation, if it succeeds.
-    ///
-    ///```
-    /// use orchard::treap::*;
-    /// use orchard::example_data::StdNum;
-    /// use orchard::methods::*; 
-    ///
-    /// let mut tree : Treap<StdNum> = (17..88).collect();
-    /// let mut walker = search(&mut tree, 7..7);
-    /// let mut tree2 = walker.split().unwrap();
-    /// drop(walker);
-    ///
-    /// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..24).collect::<Vec<_>>());
-    /// assert_eq!(tree2.iter().cloned().collect::<Vec<_>>(), (24..88).collect::<Vec<_>>());
-    /// # tree.assert_correctness();
-    ///```
-    pub fn split(&mut self) -> Option<Treap<D>> {
-        if !self.is_empty() { return None }
-        
-        let mut temp = BasicTree::Empty;
-        // in the first round, this value is irrelevent. choosing this will skip the first if.
-        let mut prev_side = self.walker.is_left_son().unwrap_or(false);
-        
-        while let Ok(side) = self.go_up() {
-            if prev_side != side {
-                let node = self.walker.node_mut().unwrap();
-                let son = if side == true {
-                    &mut node.left
-                } else {
-                    &mut node.right
-                };
-                std::mem::swap(&mut temp, son);
-                node.rebuild();
-            }
-            prev_side = side;
-        }
-
-        if prev_side == true {
-            std::mem::swap(self.walker.inner_mut(), &mut temp);
-        }
-        Some(Treap {tree : temp})
+    pub (super)  fn inner_mut(&mut self) -> &mut BasicTree<D, T> {
+        self.walker.inner_mut()
     }
 }
 
@@ -431,27 +352,10 @@ impl<'a, D : Data> ModifiableWalker<D> for TreapWalker<'a, D> {
         let node = tree.into_node()?;
         let left = Treap { tree : node.left };
         let right = Treap { tree : node.right };
-        *self.walker.inner_mut() = concatenate(left, right).tree;
+        *self.walker.inner_mut() = ConcatenableTree::concatenate(left, right).tree;
         Some(node.node_value)
     }
 } 
-
-/// Concatenates the trees together.
-///```
-/// use orchard::treap::*;
-/// use orchard::example_data::StdNum;
-///
-/// let tree1 : Treap<StdNum> = (17..=89).collect();
-/// let tree2 : Treap<StdNum> = (13..=25).collect();
-/// let mut tree = concatenate(tree1, tree2);
-///
-/// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..=89).chain(13..=25).collect::<Vec<_>>());
-/// # tree.assert_correctness();
-///```
-pub fn concatenate<D : Data>(mut tree1 : Treap<D>, tree2 : Treap<D>) -> Treap<D> {
-    tree1.concatenate(tree2);
-    tree1
-}
 
 /// Computes the union of two splay trees, ordered by keys.
 /// We order the resulting tree based on the `D::Value : Keyed` instance, assuming that
@@ -506,7 +410,7 @@ fn union_internal<D : Data>(tree1 : &mut BasicTree<D, T>, mut tree2 : Treap<D>) 
         methods::previous_empty(&mut split_walker).unwrap();
     }
     // split
-    let right = split_walker.split().unwrap();
+    let right = split_walker.split_right().unwrap();
     drop(split_walker);
     let left = tree2;
 
@@ -534,6 +438,111 @@ pub fn union<D : Data>(mut tree1 : Treap<D>, tree2 : Treap<D>) -> Treap<D> where
     tree1.union(tree2);
     tree1
 }
+
+
+impl<D : Data> ConcatenableTree<D> for Treap<D>
+{
+    /// Concatenates the trees together, in place.
+    ///```
+    /// use orchard::trees::*;
+    /// use orchard::treap::*;
+    /// use orchard::example_data::StdNum;
+    ///
+    /// let mut tree : Treap<StdNum> = (17..=89).collect();
+    /// let tree2 : Treap<StdNum> = (13..=25).collect();
+    /// tree.concatenate_right(tree2);
+    ///
+    /// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..=89).chain(13..=25).collect::<Vec<_>>());
+    /// # tree.assert_correctness();
+    ///```
+    fn concatenate_right(&mut self, tree2 : Treap<D>) {
+        let mut walker = self.walker();
+        let mut tree_r = tree2.tree;
+        loop {
+            match (walker.priority(), tree_r.alg_data().cloned()) {
+                (None, _) => { *walker.walker.inner_mut() = tree_r; break },
+                (_, None) => break,
+                (Some(a), Some(b)) if a < b => {
+                    walker.go_right().unwrap();
+                },
+                _ => { 
+                    std::mem::swap(walker.walker.inner_mut(), &mut tree_r);
+                    walker.go_left().unwrap();
+                    std::mem::swap(walker.walker.inner_mut(), &mut tree_r);
+                },
+            }
+        }
+        // the walker is responsible for going up the tree
+        // and rebuilding all the nodes
+    }
+}
+
+
+
+impl<'a, D : Data> SplittableTreeRef<D> for &'a mut Treap<D> {
+    type T = Treap<D>;
+    type SplittableWalker = TreapWalker<'a, D>;
+}
+
+impl<'a, D : Data> SplittableWalker<D> for TreapWalker<'a, D> {
+    type T = Treap<D>;
+
+    /// Will only do anything if the current position is empty.
+    /// If it is empty, it will split the tree: the elements
+    /// to the left will remain, and the elements to the right
+    /// will be put in the new output tree.
+    /// The walker will be at the root after this operation, if it succeeds.
+    ///
+    ///```
+    /// use orchard::trees::*;
+    /// use orchard::treap::*;
+    /// use orchard::example_data::StdNum;
+    /// use orchard::methods::*; 
+    ///
+    /// let mut tree : Treap<StdNum> = (17..88).collect();
+    /// let mut walker = search(&mut tree, 7..7);
+    /// let mut tree2 = walker.split_right().unwrap();
+    /// drop(walker);
+    ///
+    /// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..24).collect::<Vec<_>>());
+    /// assert_eq!(tree2.iter().cloned().collect::<Vec<_>>(), (24..88).collect::<Vec<_>>());
+    /// # tree.assert_correctness();
+    ///```
+    fn split_right(&mut self) -> Option<Treap<D>> {
+        if !self.is_empty() { return None }
+        
+        let mut temp = BasicTree::Empty;
+        // in the first round, this value is irrelevent. choosing this will skip the first if.
+        let mut prev_side = self.walker.is_left_son().unwrap_or(false);
+        
+        while let Ok(side) = self.go_up() {
+            if prev_side != side {
+                let node = self.walker.node_mut().unwrap();
+                let son = if side == true {
+                    &mut node.left
+                } else {
+                    &mut node.right
+                };
+                std::mem::swap(&mut temp, son);
+                node.rebuild();
+            }
+            prev_side = side;
+        }
+
+        if prev_side == true {
+            std::mem::swap(self.walker.inner_mut(), &mut temp);
+        }
+        Some(Treap {tree : temp})
+    }
+
+    fn split_left(&mut self) -> Option<Self::T> {
+        let mut right = self.split_right()?;
+        std::mem::swap(self.inner_mut(), &mut right.tree);
+        Some(right)
+    }
+}
+
+
 
 #[test]
 fn treap_delete() {

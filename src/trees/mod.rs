@@ -44,18 +44,6 @@ pub trait SomeTreeRef<D : Data> {
     fn walker(self) -> Self::Walker;
 }
 
-/// This trait is a workaround for current rust type inference limitations.
-/// It allows to write generic code for a tree type that has a modifiable walker.
-/// Intuitively it should've been enough to require
-/// `T : SomeTree<D>, for<'a> &'a mut T : SomeTreeRef<D>, for<'a> <&'a mut T as SomeTreeRef<D>>::Walker : ModifiableWalker`.
-/// However, that doesn't work. Instead, use `for<'a> &'a mut T : ModifiableTreeRef<D>`.
-pub trait ModifiableTreeRef<D : Data> : SomeTreeRef<D, Walker = Self::ModifiableWalker> {
-    /// Inner type that ideally shouldn't be used - just use `Self::Walker`.
-    type ModifiableWalker : ModifiableWalker<D>;
-}
-
-
-
 /// The Walker trait implements walking through a tree.
 /// This includes dealing with the borrow checking problems of recursive structures (using Telescope),
 /// and rebalancing the tree.
@@ -105,6 +93,7 @@ pub trait SomeWalker<D : Data> : SomeEntry<D> {
             None => left,
         }
     }
+
     /// Returns a summary of all the values to the right of this point.
     /// If the walker is in a non empty spot, this does not include the current node.
     fn right_summary(&self) -> D::Summary {
@@ -175,6 +164,21 @@ pub trait SomeEntry<D : Data> {
 }
 
 
+
+
+
+
+/// Trait for trees that can be modified, i.e., values can be inserted and deleted.
+/// This trait is a workaround for current rust type inference limitations.
+/// It allows to write generic code for a tree type that has a modifiable walker.
+/// Intuitively it should've been enough to require
+/// `T : SomeTree<D>, for<'a> &'a mut T : SomeTreeRef<D>, for<'a> <&'a mut T as SomeTreeRef<D>>::Walker : ModifiableWalker`.
+/// However, that doesn't work. Instead, use `for<'a> &'a mut T : ModifiableTreeRef<D>`.
+pub trait ModifiableTreeRef<D : Data> : SomeTreeRef<D, Walker = Self::ModifiableWalker> {
+    /// Inner type that ideally shouldn't be used - just use `Self::Walker`.
+    type ModifiableWalker : ModifiableWalker<D>;
+}
+
 /// This is a trait for walkers that allow inserting and deleting values.
 pub trait ModifiableWalker<D : Data> : SomeWalker<D> {
     /// Only writes if it is in an empty position. if the position isn't empty,
@@ -182,4 +186,52 @@ pub trait ModifiableWalker<D : Data> : SomeWalker<D> {
     fn insert(&mut self, value : D::Value) -> Option<()>;
 
     fn delete(&mut self) -> Option<D::Value>;
+}
+
+
+/// Trait for trees that can concatenate.
+/// I wanted this to be the same trait family as SplittableWalker, but the current rustc type solver didn't let me.
+/// It's enough to only implement any one of the three methods - they're all implemented in terms of each other.
+pub trait ConcatenableTree<D : Data> : SomeTree<D> where for<'a> &'a mut Self : SomeTreeRef<D>,
+{
+    /// Concatenates the two inputs into one tree.
+    fn concatenate(mut left : Self, right : Self) -> Self {
+        left.concatenate_right(right);
+        left
+    }
+
+    /// Concatenates the other tree to the right of this tree.
+    fn concatenate_right(&mut self, mut other : Self) {
+        let left = std::mem::replace(self, Default::default());
+        other.concatenate_left(left);
+        *self = other;
+    }
+
+    /// Concatenates the other tree to the left of this tree.
+    fn concatenate_left(&mut self, other : Self) {
+        let right = std::mem::replace(self, Default::default());
+        *self = Self::concatenate(other, right);
+    }
+}
+/// Trait for trees that can be split and concatenated.
+/// Require this kind of tree if you want to use reversal actions on segments of your tree.
+pub trait SplittableTreeRef<D : Data> : SomeTreeRef<D, Walker=Self::SplittableWalker> + Sized
+{
+    /// Inner type that ideally shouldn't be used - just use the original tree type.
+    type T;
+    /// Inner type that ideally shouldn't be used - just use `Self::Walker`.
+    type SplittableWalker : SplittableWalker<D,T=Self::T>;
+}
+
+/// Walkers that can split a tree into two.
+pub trait SplittableWalker<D : Data> : ModifiableWalker<D> {
+    type T;
+
+    /// Split out everything to the right of the current position, if it is an empty position.
+    /// Otherwise returns [`None`].
+    fn split_right(&mut self) -> Option<Self::T>;
+
+    /// Split out everything to the left of the current position, if it is an empty position.
+    /// Otherwise returns [`None`].
+    fn split_left(&mut self) -> Option<Self::T>;
 }

@@ -138,11 +138,7 @@ fn yarra<'a, T : SomeTree<RevData>>(n : usize, k : usize) -> I where
 
     let mut sn = 1;
     let mut tn = 1;
-    for round in 0..k {
-        if round % 8000 == 0 {
-            dbg!(round);
-        }
-        
+    for _ in 0..k {
         if sn != tn {
             let (low, high) = if sn < tn {
                 (sn, tn+1)
@@ -168,33 +164,22 @@ fn yarra<'a, T : SomeTree<RevData>>(n : usize, k : usize) -> I where
         index_sum += inter.sum_with_index(index);
         index_sum %= MODULUS;
         index += inter.size();
-        if index % 10000 == 0 {
-            dbg!(index);
-        }
     }
     dbg!(index_sum);
     index_sum
 }
 
-pub fn yarra_treap(n : usize, k : usize) -> I {
-    yarra::<Treap<RevData>>(n, k)
-}
-
-pub fn yarra_splay(n : usize, k : usize) -> I {
-    yarra::<SplayTree<RevData>>(n,k)
-}
-
 pub fn main() {
     
     println!("splay:");
-    let res = yarra_splay(1000_000_000_000_000_000, 1000_000);
+    let res = yarra::<SplayTree<_>>(1000_000_000_000_000_000, 1000_000);
     assert_eq!(res, 563917241);
     println!("done splay");
     
     // TODO: somehow saw poor performance in this commit. might have always been this way, since i now saw that
     // previously this called yarra_splay instead of treap. investigate.
     println!("treap:");
-    let res = yarra_treap(1000_000_000_000_000_000, 1000_000);
+    let res = yarra::<Treap<_>>(1000_000_000_000_000_000, 1000_000);
     assert_eq!(res, 563917241);
     println!("done treap");
 }
@@ -202,37 +187,16 @@ pub fn main() {
 
 #[test]
 pub fn test() {
-    let res = yarra_treap(100, 100);
+    let res = yarra::<Treap<_>>(100, 100);
     assert_eq!(res, 246597);
-    let res = yarra_splay(100, 100);
+    let res = yarra::<SplayTree<_>>(100, 100);
     assert_eq!(res, 246597);
-    let res = yarra_treap(10000, 10000);
+    let res = yarra::<Treap<_>>(10000, 10000);
     assert_eq!(res, 275481640);
-    let res = yarra_splay(10000, 10000);
+    let res = yarra::<SplayTree<_>>(10000, 10000);
     assert_eq!(res, 275481640);
 
     use std::io::Write;
     use std::io::stdout;
     stdout().flush().unwrap();
-
-    /*
-    let mut tree : SplayTree<KeyAction<_>> = SplayTree::new();
-    for x in 1..25 {
-        insert_by_key(&mut tree, Key::new(x*5));
-    }
-
-    for x in 1..30 {
-        search(&mut tree, &x);
-        println!("{:?}, {:?}", x, tree.root_node_value().unwrap().key);
-        if x % 5 == 0 { 
-            if x != tree.root_node_value().unwrap().key.unwrap() {
-            panic!();
-            }
-            else {
-                dbg!("success!", x);
-            }
-        }
-    }
-    println!("done!");
-    */
 }
