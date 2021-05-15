@@ -15,7 +15,7 @@ use super::basic_tree::*;
 use rand;
 
 // The type that is used for bookkeeping.
-// convention: a smaller number should go higher up the tree.
+// convention: a bigger number should go higher up the tree.
 type T = u64;
 
 pub struct Treap<D : Data> {
@@ -124,10 +124,10 @@ impl<D : Data> Treap<D> {
 
     /// Iterates over the whole tree.
 	///```
-	/// use orchard::basic_tree::*;
+	/// use orchard::treap::*;
 	/// use orchard::example_data::StdNum;
 	///
-	/// let mut tree : BasicTree<StdNum> = (17..=89).collect();
+	/// let mut tree : Treap<StdNum> = (17..=89).collect();
 	///
 	/// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..=89).collect::<Vec<_>>());
 	/// # tree.assert_correctness();
@@ -138,11 +138,11 @@ impl<D : Data> Treap<D> {
 
     /// Iterates over the given segment.
 	///```
-	/// use orchard::basic_tree::*;
+	/// use orchard::treap::*;
 	/// use orchard::example_data::StdNum;
 	/// use orchard::methods;
 	///
-	/// let mut tree : BasicTree<StdNum> = (20..80).collect();
+	/// let mut tree : Treap<StdNum> = (20..80).collect();
 	/// let segment_iter = tree.iter_segment(3..13);
 	///
 	/// assert_eq!(segment_iter.cloned().collect::<Vec<_>>(), (23..33).collect::<Vec<_>>());
@@ -155,12 +155,23 @@ impl<D : Data> Treap<D> {
     }
 
     /// Checks that invariants remain correct. i.e., that every node's summary
-	/// is the sum of the summaries of its children.
-	/// If it is not, panics.
+	/// is the sum of the summaries of its children, and that the priorities are ordered.
+    /// If it finds a collision of priority values, or any other violation, it panics.
 	pub fn assert_correctness(&self) where
         D::Summary : Eq,
     {
-        self.tree.assert_correctness()
+        self.tree.assert_correctness();
+        internal_assert_correctness(&self.tree, None);
+        fn internal_assert_correctness<D : Data>(tree : &BasicTree<D, T>, prev : Option<T>) {
+            if let Some(node) = tree.node() {
+                let new_priority = *node.alg_data();
+                if let Some(priority) = prev {
+                    assert!(priority > new_priority);
+                }
+                internal_assert_correctness(&node.left, Some(new_priority));
+                internal_assert_correctness(&node.right, Some(new_priority));
+            }
+        }
     }
 
     /// Computes the union of two splay trees, ordered by keys.
@@ -462,7 +473,7 @@ impl<D : Data> ConcatenableTree<D> for Treap<D>
             match (walker.priority(), tree_r.alg_data().cloned()) {
                 (None, _) => { *walker.walker.inner_mut() = tree_r; break },
                 (_, None) => break,
-                (Some(a), Some(b)) if a < b => {
+                (Some(a), Some(b)) if a > b => {
                     walker.go_right().unwrap();
                 },
                 _ => { 
