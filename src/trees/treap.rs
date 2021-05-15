@@ -16,7 +16,7 @@ use rand;
 
 // The type that is used for bookkeeping.
 // convention: a smaller number should go higher up the tree.
-type T = usize;
+type T = u64;
 
 pub struct Treap<D : Data> {
     tree : BasicTree<D, T>,
@@ -42,7 +42,7 @@ impl<D : Data> SomeTree<D> for Treap<D> {
             let mut walker2 = TreapWalker {
                 walker : BasicWalker::new_with_context(&mut mid.tree, self.subtree_summary(), Default::default())
             };
-            methods::search_walker(&mut walker2, locators::RightEdgeOf(locator));
+            methods::search_subtree(&mut walker2, locators::RightEdgeOf(locator));
             let right = walker2.split_right().unwrap();
             drop(walker2);
             
@@ -50,7 +50,7 @@ impl<D : Data> SomeTree<D> for Treap<D> {
             mid.act_subtree(action);
 
             // glue back together
-            mid.concatenate_right( right);
+            mid.concatenate_right(right);
             self.concatenate_right(mid);
         }
     }

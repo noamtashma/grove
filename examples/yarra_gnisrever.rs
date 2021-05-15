@@ -107,12 +107,12 @@ impl Data for RevData {
 }
 
 // splits a segment inside the tree
-fn search_split<TR : ModifiableTreeRef<RevData>>(tree : TR, index : usize)
+fn search_split<TR : SplittableTreeRef<RevData>>(tree : TR, index : usize) -> TR::T
 {
     let mut walker = tree.walker();
     // using an empty range so that we'll only end up at a node
     // if we actually need to split that node
-    methods::search_walker(&mut walker, index..index); 
+    methods::search_subtree(&mut walker, index..index); 
     
     let left = walker.left_summary().size;
     let v2option = walker.with_value( |val| {
@@ -122,16 +122,16 @@ fn search_split<TR : ModifiableTreeRef<RevData>>(tree : TR, index : usize)
     });
 
     if let Some(v2) = v2option {
-        methods::next_empty(&mut walker).unwrap(); // not at an empty node
+        methods::next_empty(&mut walker).unwrap(); // not at an empty position
         walker.insert(v2).unwrap();
+        methods::previous_empty(&mut walker).unwrap(); // tree structure might have changed on insert
     }
+
+    walker.split_right().unwrap()
 }
 
-fn yarra<'a, T : SomeTree<RevData>>(n : usize, k : usize) -> I where
-    for<'b> &'b mut T : ModifiableTreeRef<RevData>,
-    // for<'b> <&'b mut T as SomeTreeRef<RevData>>::Walker : ModifiableWalker<RevData>,
-    //T : 'a,
-    //<&'a mut T as SomeTreeRef<RevData>>::Walker : ModifiableWalker<RevData>,
+fn yarra<'a,T : ConcatenableTree<RevData>>(n : usize, k : usize) -> I where
+    for<'b> &'b mut T : SplittableTreeRef<RevData, T=T>,
 {
     let inter = Interval {start : 0, end : (n-1) as I};
     let mut tree : T = vec![inter].into_iter().collect();
@@ -146,9 +146,11 @@ fn yarra<'a, T : SomeTree<RevData>>(n : usize, k : usize) -> I where
                 (tn, sn+1)
             };
             
-            search_split(&mut tree, low);
-            search_split(&mut tree, high);
-            tree.act_segment(RevAction { to_reverse : true }, low..high);
+            let mut mid = search_split(&mut tree, low);
+            let right = search_split(&mut mid, high - low);
+            mid.act_subtree(RevAction { to_reverse : true });
+            mid.concatenate_right(right);
+            tree.concatenate_right(mid);
         }
 
         sn += tn;

@@ -70,27 +70,7 @@ pub fn previous_filled<W : SomeWalker<A>, A : Data>(walker : &mut W) -> Result<(
     return Ok(());
 }
 
-// TODO: make an iterator
-/// Returns a vector of all the values in the tree.
-pub fn to_array<D : Data, TR>(tree : TR)
--> Vec<D::Value> where
-TR : SomeTreeRef<D>,
-D::Value : Clone,
-{
-    let mut walker = tree.walker();
-    let mut res = vec![];
-    while let Ok(_) = walker.go_left()
-        {}
-
-    while let Ok(_) = next_filled(&mut walker) {
-        if let Some(value) = walker.value() {
-            res.push(value.clone());
-        } else {panic!()}
-    }
-    res
-}
-
-// TODO: make this return an error instead
+// TODO: consider making this return an error instead
 /// Panics if the locator accepts a node.
 pub fn insert<D : Data, L, TR> (tree : TR, locator : L, value : D::Value)
     -> TR::Walker where
@@ -104,22 +84,30 @@ pub fn insert<D : Data, L, TR> (tree : TR, locator : L, value : D::Value)
     walker
 }
 
-// TODO: finger searching. currently searches the subtree,
-// but it's not intended behavior.
-/// Finds any node that the locator `Accept`s.
+// TODO: finger searching.
+/// Finds any node that the locator `Accept`s. Looks inside the whole tree.
 /// If there isn't any, it finds the empty location where that node would be instead.
 /// Returns a walker at the wanted position.
 pub fn search_walker<W, D : Data, L>(walker : &mut W, locator : L) where
     W : crate::trees::SomeWalker<D>,
     L : Locator<D>,
 {
-    use LocResult::*;
+    walker.go_to_root();
+    search_subtree(walker, locator);
+}
 
+/// Finds any node that the locator `Accept`s. Looks only inside the current subtree.
+/// If there isn't any, it finds the empty location where that node would be instead.
+/// Returns a walker at the wanted position.
+pub fn search_subtree<W, D : Data, L>(walker : &mut W, locator : L) where
+    W : crate::trees::SomeWalker<D>,
+    L : Locator<D>,
+{
     while let Some(res) = walker_locate(walker, &locator) {
         match res {
-            Accept => break,
-            GoRight => walker.go_right().unwrap(),
-            GoLeft => walker.go_left().unwrap(),
+            LocResult::Accept => break,
+            LocResult::GoRight => walker.go_right().unwrap(),
+            LocResult::GoLeft => walker.go_left().unwrap(),
         };
     }
 }
