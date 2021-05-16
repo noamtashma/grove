@@ -434,7 +434,34 @@ impl<'a, D : Data> ModifiableWalker<D> for SplayWalker<'a, D> {
     /// If currently at an empty position, returns [`None`].
     /// After deletion, the walker may move to a son of the current node or to an adjacent empty position.
     fn delete(&mut self) -> Option<D::Value> {
-        self.walker.delete()
+        // the delete implementation is copied from `BasicTree`,
+        // in order that splaying could be done on the second part of the path,
+        // to preserve the splay tree's complexity properties.
+        let tree = self.walker.take_subtree();
+		let mut node = tree.into_node()?;
+		if node.right.is_empty() {
+			self.walker.put_subtree(node.left).unwrap();
+		} else { // find the next node and move it to the current position
+			let mut walker = node.right.walker();
+			while let Ok(_) = walker.go_left()
+				{}
+			let _ = walker.go_up();
+
+			let tree2 = walker.take_subtree();
+
+			let mut boxed_replacement_node = tree2.into_node_boxed().unwrap();
+			assert!(boxed_replacement_node.left.is_empty());
+			assert!(boxed_replacement_node.right.is_empty());
+            walker.put_subtree(boxed_replacement_node.right).unwrap();
+			drop(SplayWalker { walker : walker }); // splay to preserve the tree's complexity
+
+
+			boxed_replacement_node.left = node.left;
+			boxed_replacement_node.right = node.right;
+			boxed_replacement_node.rebuild();
+			self.walker.put_subtree(BasicTree::Root(boxed_replacement_node)).unwrap();
+		}
+		Some(node.node_value)
     }
 }
 
@@ -540,7 +567,7 @@ impl<'a, D : Data> SplittableWalker<D> for SplayWalker<'a, D> {
 
 #[test]
 fn splay_delete() {
-    let arr = vec![3,5,1,4,7,8,9,20,11];
+    let arr : Vec<_> =(0..500).collect();
 	for i in 0..arr.len() {
 		let mut tree : SplayTree<example_data::StdNum> = arr.iter().cloned().collect();
 		let mut walker = methods::search(&mut tree, (i,));
@@ -557,7 +584,7 @@ fn splay_delete() {
 
 #[test]
 fn splay_insert() {
-    let arr = vec![3,5,1,4,7,8,9,20,11];
+    let arr : Vec<_> =(0..500).collect();
 	for i in 0 ..= arr.len() {
 		let new_val = 13;
 		let mut tree : SplayTree<example_data::StdNum> = arr.iter().cloned().collect();

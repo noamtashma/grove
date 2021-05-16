@@ -553,7 +553,7 @@ impl<'a, D : Data> SplittableWalker<D> for TreapWalker<'a, D> {
 
 #[test]
 fn treap_delete() {
-    let arr = vec![3,5,1,4,7,8,9,20,11];
+    let arr : Vec<_> =(0..500).collect();
 	for i in 0 .. arr.len() {
 		let mut tree : Treap<example_data::StdNum> = arr.iter().cloned().collect();
 		let mut walker = methods::search(&mut tree, (i,));
@@ -570,7 +570,7 @@ fn treap_delete() {
 
 #[test]
 fn treap_insert() {
-    let arr = vec![3,5,1,4,7,8,9,20,11];
+    let arr : Vec<_> =(0..500).collect();
 	for i in 0 ..= arr.len() {
 		let new_val = 13;
 		let mut tree : Treap<example_data::StdNum> = arr.iter().cloned().collect();

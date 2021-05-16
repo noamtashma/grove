@@ -248,27 +248,47 @@ impl<'a, D : Data, T> BasicWalker<'a, D, T> {
 		}
     }
 
+	/// Takes the current subtree out of the tree, and writes `Empty` instead.
+	/// Intended to help writing tree algorithms.
+	pub (in super::super) fn take_subtree(&mut self) -> BasicTree<D, T> {
+		std::mem::replace(&mut *self.tel, BasicTree::Empty)
+	}
+
+	/// If the current position is empty, puts the given value there instead.
+	/// Intended to help writing tree algorithms.
+	pub (in super::super) fn put_subtree(&mut self, new : BasicTree<D, T>) -> Option<()> {
+		if self.tel.is_empty() {
+			*self.tel = new;
+			Some(())
+		} else {
+			None
+		}
+	}
+
 	pub fn delete_with_alg_data(&mut self) -> Option<(D::Value, T)> {
-        let tree = std::mem::replace(&mut *self.tel, BasicTree::Empty);
+        let tree = self.take_subtree();
 		let mut node = tree.into_node()?;
 		if node.right.is_empty() {
-			*self.tel = node.left;
+			self.put_subtree(node.left).unwrap();
 		} else { // find the next node and move it to the current position
 			let mut walker = node.right.walker();
 			while let Ok(_) = walker.go_left()
 				{}
 			let _ = walker.go_up();
 
-			let tree2 = std::mem::replace(&mut *walker.tel, BasicTree::Empty);
-			drop(walker);
+			let tree2 = walker.take_subtree();
 
 			let mut boxed_replacement_node = tree2.into_node_boxed().unwrap();
 			assert!(boxed_replacement_node.left.is_empty());
 			assert!(boxed_replacement_node.right.is_empty());
+			walker.put_subtree(boxed_replacement_node.right).unwrap();
+			drop(walker);
+
+
 			boxed_replacement_node.left = node.left;
 			boxed_replacement_node.right = node.right;
 			boxed_replacement_node.rebuild();
-			*self.tel = BasicTree::Root(boxed_replacement_node);
+			self.put_subtree(BasicTree::Root(boxed_replacement_node)).unwrap();
 		}
 		Some((node.node_value, node.alg_data))
     }

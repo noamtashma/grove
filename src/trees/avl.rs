@@ -472,18 +472,42 @@ impl<'a, D : Data> ModifiableWalker<D> for AVLWalker<'a, D> {
 
 	// TODO: specify where the walker will be.
     fn delete(&mut self) -> Option<D::Value> {
-		// TODO: fix. the BasicTree implementation of delete doesn't leave the walker at the right location.
-        let res = self.walker.delete_with_alg_data()?.0;
-		self.rebalance();
-		todo!();
-		Some(res)
+		// the delete implementation is copied from `BasicTree`,
+        // in order for rebalancing to be done properly.
+        let tree = self.walker.take_subtree();
+		let mut node = tree.into_node()?;
+		if node.right.is_empty() {
+			self.walker.put_subtree(node.left).unwrap();
+			self.rebalance();
+		} else { // find the next node and move it to the current position
+			let mut walker = node.right.walker();
+			while let Ok(_) = walker.go_left()
+				{}
+			let _ = walker.go_up();
+
+			let tree2 = walker.take_subtree();
+
+			let mut boxed_replacement_node = tree2.into_node_boxed().unwrap();
+			assert!(boxed_replacement_node.left.is_empty());
+			walker.put_subtree(boxed_replacement_node.right).unwrap();
+			AVLWalker { walker : walker }.rebalance(); // rebalance here
+
+			boxed_replacement_node.left = node.left;
+			boxed_replacement_node.right = node.right;
+			boxed_replacement_node.rebuild();
+			boxed_replacement_node.rebuild_ranks();
+			self.walker.put_subtree(BasicTree::Root(boxed_replacement_node)).unwrap();
+			self.go_right().unwrap();
+			self.rebalance(); // rebalance here
+		}
+		Some(node.node_value)
     }
 }
 
-/*
+
 #[test]
 fn avl_delete() {
-    let arr = vec![3,5,1,4,7,8,9,20,11];
+    let arr : Vec<_> =(0..500).collect();
 	for i in 0..arr.len() {
 		let mut tree : AVLTree<example_data::StdNum> = arr.iter().cloned().collect();
 		let mut walker = methods::search(&mut tree, (i,));
@@ -497,11 +521,11 @@ fn avl_delete() {
 			.cloned().collect::<Vec<_>>());
 	}
 }
-*/
+
 
 #[test]
 fn avl_insert() {
-    let arr = vec![3,5,1,4,7,8,9,20,11];
+    let arr : Vec<_> =(0..500).collect();
 	for i in 0 ..= arr.len() {
 		let new_val = 13;
 		let mut tree : AVLTree<example_data::StdNum> = arr.iter().cloned().collect();

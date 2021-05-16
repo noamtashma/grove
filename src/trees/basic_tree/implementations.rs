@@ -244,7 +244,8 @@ impl<'a, D : Data> ModifiableWalker<D> for BasicWalker<'a, D> {
 
 	/// Removes the current value from the tree, and returns it.
     /// If currently at an empty position, returns [`None`].
-    /// After deletion, the walker may move to a son of the current node or to an adjacent empty position.
+    /// After deletion, the walker will stay at the same position, but the subtree below it may change
+	/// and the current node will be a different node (of course).
     fn delete(&mut self) -> Option<D::Value> {
         let res = self.delete_with_alg_data()?;
 		Some(res.0)
