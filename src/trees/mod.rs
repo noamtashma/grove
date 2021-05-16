@@ -13,6 +13,7 @@ pub mod methods;
 pub mod basic_tree;
 pub mod splay;
 pub mod treap;
+pub mod avl;
 
 use std::iter::FromIterator;
 
@@ -181,10 +182,15 @@ pub trait ModifiableTreeRef<D : Data> : SomeTreeRef<D, Walker = Self::Modifiable
 
 /// This is a trait for walkers that allow inserting and deleting values.
 pub trait ModifiableWalker<D : Data> : SomeWalker<D> {
-    /// Only writes if it is in an empty position. if the position isn't empty,
-    /// return Err(()).
+    /// Inserts the value into the tree at the current empty position.
+    /// If the current position is not empty, return [`None`].
+    /// When the function returns, the walker will be at the position the node
+    /// was inserted.
     fn insert(&mut self, value : D::Value) -> Option<()>;
 
+    /// Removes the current value from the tree, and returns it.
+    /// If currently at an empty position, returns [`None`].
+    /// May end up at any possible location, depending on the tree type.
     fn delete(&mut self) -> Option<D::Value>;
 }
 

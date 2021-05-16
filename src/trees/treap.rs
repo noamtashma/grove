@@ -113,13 +113,19 @@ impl<D : Data> SomeEntry<D> for Treap<D> {
     }
 }
 
+impl<D : Data> BasicTree<D, T> {
+    pub fn priority(&self) -> Option<T> {
+        Some(self.node()?.alg_data)
+    }
+}
+
 impl<D : Data> Treap<D> {
     pub fn new() -> Treap<D> {
         Treap { tree : BasicTree::Empty }
     }
 
     pub fn priority(&self) -> Option<T> {
-        Some(self.tree.node()?.alg_data)
+        self.tree.priority()
     }
 
     /// Iterates over the whole tree.
@@ -285,10 +291,10 @@ impl<'a, D : Data> TreapWalker<'a, D> {
     /// Returns the priority of the current node. Lower numbers means 
     /// The node is closer to the root.
     pub fn priority(&self) -> Option<T> {
-        Some(self.walker.node()?.alg_data)
+        self.walker.inner().priority()
     }
 
-    pub (super)  fn inner_mut(&mut self) -> &mut BasicTree<D, T> {
+    pub (super) fn inner_mut(&mut self) -> &mut BasicTree<D, T> {
         self.walker.inner_mut()
     }
 }
@@ -347,6 +353,7 @@ impl<'a, D : Data> ModifiableWalker<D> for TreapWalker<'a, D> {
 
     /// Removes the current value from the tree, and returns it.
     /// If currently at an empty position, returns [`None`].
+    /// The walker stays in the same position, and only the current node's subtree changes.
     fn delete(&mut self) -> Option<D::Value> {
         let tree = std::mem::replace(self.walker.inner_mut(), BasicTree::Empty);
         let node = tree.into_node()?;
@@ -379,7 +386,7 @@ fn union_internal<D : Data>(tree1 : &mut BasicTree<D, T>, mut tree2 : Treap<D>) 
         *tree1 = tree2.tree;
         return;
     }
-    if tree1.alg_data().unwrap() > &tree2.priority().unwrap() {
+    if tree1.priority().unwrap() > tree2.priority().unwrap() {
         std::mem::swap(tree1, &mut tree2.tree);
     }
     let node = tree1.node_mut().unwrap();
@@ -459,7 +466,7 @@ impl<D : Data> ConcatenableTree<D> for Treap<D>
         let mut walker = self.walker();
         let mut tree_r = tree2.tree;
         loop {
-            match (walker.priority(), tree_r.alg_data().cloned()) {
+            match (walker.priority(), tree_r.priority()) {
                 (None, _) => { *walker.walker.inner_mut() = tree_r; break },
                 (_, None) => break,
                 (Some(a), Some(b)) if a < b => {
@@ -546,8 +553,8 @@ impl<'a, D : Data> SplittableWalker<D> for TreapWalker<'a, D> {
 
 #[test]
 fn treap_delete() {
-	for i in 0..9 {
-		let arr = vec![3,5,1,4,7,8,9,20,11];
+    let arr = vec![3,5,1,4,7,8,9,20,11];
+	for i in 0 .. arr.len() {
 		let mut tree : Treap<example_data::StdNum> = arr.iter().cloned().collect();
 		let mut walker = methods::search(&mut tree, (i,));
 		assert_eq!(walker.value().cloned(), Some(arr[i]));
@@ -563,8 +570,8 @@ fn treap_delete() {
 
 #[test]
 fn treap_insert() {
-	for i in 0..10 {
-		let arr = vec![3,5,1,4,7,8,9,20,11];
+    let arr = vec![3,5,1,4,7,8,9,20,11];
+	for i in 0 ..= arr.len() {
 		let new_val = 13;
 		let mut tree : Treap<example_data::StdNum> = arr.iter().cloned().collect();
 		let mut walker = methods::search(&mut tree, i..i);

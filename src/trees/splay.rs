@@ -60,10 +60,10 @@ impl<D : Data> SplayTree<D> {
 
     /// Iterates over the whole tree.
 	///```
-	/// use orchard::basic_tree::*;
+	/// use orchard::splay::*;
 	/// use orchard::example_data::StdNum;
 	///
-	/// let mut tree : BasicTree<StdNum> = (17..=89).collect();
+	/// let mut tree : SplayTree<StdNum> = (17..=89).collect();
 	///
 	/// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..=89).collect::<Vec<_>>());
 	/// # tree.assert_correctness();
@@ -72,9 +72,29 @@ impl<D : Data> SplayTree<D> {
 		self.tree.iter()
 	}
 
+    // TODO: fix the bad complexity.
+    /// Iterates over the given segment.
+    /// Currently, might take worst case `O(n)` time.
+	///```
+	/// use orchard::splay::*;
+	/// use orchard::example_data::StdNum;
+	/// use orchard::methods;
+	///
+	/// let mut tree : SplayTree<StdNum> = (20..80).collect();
+	/// let segment_iter = tree.iter_segment(3..13); // should also try 3..5
+	///
+	/// assert_eq!(segment_iter.cloned().collect::<Vec<_>>(), (23..33).collect::<Vec<_>>());
+	/// # tree.assert_correctness();
+	///```
+	pub fn iter_segment<L>(&mut self, loc : L) -> impl Iterator<Item=&D::Value> where
+        L : locators::Locator<D>
+    {
+        self.tree.iter_segment(loc)
+    }
+
     /// Gets the tree into a state in which the locator's segment
     /// is a single subtree, and returns a walker at that subtree.
-    pub fn isolate_segment<L>(&mut self, locator : L) -> SplayWalker<D> where
+    pub fn isolate_segment<'a, L>(&'a mut self, locator : L) -> SplayWalker<'a, D> where
         L : crate::Locator<D>
     {
 
@@ -402,10 +422,17 @@ impl<'a, D : Data> SomeEntry<D> for SplayWalker<'a, D> {
 }
 
 impl<'a, D : Data> ModifiableWalker<D> for SplayWalker<'a, D> {
+    /// Inserts the value into the tree at the current empty position.
+    /// If the current position is not empty, return [`None`].
+    /// When the function returns, the walker will be at the position the node
+    /// was inserted.
     fn insert(&mut self, value : D::Value) -> Option<()> {
         self.walker.insert(value)
     }
 
+    /// Removes the current value from the tree, and returns it.
+    /// If currently at an empty position, returns [`None`].
+    /// After deletion, the walker may move to a son of the current node or to an adjacent empty position.
     fn delete(&mut self) -> Option<D::Value> {
         self.walker.delete()
     }
@@ -513,8 +540,8 @@ impl<'a, D : Data> SplittableWalker<D> for SplayWalker<'a, D> {
 
 #[test]
 fn splay_delete() {
-	for i in 0..9 {
-		let arr = vec![3,5,1,4,7,8,9,20,11];
+    let arr = vec![3,5,1,4,7,8,9,20,11];
+	for i in 0..arr.len() {
 		let mut tree : SplayTree<example_data::StdNum> = arr.iter().cloned().collect();
 		let mut walker = methods::search(&mut tree, (i,));
 		assert_eq!(walker.value().cloned(), Some(arr[i]));
@@ -530,8 +557,8 @@ fn splay_delete() {
 
 #[test]
 fn splay_insert() {
-	for i in 0..10 {
-		let arr = vec![3,5,1,4,7,8,9,20,11];
+    let arr = vec![3,5,1,4,7,8,9,20,11];
+	for i in 0 ..= arr.len() {
 		let new_val = 13;
 		let mut tree : SplayTree<example_data::StdNum> = arr.iter().cloned().collect();
 		let mut walker = methods::search(&mut tree, i..i);
