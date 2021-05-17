@@ -493,3 +493,28 @@ impl<D : Data, L1 : Locator<D>, L2 : Locator<D>> Locator<D> for UnionLocator<L1,
         if a == b {a} else { Accept }
     }
 }
+
+/// A Wrapper for two other locators, that finds the segment between them.
+/// More specifically, if the two segments intersect, this finds the intersection.
+/// If they don't intersect, this finds the segment that is between the two segments.
+/// For example, the Between of ranges `[3,6)` and `[8,12)` will  be `[6,8)`,
+// and the Between of ranges `[2,7)` and `[5,11)` will be `[5,7)`.
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub struct BetweenLocator<L1, L2> (
+    pub L1, pub L2
+);
+
+impl<D : Data, L1 : Locator<D>, L2 : Locator<D>> Locator<D> for BetweenLocator<L1, L2> {
+    fn locate(&self, left : D::Summary, node : &D::Value, right : D::Summary) -> 
+        LocResult
+    {
+        let a = self.0.locate(left, node, right);
+        let b = self.1.locate(left, node, right);
+        match (a, b) {
+            (GoLeft, GoRight) => Accept,
+            (GoRight, GoLeft) => Accept,
+            (Accept, x) => x,
+            (x, _) => x,
+        }
+    }
+}
