@@ -437,24 +437,19 @@ impl<'a, D : Data> ModifiableWalker<D> for SplayWalker<'a, D> {
         // the delete implementation is copied from `BasicTree`,
         // in order that splaying could be done on the second part of the path,
         // to preserve the splay tree's complexity properties.
-        let tree = self.walker.take_subtree();
-		let mut node = tree.into_node()?;
+		let mut node = self.walker.take_subtree().into_node()?;
 		if node.right.is_empty() {
 			self.walker.put_subtree(node.left).unwrap();
 		} else { // find the next node and move it to the current position
 			let mut walker = node.right.walker();
 			while let Ok(_) = walker.go_left()
 				{}
-			let _ = walker.go_up();
+            let res = walker.go_up(); assert_eq!(res, Ok(true));
 
-			let tree2 = walker.take_subtree();
-
-			let mut boxed_replacement_node = tree2.into_node_boxed().unwrap();
+			let mut boxed_replacement_node = walker.take_subtree().into_node_boxed().unwrap();
 			assert!(boxed_replacement_node.left.is_empty());
-			assert!(boxed_replacement_node.right.is_empty());
             walker.put_subtree(boxed_replacement_node.right).unwrap();
 			drop(SplayWalker { walker : walker }); // splay to preserve the tree's complexity
-
 
 			boxed_replacement_node.left = node.left;
 			boxed_replacement_node.right = node.right;
