@@ -17,6 +17,7 @@ impl<D : Data> Simulator<D> {
 use orchard::example_data::RevAffineAction;
 use rand::{self, Rng};
 use example_data::StdNum;
+
 pub fn check_consistency<T1, T2>() where
     T1 : SomeTree<StdNum>,
     for<'a> &'a mut T1 : SomeTreeRef<StdNum>,

@@ -129,6 +129,14 @@ impl<'a, D : Data, T> BasicWalker<'a, D, T> {
 	/// Performs a left rotation
 	/// Returns [`None`] if this is an empty tree or if it has no right son.
 	pub fn rot_left(&mut self) -> Option<()> {
+		self.rot_left_with_custom_rebuilder(|_| {})
+	}
+
+	/// Performs a left rotation.
+	/// Returns [`None`] if this is an empty tree or if it has no right son.
+	/// Uses a callback for a rebuilding action, that will be applied in addition
+	/// to the regular summary rebuilding
+	pub fn rot_left_with_custom_rebuilder<F : FnMut(&mut BasicNode<D, T>)>(&mut self, mut rebuilder : F) -> Option<()> {
 		let owned_tree = std::mem::replace(&mut *self.tel, BasicTree::Empty);
 
 		let mut bn1 : Box<BasicNode<D, T>> = owned_tree.into_node_boxed()?;
@@ -140,8 +148,10 @@ impl<'a, D : Data, T> BasicWalker<'a, D, T> {
 		bn1.right = bn2.left;
 		bn2.subtree_summary = bn1.subtree_summary; // this is insetad of bn2.rebuild(), since we already know the result
 		bn1.rebuild();
+		rebuilder(&mut *bn1);
 		bn2.left = Root(bn1);
-		//bn2.rebuild();
+		// bn2.rebuild()
+		rebuilder(&mut *bn2);
 
 		*self.tel = Root(bn2); // restore the node back
 		Some(())
@@ -150,6 +160,14 @@ impl<'a, D : Data, T> BasicWalker<'a, D, T> {
 	/// Performs a right rotation
 	/// Returns [`None`] if this node has no left son.
 	pub fn rot_right(&mut self) -> Option<()> {
+		self.rot_right_with_custom_rebuilder(|_| {})
+	}
+
+	/// Performs a right rotation.
+	/// Returns [`None`] if this node has no left son.
+	/// Uses a callback for a rebuilding action, that will be applied in addition
+	/// to the regular summary rebuilding
+	pub fn rot_right_with_custom_rebuilder<F : FnMut(&mut BasicNode<D, T>)>(&mut self, mut rebuilder : F) -> Option<()> {
 		let owned_tree = std::mem::replace(&mut *self.tel, BasicTree::Empty);
 
 		let mut bn1 : Box<BasicNode<D, T>> = owned_tree.into_node_boxed()?;
@@ -161,8 +179,10 @@ impl<'a, D : Data, T> BasicWalker<'a, D, T> {
 		bn1.left = bn2.right;
 		bn2.subtree_summary = bn1.subtree_summary; // this is insetad of bn2.rebuild(), since we already know the result
 		bn1.rebuild();
+		rebuilder(&mut *bn1);
 		bn2.right = Root(bn1);
-		//bn2.rebuild();
+		// bn2.rebuild()
+		rebuilder(&mut *bn2);
 
 		*self.tel = Root(bn2); // restore the node back
 		Some(())
@@ -178,12 +198,31 @@ impl<'a, D : Data, T> BasicWalker<'a, D, T> {
 		}
 	}
 
+	/// Performs rot_left if b is true
+	/// rot_right otherwise
+	pub fn rot_side_with_custom_rebuilder<F : FnMut(&mut BasicNode<D, T>)>(&mut self, b : bool, rebuilder : F) -> Option<()> {
+		if b {
+			self.rot_left_with_custom_rebuilder(rebuilder)
+		} else {
+			self.rot_right_with_custom_rebuilder(rebuilder)
+		}
+	}
+
 	/// Rotates so that the current node moves up.
 	/// Basically moves up and then calls rot_side.
 	/// Fails if the current node is the root.
 	pub fn rot_up(&mut self) -> Result<bool, ()> {
 		let b = self.go_up()?;
 		self.rot_side(!b).expect("original node went missing?");
+		Ok(b)
+	}
+
+	/// Rotates so that the current node moves up.
+	/// Basically moves up and then calls rot_side.
+	/// Fails if the current node is the root.
+	pub fn rot_up_with_custom_rebuilder<F : FnMut(&mut BasicNode<D, T>)>(&mut self, rebuilder : F) -> Result<bool, ()> {
+		let b = self.go_up()?;
+		self.rot_side_with_custom_rebuilder::<F>(!b, rebuilder).expect("original node went missing?");
 		Ok(b)
 	}
 
@@ -198,6 +237,56 @@ impl<'a, D : Data, T> BasicWalker<'a, D, T> {
 		let (tel, _, _) = self.destructure();
 		tel.into_ref()
 	}
+
+	pub fn insert_with_alg_data(&mut self, value : D::Value, alg_data : T) -> Option<()> {
+		match *self.tel {
+			Empty => {
+				*self.tel = BasicTree::new(BasicNode::new_alg(value, alg_data));
+				Some(())
+			},
+			_ => None,
+		}
+    }
+
+	/// Takes the current subtree out of the tree, and writes `Empty` instead.
+	/// Intended to help writing tree algorithms.
+	pub (in super::super) fn take_subtree(&mut self) -> BasicTree<D, T> {
+		std::mem::replace(&mut *self.tel, BasicTree::Empty)
+	}
+
+	/// If the current position is empty, puts the given value there instead.
+	/// Intended to help writing tree algorithms.
+	pub (in super::super) fn put_subtree(&mut self, new : BasicTree<D, T>) -> Option<()> {
+		if self.tel.is_empty() {
+			*self.tel = new;
+			Some(())
+		} else {
+			None
+		}
+	}
+
+	pub fn delete_with_alg_data(&mut self) -> Option<(D::Value, T)> {
+		let mut node = self.take_subtree().into_node()?;
+		if node.right.is_empty() {
+			self.put_subtree(node.left).unwrap();
+		} else { // find the next node and move it to the current position
+			let mut walker = node.right.walker();
+			while let Ok(_) = walker.go_left()
+				{}
+			let res = walker.go_up(); assert_eq!(res, Ok(true));
+
+			let mut boxed_replacement_node = walker.take_subtree().into_node_boxed().unwrap();
+			assert!(boxed_replacement_node.left.is_empty());
+			walker.put_subtree(boxed_replacement_node.right).unwrap();
+			drop(walker);
+
+			boxed_replacement_node.left = node.left;
+			boxed_replacement_node.right = node.right;
+			boxed_replacement_node.rebuild();
+			self.put_subtree(BasicTree::Root(boxed_replacement_node)).unwrap();
+		}
+		Some((node.node_value, node.alg_data))
+    }
 }
 
 /// This implementation exists in order to rebuild the nodes

@@ -2,6 +2,7 @@ use orchard::*;
 
 use trees::treap::*;
 use trees::splay::*;
+use trees::avl::*;
 use example_data::Size;
 use example_data::RevAction;
 
@@ -124,7 +125,10 @@ fn search_split<TR : SplittableTreeRef<RevData>>(tree : TR, index : usize) -> TR
     if let Some(v2) = v2option {
         methods::next_empty(&mut walker).unwrap(); // not at an empty position
         walker.insert(v2).unwrap();
-        methods::previous_empty(&mut walker).unwrap(); // tree structure might have changed on insert
+        walker.go_to_root();
+        // after insertion, walker might be at some arbitrary location,
+        // depending on the tree type
+        methods::search_walker(&mut walker, index..index);
     }
 
     walker.split_right().unwrap()
@@ -178,6 +182,11 @@ pub fn main() {
     assert_eq!(res, 563917241);
     println!("done splay");
     
+    println!("avl:");
+    let res = yarra::<AVLTree<_>>(1000_000_000_000_000_000, 1000_000);
+    assert_eq!(res, 563917241);
+    println!("done avl");
+
     println!("treap:");
     let res = yarra::<Treap<_>>(1000_000_000_000_000_000, 1000_000);
     assert_eq!(res, 563917241);
@@ -191,9 +200,13 @@ pub fn test() {
     assert_eq!(res, 246597);
     let res = yarra::<SplayTree<_>>(100, 100);
     assert_eq!(res, 246597);
+    let res = yarra::<AVLTree<_>>(100, 100);
+    assert_eq!(res, 246597);
     let res = yarra::<Treap<_>>(10000, 10000);
     assert_eq!(res, 275481640);
     let res = yarra::<SplayTree<_>>(10000, 10000);
+    assert_eq!(res, 275481640);
+    let res = yarra::<AVLTree<_>>(10000, 10000);
     assert_eq!(res, 275481640);
 
     use std::io::Write;

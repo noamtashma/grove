@@ -234,39 +234,21 @@ impl<'a, D : Data, T> SomeEntry<D> for BasicWalker<'a, D, T> {
 }
 
 impl<'a, D : Data> ModifiableWalker<D> for BasicWalker<'a, D> {
+	/// Inserts the value into the tree at the current empty position.
+    /// If the current position is not empty, return [`None`].
+    /// When the function returns, the walker will be at the position the node
+    /// was inserted.
     fn insert(&mut self, value : D::Value) -> Option<()> {
-		match *self.tel {
-			Empty => {
-				*self.tel = BasicTree::new(BasicNode::new(value));
-				Some(())
-			},
-			_ => None,
-		}
+		self.insert_with_alg_data(value, ())
     }
 
+	/// Removes the current value from the tree, and returns it.
+    /// If currently at an empty position, returns [`None`].
+    /// After deletion, the walker will stay at the same position, but the subtree below it may change
+	/// and the current node will be a different node (of course).
     fn delete(&mut self) -> Option<D::Value> {
-        let tree = std::mem::replace(&mut *self.tel, BasicTree::Empty);
-		let mut node = tree.into_node()?;
-		if node.right.is_empty() {
-			*self.tel = node.left;
-		} else { // find the next node and move it to the current position
-			let mut walker = node.right.walker();
-			while let Ok(_) = walker.go_left()
-				{}
-			let _ = walker.go_up();
-
-			let tree2 = std::mem::replace(&mut *walker.tel, BasicTree::Empty);
-			drop(walker);
-
-			let mut boxed_replacement_node = tree2.into_node_boxed().unwrap();
-			assert!(boxed_replacement_node.left.is_empty());
-			assert!(boxed_replacement_node.right.is_empty());
-			boxed_replacement_node.left = node.left;
-			boxed_replacement_node.right = node.right;
-			boxed_replacement_node.rebuild();
-			*self.tel = BasicTree::Root(boxed_replacement_node);
-		}
-		Some(node.node_value)
+        let res = self.delete_with_alg_data()?;
+		Some(res.0)
     }
 }
 
