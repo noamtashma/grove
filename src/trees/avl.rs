@@ -734,7 +734,7 @@ fn avl_delete() {
     let arr : Vec<_> =(0..500).collect();
 	for i in 0..arr.len() {
 		let mut tree : AVLTree<example_data::StdNum> = arr.iter().cloned().collect();
-		let mut walker = methods::search(&mut tree, (i,));
+		let mut walker = methods::search(&mut tree, i);
 		assert_eq!(walker.value().cloned(), Some(arr[i]));
 		let res = walker.delete();
 		assert_eq!(res, Some(arr[i]));
@@ -758,7 +758,7 @@ fn avl_insert() {
 		// after inserting, the walker can move, because of rebalancing.
 		// however, in avl trees, the walker should be in an ancestor of the inserted value.
 		// therefore, we check with `search_subtree`.
-		methods::search_subtree(&mut walker, (i,));
+		methods::search_subtree(&mut walker, i);
 		assert_eq!(walker.value().cloned(), Some(new_val));
 		drop(walker);
 		tree.assert_correctness();

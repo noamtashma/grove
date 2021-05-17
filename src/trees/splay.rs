@@ -565,7 +565,7 @@ fn splay_delete() {
     let arr : Vec<_> =(0..500).collect();
 	for i in 0..arr.len() {
 		let mut tree : SplayTree<example_data::StdNum> = arr.iter().cloned().collect();
-		let mut walker = methods::search(&mut tree, (i,));
+		let mut walker = methods::search(&mut tree, i);
 		assert_eq!(walker.value().cloned(), Some(arr[i]));
 		let res = walker.delete();
 		assert_eq!(res, Some(arr[i]));

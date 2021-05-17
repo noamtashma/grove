@@ -257,7 +257,7 @@ fn basic_tree_delete() {
 	for i in 0..9 {
 		let arr = vec![3,5,1,4,7,8,9,20,11];
 		let mut tree : BasicTree<example_data::StdNum> = arr.iter().cloned().collect();
-		let mut walker = methods::search(&mut tree, (i,));
+		let mut walker = methods::search(&mut tree, i);
 		assert_eq!(walker.value().cloned(), Some(arr[i]));
 		let res = walker.delete();
 		assert_eq!(res, Some(arr[i]));

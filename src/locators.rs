@@ -69,15 +69,15 @@ pub fn walker_locate<W, D : Data, L> (walker : &mut W, locator : &L) -> Option<L
 // and for insertions.
 
 
-/// Locator instance for `(usize,)` representing a single index.
-impl<D : Data> Locator<D> for (usize,) where D::Summary : SizedSummary {
+/// Locator instance for `usize` representing a single index.
+impl<D : Data> Locator<D> for usize where D::Summary : SizedSummary {
     fn locate(&self, left : D::Summary, node : &D::Value, _right : D::Summary) -> LocResult {
         // find the index of the current node
         let s = left.size();
 
-        if s > self.0 {
+        if s > *self {
             GoLeft
-        } else if s + D::to_summary(node).size() <= self.0 {
+        } else if s + D::to_summary(node).size() <= *self {
             GoRight
         } else {
             Accept
@@ -256,6 +256,8 @@ pub struct ByKey<T> (
     pub T,
 );
 
+/// Can't be an instance for `ByKey<D::Value::Key>` directly, because the `Key` might itself
+/// be a range type, and so it would conflict with the other implementations.
 impl<D : Data> Locator<D> for ByKey<(<D::Value as Keyed>::Key, )> where
     D::Value : Keyed,
 {
