@@ -37,8 +37,6 @@ use LocResult::*;
 /// that might not be the case, using interior mutability.
 /// Locators must be [`Clone`], in order for usage to be comfortable. This can always be achieved
 /// by taking a reference.
-
-/// Locators must be copy. This can always be achieved using references.
 pub trait Locator<D : Data> : Clone {
     fn locate(&self, left : D::Summary, node : &D::Value, right : D::Summary) -> LocResult;
 }

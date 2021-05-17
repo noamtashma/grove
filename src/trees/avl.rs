@@ -117,14 +117,13 @@ impl<D : Data> AVLTree<D> {
 	/// Checks that the tree is well formed.
 	/// Panics otherwise.
 	pub fn assert_correctness(&self) where D::Summary : Eq {
-		self.tree.assert_correctness(); // TODO: remove
 		Self::assert_correctness_internal(&self.tree);
 	}
 
 	fn assert_correctness_internal(tree : &BasicTree<D, T>) where D::Summary : Eq {
+		tree.assert_correctness_locally();
 		if let Some(node) = tree.node() {
 			Self::assert_ranks_locally_internal(&node);
-			//node.assert_correctness_locally();
 			Self::assert_correctness_internal(&node.left);
 			Self::assert_correctness_internal(&node.right);
 		}
@@ -133,7 +132,6 @@ impl<D : Data> AVLTree<D> {
 	pub fn assert_correctness_locally(&self) where D::Summary : Eq {
 		if let Some(node) = self.tree.node() {
 			Self::assert_ranks_locally_internal(&node);
-			//node.assert_correctness_locally();
 		}
 	}
 

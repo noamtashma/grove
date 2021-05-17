@@ -160,26 +160,6 @@ impl<D : Data> Treap<D> {
         self.tree.iter_segment(loc)
     }
 
-    /// Checks that invariants remain correct. i.e., that every node's summary
-	/// is the sum of the summaries of its children, and that the priorities are ordered.
-    /// If it finds a collision of priority values, or any other violation, it panics.
-	pub fn assert_correctness(&self) where
-        D::Summary : Eq,
-    {
-        self.tree.assert_correctness();
-        internal_assert_correctness(&self.tree, None);
-        fn internal_assert_correctness<D : Data>(tree : &BasicTree<D, T>, prev : Option<T>) {
-            if let Some(node) = tree.node() {
-                let new_priority = *node.alg_data();
-                if let Some(priority) = prev {
-                    assert!(priority > new_priority);
-                }
-                internal_assert_correctness(&node.left, Some(new_priority));
-                internal_assert_correctness(&node.right, Some(new_priority));
-            }
-        }
-    }
-
     /// Computes the union of two splay trees, ordered by keys.
     /// We order the resulting tree based on the `D::Value : Keyed` instance, assuming that
     /// the values in the existing trees are also in the correct order.
@@ -197,6 +177,55 @@ impl<D : Data> Treap<D> {
     pub fn union(&mut self, tree2 : Treap<D>) where D::Value : Keyed {
         union_internal(&mut self.tree, tree2);
     }
+
+    /// Checks that invariants remain correct. i.e., that every node's summary
+	/// is the sum of the summaries of its children, and that the priorities are ordered.
+    /// If it finds a collision of priority values, or any other violation, it panics.
+	pub fn assert_correctness(&self) where D::Summary : Eq {
+		Self::assert_correctness_internal(&self.tree);
+	}
+
+	fn assert_correctness_internal(tree : &BasicTree<D, T>) where D::Summary : Eq {
+		tree.assert_correctness_locally();
+		if let Some(node) = tree.node() {
+			Self::assert_priorities_locally_internal(&node);
+			Self::assert_correctness_internal(&node.left);
+			Self::assert_correctness_internal(&node.right);
+		}
+	}
+
+	pub fn assert_correctness_locally(&self) where D::Summary : Eq {
+		if let Some(node) = self.tree.node() {
+			Self::assert_priorities_locally_internal(&node);
+		}
+	}
+
+	pub fn assert_priorities_locally(&self) {
+		if let Some(node) = self.tree.node() {
+			Self::assert_priorities_locally_internal(&node);
+		}
+	}
+
+	fn assert_priorities_locally_internal(node : &BasicNode<D, T>) {
+        if let Some(left) = node.left.node() {
+            assert!(node.alg_data() > left.alg_data());
+        }
+        if let Some(right) = node.right.node() {
+            assert!(node.alg_data() > right.alg_data());
+        }
+	}
+
+	pub fn assert_priorities(&self) {
+		Self::assert_priorities_internal(&self.tree);
+	}
+
+	fn assert_priorities_internal(tree : &BasicTree<D, T>) {
+		if let Some(node) = tree.node() {
+			Self::assert_priorities_locally_internal(&node);
+			Self::assert_priorities_internal(&node.left);
+			Self::assert_priorities_internal(&node.right);
+		}
+	}
 }
 
 impl<D : Data> std::iter::FromIterator<D::Value> for Treap<D> {
