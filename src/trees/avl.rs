@@ -75,31 +75,6 @@ impl<D : Data> Rankable for BasicNode<D, T> {
 	}
 }
 
-pub fn representation_tree<D : Data>(tree : &BasicTree<D, T>, to_reverse : bool) -> String {
-	match tree {
-		BasicTree::Empty => String::from("*"),
-		BasicTree::Root(node) => format!("<{} >", representation_node(node, to_reverse)),
-	}
-}
-
-pub fn representation_node<D : Data>(node : &BasicNode<D, T>, to_reverse : bool) -> String {
-	let xor = node.action().to_reverse() ^ to_reverse;
-	let shebang = if node.action().to_reverse() { "!" } else { "" };
-	if xor {
-		format!("{}{} {} {}",
-			node.rank(),
-			shebang,
-			representation_tree(&node.right, xor),
-			representation_tree(&node.left, xor))
-	} else {
-		format!("{}{} {} {}",
-			node.rank(),
-			shebang,
-			representation_tree(&node.left, xor),
-			representation_tree(&node.right, xor))
-	}
-}
-
 impl<D : Data> AVLTree<D> {
     pub fn new() -> Self {
         AVLTree { tree : BasicTree::Empty }

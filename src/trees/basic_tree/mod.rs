@@ -148,6 +148,23 @@ impl<D : Data, T> BasicTree<D, T> {
 			Root(node) => Some(node),
 		}
 	}
+
+	/// Used for debugging. Prints a representation of the tree, like so:
+	/// `< < * * > * >`
+	/// Each pair of triangle brackets is a node, and `*` denotes empty trees.
+	/// The trees are printed in the layout they will have atfter all reversals have been
+	/// finished, but nodes which are yet to be reversed (`node.action.to_reverse() == true`)
+	/// are printed with an exclamation mark: `<! * * >`.
+	/// You can provide a custom printer for the alg_data field.
+	/// If the input `to_reverse` is true, it will print the tree in reverse.
+	pub fn representation<F>(&self, alg_print : &F, to_reverse : bool) -> String where
+		F : Fn(&T) -> String,
+	{
+		match self {
+			BasicTree::Empty => String::from("*"),
+			BasicTree::Root(node) => format!("<{} >", node.representation(alg_print, to_reverse)),
+		}
+	}
 }
 
 // TODO: decide if the fields should really be public
@@ -291,5 +308,33 @@ impl<D : Data, T> BasicNode<D, T> {
 	pub fn act_value(&mut self, action : D::Action) {
 		self.access();
 		action.act_inplace(&mut self.node_value);
+	}
+
+	/// Used for debugging. Prints a representation of the tree, like so:
+	/// `< < * * > * >`
+	/// Each pair of triangle brackets is a node, and `*` denotes empty trees.
+	/// The trees are printed in the layout they will have atfter all reversals have been
+	/// finished, but nodes which are yet to be reversed (`node.action.to_reverse() == true`)
+	/// are printed with an exclamation mark: `<! * * >`.
+	/// You can provide a custom printer for the alg_data field.
+	/// If the input `to_reverse` is true, it will print the tree in reverse.
+	pub fn representation<F>(&self, alg_print : &F, to_reverse : bool) -> String where
+		F : Fn(&T) -> String,
+	{
+		let xor = self.action().to_reverse() ^ to_reverse;
+		let shebang = if self.action().to_reverse() { "!" } else { "" };
+		if xor {
+			format!("{}{} {} {}",
+				alg_print(self.alg_data()),
+				shebang,
+				self.right.representation(alg_print, xor),
+				self.left.representation(alg_print, xor))
+		} else {
+			format!("{}{} {} {}",
+				alg_print(self.alg_data()),
+				shebang,
+				self.left.representation(alg_print, xor),
+				self.right.representation(alg_print, xor))
+		}
 	}
 }
