@@ -542,6 +542,27 @@ impl<'a, D : Data> SplittableWalker<D> for TreapWalker<'a, D> {
         Some(Treap {tree : temp})
     }
 
+    /// Will only do anything if the current position is empty.
+    /// If it is empty, it will split the tree: the elements
+    /// to the left will remain, and the elements to the right
+    /// will be put in the new output tree.
+    /// The walker will be at the root after this operation, if it succeeds.
+    ///
+    ///```
+    /// use orchard::trees::*;
+    /// use orchard::treap::*;
+    /// use orchard::example_data::StdNum;
+    /// use orchard::methods::*; 
+    ///
+    /// let mut tree : Treap<StdNum> = (17..88).collect();
+    /// let mut walker = search(&mut tree, 7..7);
+    /// let mut tree2 = walker.split_left().unwrap();
+    /// drop(walker);
+    ///
+    /// assert_eq!(tree2.iter().cloned().collect::<Vec<_>>(), (17..24).collect::<Vec<_>>());
+    /// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (24..88).collect::<Vec<_>>());
+    /// # tree.assert_correctness();
+    ///```
     fn split_left(&mut self) -> Option<Self::T> {
         let mut right = self.split_right()?;
         std::mem::swap(self.inner_mut(), &mut right.tree);

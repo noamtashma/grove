@@ -110,7 +110,7 @@ pub trait SomeWalker<D : Data> : SomeEntry<D> {
     fn value(&self) -> Option<&D::Value>;
 }
 
-/// Methods that ask to read the contents of the current tree/position.
+/// Methods that ask to read the contents of the current tree/subtree.
 /// These methods are common to the trees themselves and to the walkers.
 pub trait SomeEntry<D : Data> {
     // TODO: reconsider
@@ -121,7 +121,7 @@ pub trait SomeEntry<D : Data> {
     fn with_value<F, R>(&mut self, f : F) -> Option<R> where 
         F : FnOnce(&mut D::Value) -> R;
     
-    /// Returns [`true`] if the current tree is empty.
+    /// Returns [`true`] if the current tree/subtree is empty.
     fn is_empty(&self) -> bool {
         self.left_subtree_summary().is_none()
     }

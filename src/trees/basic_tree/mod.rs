@@ -17,8 +17,8 @@ use crate::*;
 /// A basic tree. might be empty.
 /// The `T` parameter is for algorithm-specific bookeeping data.
 /// For example, red-block trees store a color in each node.
-pub enum BasicTree<A : ?Sized + Data, T=()> {
-	Empty, Root(Box<BasicNode<A, T>>) // TODO: rename Root
+pub enum BasicTree<D : ?Sized + Data, T=()> {
+	Empty, Root(Box<BasicNode<D, T>>) // TODO: rename Root
 }
 use BasicTree::*;
 
@@ -195,6 +195,10 @@ impl<D : Data, T> BasicNode<D, T> {
 	/// Returns the algorithm-specific data
 	pub fn alg_data(&self) -> &T {
 		&self.alg_data
+	}
+
+	pub (crate) fn action(&self) -> &D::Action {
+		&self.action
 	}
 
 	/// Returns the summary of all values in this node's subtree.
