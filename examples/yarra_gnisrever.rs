@@ -187,8 +187,6 @@ pub fn main() {
     assert_eq!(res, 563917241);
     println!("done avl");
 
-    // TODO: somehow saw poor performance in this commit. might have always been this way, since i now saw that
-    // previously this called yarra_splay instead of treap. investigate.
     println!("treap:");
     let res = yarra::<Treap<_>>(1000_000_000_000_000_000, 1000_000);
     assert_eq!(res, 563917241);
