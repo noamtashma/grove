@@ -176,7 +176,6 @@ fn yarra<'a,T : ConcatenableTree<RevData>>(n : usize, k : usize) -> I where
 }
 
 pub fn main() {
-    
     println!("splay:");
     let res = yarra::<SplayTree<_>>(1000_000_000_000_000_000, 1000_000);
     assert_eq!(res, 563917241);
@@ -195,21 +194,25 @@ pub fn main() {
 
 
 #[test]
-pub fn test() {
-    let res = yarra::<Treap<_>>(100, 100);
-    assert_eq!(res, 246597);
+pub fn yarra_splay() {
     let res = yarra::<SplayTree<_>>(100, 100);
     assert_eq!(res, 246597);
-    let res = yarra::<AVLTree<_>>(100, 100);
+    let res = yarra::<SplayTree<_>>(10000, 10000);
+    assert_eq!(res, 275481640);
+}
+
+#[test]
+pub fn yarra_treap() {
+    let res = yarra::<Treap<_>>(100, 100);
     assert_eq!(res, 246597);
     let res = yarra::<Treap<_>>(10000, 10000);
     assert_eq!(res, 275481640);
-    let res = yarra::<SplayTree<_>>(10000, 10000);
-    assert_eq!(res, 275481640);
+}
+
+#[test]
+pub fn yarra_avl() {
+    let res = yarra::<AVLTree<_>>(100, 100);
+    assert_eq!(res, 246597);
     let res = yarra::<AVLTree<_>>(10000, 10000);
     assert_eq!(res, 275481640);
-
-    use std::io::Write;
-    use std::io::stdout;
-    stdout().flush().unwrap();
 }
