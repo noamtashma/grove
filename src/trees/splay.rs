@@ -520,9 +520,7 @@ impl<'a, D : Data> SplittableWalker<D> for SplayWalker<'a, D> {
     /// use orchard::methods::*; 
     ///
     /// let mut tree : SplayTree<StdNum> = (17..88).collect();
-    /// let mut walker = search(&mut tree, 7..7);
-    /// let mut tree2 = walker.split_right().unwrap();
-    /// drop(walker);
+    /// let mut tree2 = tree.slice(7..7).split_right().unwrap();
     ///
     /// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..24).collect::<Vec<_>>());
     /// assert_eq!(tree2.iter().cloned().collect::<Vec<_>>(), (24..88).collect::<Vec<_>>());
