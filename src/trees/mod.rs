@@ -14,6 +14,7 @@ pub mod basic_tree;
 pub mod splay;
 pub mod treap;
 pub mod avl;
+pub mod slice;
 
 use std::iter::FromIterator;
 
@@ -35,6 +36,10 @@ pub trait SomeTree<D : Data> :
     /// Apply an action on a subsegment.
     fn act_segment<L>(&mut self, action : D::Action, locator : L) where
         L : locators::Locator<D>;
+
+    fn slice<L : locators::Locator<D>>(&mut self, locator : L) -> slice::Slice<D, Self, L> {
+        slice::Slice::new(self, locator)
+    }
 }
 
 /// This is a workaround for not having Generic Associated Types in Rust yet.

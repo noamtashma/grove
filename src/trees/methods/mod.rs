@@ -70,20 +70,6 @@ pub fn previous_filled<W : SomeWalker<A>, A : Data>(walker : &mut W) -> Result<(
     return Ok(());
 }
 
-// TODO: consider making this return an error instead
-/// Panics if the locator accepts a node.
-pub fn insert<D : Data, L, TR> (tree : TR, locator : L, value : D::Value)
-    -> TR::Walker where
-    TR : SomeTreeRef<D>,
-    TR::Walker : ModifiableWalker<D>,
-    L : Locator<D>,
-    //<A as data::Data>::Value : std::fmt::Debug,
-{
-    let mut walker = search(tree, locator);
-    walker.insert(value).expect("tried to insert into an existing node"); // TODO
-    walker
-}
-
 // TODO: finger searching.
 /// Finds any node that the locator `Accept`s. Looks inside the whole tree.
 /// If there isn't any, it finds the empty location where that node would be instead.

@@ -194,10 +194,10 @@ impl<D : Data> SomeTree<D> for AVLTree<D> {
             methods::act_segment(self, action, locator)
         } else {
             // split out the middle
-            let mut walker = methods::search(&mut *self, locators::LeftEdgeOf(locator.clone()));
-            let mut mid = walker.split_right().unwrap();
-            drop(walker);
-
+			let mut mid : AVLTree<D> = self
+				.slice(locators::LeftEdgeOf(locator.clone()))
+				.split_right().unwrap();
+            
             let mut walker2 = AVLWalker {
                 walker : BasicWalker::new_with_context(&mut mid.tree, self.subtree_summary(), Default::default())
             };
@@ -555,9 +555,7 @@ impl<'a, D : Data> SplittableWalker<D> for AVLWalker<'a, D> {
     /// use orchard::methods::*; 
     ///
     /// let mut tree : AVLTree<StdNum> = (17..88).collect();
-    /// let mut walker = search(&mut tree, 7..7);
-    /// let mut tree2 = walker.split_right().unwrap();
-    /// drop(walker);
+    /// let mut tree2 = tree.slice(7..7).split_right().unwrap();
     ///
     /// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..24).collect::<Vec<_>>());
     /// assert_eq!(tree2.iter().cloned().collect::<Vec<_>>(), (24..88).collect::<Vec<_>>());
@@ -599,9 +597,7 @@ impl<'a, D : Data> SplittableWalker<D> for AVLWalker<'a, D> {
     /// use orchard::methods::*; 
     ///
     /// let mut tree : AVLTree<StdNum> = (17..88).collect();
-    /// let mut walker = search(&mut tree, 7..7);
-    /// let mut tree2 = walker.split_left().unwrap();
-    /// drop(walker);
+    /// let mut tree2 = tree.slice(7..7).split_left().unwrap();
     ///
     /// assert_eq!(tree2.iter().cloned().collect::<Vec<_>>(), (17..24).collect::<Vec<_>>());
     /// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (24..88).collect::<Vec<_>>());
