@@ -212,7 +212,7 @@ impl Data for MyData {
 // here the actual algorithms start
 
 // splits a segment inside the tree
-fn search_split<TR : SplittableTreeRef<MyData>>(tree : TR, index : usize) -> TR::T
+fn search_split<TR : ModifiableTreeRef<MyData>>(tree : TR, index : usize)
 {
     let mut walker = tree.walker();
     // using an empty range so that we'll only end up at a node
@@ -229,13 +229,7 @@ fn search_split<TR : SplittableTreeRef<MyData>>(tree : TR, index : usize) -> TR:
     if let Some(v2) = v2option {
         methods::next_empty(&mut walker).unwrap(); // not at an empty position
         walker.insert(v2).unwrap();
-        walker.go_to_root();
-        // after insertion, walker might be at some arbitrary location,
-        // depending on the tree type
-        methods::search_walker(&mut walker, index..index);
     }
-
-    walker.split_right().unwrap()
 }
 
 
@@ -289,17 +283,19 @@ fn solve(m : usize, n : usize, budget : I, obstacles : Vec<Obstacle>) -> usize {
             }
 
             // clamping to zero if the `x` coordinate is negative
-            let mut mid : Treap<_> = search_split(&mut tree, std::cmp::max(edge.xlow, 0) as usize);
-            let right : Treap<_> = search_split(&mut mid, (edge.xhigh - std::cmp::max(edge.xlow, 0)) as usize);
+            let xlow = std::cmp::max(edge.xlow, 0) as usize;
+            if edge.is_opening {
+                search_split(&mut tree, xlow);
+                search_split(&mut tree, edge.xhigh as usize);
+            }
             
             // note that acting on edges that got out of bounds still works as it should,
             // adding the cost only on the part that is in bounds
-            mid.act_subtree(AddAction {
+            tree.slice(xlow..edge.xhigh as usize).act(AddAction {
                 add : if edge.is_opening { edge.cost } else { - edge.cost }
             });
 
-            mid.concatenate_right(right);
-            tree.concatenate_right(mid);
+            // TODO: if there is a closing edge, try to reunite the segments.
         }
         
         // check one last time, because the squares with the highest possible `y` coordinate
@@ -323,7 +319,7 @@ fn solve(m : usize, n : usize, budget : I, obstacles : Vec<Obstacle>) -> usize {
 
 // runs the solution on a given input
 fn run_from<R: Read>(io: R) -> usize {
-    let br = BufReader::new(io);//.read_to_string(&mut contents).expect("can't open file");
+    let br = BufReader::new(io);
     
     let mut words_iter = br.lines()
         .flat_map(|row|
@@ -365,7 +361,7 @@ fn run_from<R: Read>(io: R) -> usize {
 // run the tests in the test directory.
 // you need to manually put the tests in the folder.
 fn check_all_tests() -> Result<(), Error> {
-    let current_dir = std::path::PathBuf::from_str("../orchard/pyramid_base_test_file/").unwrap();
+    let current_dir = std::path::PathBuf::from_str("../orchard/pyramid_base_test_files").unwrap();
     println!(
         "Testing files from {:?}:",
         current_dir
@@ -396,7 +392,7 @@ fn check_all_tests() -> Result<(), Error> {
 // run the solution of a specific file,
 // and print some metadata
 fn run_on_file(name : &str) -> Result<(), Error> {
-    let current_dir = std::path::PathBuf::from_str("../orchard/pyramid_base_test_files/").unwrap();
+    let current_dir = std::path::PathBuf::from_str("../orchard/pyramid_base_test_files").unwrap();
     print!("testing {: >8}.in:", name);
     let mut file_path = current_dir.clone();
     file_path.push(format!("{}.in", name));
