@@ -54,6 +54,11 @@ impl<D : Data> SomeTree<D> for Treap<D> {
             self.concatenate_right(mid);
         }
     }
+
+    type TreeData = T;
+    fn iter_locator<'a, L : locators::Locator<D>>(&'a mut self, locator : L) -> basic_tree::iterators::ImmIterator<'a, D, L, T> {
+		iterators::ImmIterator::new(&mut self.tree, locator)
+	}
 }
 
 impl<D : Data> Default for Treap<D> {
@@ -126,38 +131,6 @@ impl<D : Data> Treap<D> {
 
     pub fn priority(&self) -> Option<T> {
         self.tree.priority()
-    }
-
-    /// Iterates over the whole tree.
-	///```
-	/// use orchard::treap::*;
-	/// use orchard::example_data::StdNum;
-	///
-	/// let mut tree : Treap<StdNum> = (17..=89).collect();
-	///
-	/// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..=89).collect::<Vec<_>>());
-	/// # tree.assert_correctness();
-	///```
-	pub fn iter(&mut self) -> impl Iterator<Item=&D::Value> {
-		self.tree.iter()
-	}
-
-    /// Iterates over the given segment.
-	///```
-	/// use orchard::treap::*;
-	/// use orchard::example_data::StdNum;
-	/// use orchard::methods;
-	///
-	/// let mut tree : Treap<StdNum> = (20..80).collect();
-	/// let segment_iter = tree.iter_segment(3..13);
-	///
-	/// assert_eq!(segment_iter.cloned().collect::<Vec<_>>(), (23..33).collect::<Vec<_>>());
-	/// # tree.assert_correctness();
-	///```
-	pub fn iter_segment<L>(&mut self, loc : L) -> impl Iterator<Item=&D::Value> where
-        L : locators::Locator<D>
-    {
-        self.tree.iter_segment(loc)
     }
 
     /// Computes the union of two splay trees, ordered by keys.

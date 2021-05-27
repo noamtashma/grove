@@ -16,6 +16,11 @@ impl<D : Data> SomeTree<D> for BasicTree<D> {
         L : Locator<D> {
        methods::act_segment(self, action, locator);
     }
+
+	type TreeData = ();
+	fn iter_locator<'a, L : locators::Locator<D>>(&'a mut self, locator : L) -> basic_tree::iterators::ImmIterator<'a, D, L> {
+		iterators::ImmIterator::new(self, locator)
+	}
 }
 
 impl<D : Data> Default for BasicTree<D> {

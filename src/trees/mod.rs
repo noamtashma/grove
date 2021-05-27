@@ -16,8 +16,6 @@ pub mod treap;
 pub mod avl;
 pub mod slice;
 
-use std::iter::FromIterator;
-
 use crate::data::*;
 use crate::locators;
 
@@ -26,7 +24,7 @@ use crate::locators;
 /// immediately in this trait.
 /// More advanced use can be achieved by using walkers, which must be implemented.
 pub trait SomeTree<D : Data> :
-    SomeEntry<D> + FromIterator<D::Value> + IntoIterator<Item=D::Value> + Default
+    SomeEntry<D> + std::iter::FromIterator<D::Value> + IntoIterator<Item=D::Value> + Default
     where for<'a> &'a mut Self : SomeTreeRef<D>
 {
     /// Compute the summary of a subsegment.
@@ -37,8 +35,49 @@ pub trait SomeTree<D : Data> :
     fn act_segment<L>(&mut self, action : D::Action, locator : L) where
         L : locators::Locator<D>;
 
+    // TODO: write a specific instantiation for splay that avoids complexity problems.
+    /// Returns a value representing a specific subsegment of the tree. This gives a nicer
+    /// Interface for tree operations: `tree.slice(3..50).act(action)` instead of
+    /// `tree.act_segment(3..50, action)`. see [`slice::Slice`].
     fn slice<L : locators::Locator<D>>(&mut self, locator : L) -> slice::Slice<D, Self, L> {
         slice::Slice::new(self, locator)
+    }
+
+    /// This is here just so that the signature for iter_locator can be written out. Don't use this.
+    type TreeData;
+
+    /// Iterating on values.
+    /// This iterator assumes you won't change the values using interior mutability. If you change the values,
+    /// The tree summaries will behave incorrectly.
+    ///
+    /// See documentation in [`basic_tree::iterators`] as to why this function receives a `&mut self`
+    /// instead of `&Self` input, and why there isn't a mutable iterator.
+	///```
+    /// use orchard::*;
+	/// use orchard::basic_tree::*;
+	/// use orchard::example_data::StdNum;
+	///
+	/// let mut tree : BasicTree<StdNum> = (20..80).collect();
+	/// let segment_iter = tree.iter_locator(3..13);
+	///
+	/// assert_eq!(segment_iter.cloned().collect::<Vec<_>>(), (23..33).collect::<Vec<_>>());
+	/// # tree.assert_correctness();
+	///```
+    fn iter_locator<'a, L : locators::Locator<D>>(&'a mut self, locator : L) -> basic_tree::iterators::ImmIterator<'a, D, L, Self::TreeData>;
+
+    /// Iterates over the whole tree.
+	///```
+    /// use orchard::*;
+	/// use orchard::basic_tree::*;
+	/// use orchard::example_data::StdNum;
+	///
+	/// let mut tree : BasicTree<StdNum> = (17..=89).collect();
+	///
+	/// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..=89).collect::<Vec<_>>());
+	/// # tree.assert_correctness();
+	///```
+    fn iter(&mut self) -> basic_tree::iterators::ImmIterator<'_, D, std::ops::RangeFull, Self::TreeData> {
+        self.iter_locator(..)
     }
 }
 
@@ -188,9 +227,8 @@ pub trait ModifiableTreeRef<D : Data> : SomeTreeRef<D, Walker = Self::Modifiable
 /// This is a trait for walkers that allow inserting and deleting values.
 pub trait ModifiableWalker<D : Data> : SomeWalker<D> {
     /// Inserts the value into the tree at the current empty position.
-    /// If the current position is not empty, return [`None`].
-    /// When the function returns, the walker will be at the position the node
-    /// was inserted.
+    /// If the current position is not empty, returns [`None`].
+    /// May end up at any possible location, depending on the tree type.
     fn insert(&mut self, value : D::Value) -> Option<()>;
 
     /// Removes the current value from the tree, and returns it.

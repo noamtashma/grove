@@ -56,39 +56,6 @@ impl<D : Data, T> BasicTree<D, T> {
 		}
 	}
 
-
-	/// Iterates over the whole tree.
-	///```
-	/// use orchard::basic_tree::*;
-	/// use orchard::example_data::StdNum;
-	///
-	/// let mut tree : BasicTree<StdNum> = (17..=89).collect();
-	///
-	/// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..=89).collect::<Vec<_>>());
-	/// # tree.assert_correctness();
-	///```
-	pub fn iter(&mut self) -> impl Iterator<Item=&D::Value> {
-		iterators::ImmIterator::new(self, ..)
-	}
-
-	/// Iterates over the given segment.
-	///```
-	/// use orchard::basic_tree::*;
-	/// use orchard::example_data::StdNum;
-	/// use orchard::methods;
-	///
-	/// let mut tree : BasicTree<StdNum> = (20..80).collect();
-	/// let segment_iter = tree.iter_segment(3..13); // should also try 3..5
-	///
-	/// assert_eq!(segment_iter.cloned().collect::<Vec<_>>(), (23..33).collect::<Vec<_>>());
-	/// # tree.assert_correctness();
-	///```
-	pub fn iter_segment<L>(&mut self, loc : L) -> impl Iterator<Item=&D::Value> where
-		L : locators::Locator<D>
-	{
-		iterators::ImmIterator::new(self, loc)
-	}
-
 	/// Checks that invariants remain correct. i.e., that every node's summary
 	/// is the sum of the summaries of its children.
 	/// If it is not, panics.
@@ -295,6 +262,7 @@ impl<D : Data, T> BasicNode<D, T> {
 	/// This function leaves the [`self.action`] field "dirty" - after calling
 	/// this you might need to call access, to push the action to this node's sons.
 	///```
+	/// use orchard::*;
 	/// use orchard::basic_tree::*;
 	/// use orchard::example_data::{StdNum, RevAffineAction};
 	///

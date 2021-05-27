@@ -8,10 +8,35 @@ enum Fragment<'a, D : Data, T=()> {
     Node (&'a mut BasicNode<D, T>)
 }
 
-// TODO - fix the mutability problem using a guard?
 /// Mutable iterator iterating over a segment of the tree. Since it is a mutable
 /// iterator, the tree will probably not be in a legal state if the values are modified.
-pub struct MutIterator<'a, D : Data, L, T=()> {
+/// please use walkers instead.
+///
+/// We wopuld've likes to rebuild the nodes as we change them. However, because rust's iterators
+/// are not streaming iterators, we can only rebuild the tree after the iterator finished. This is
+/// inherently inefficient and unidiomatic, since most uses would only need a streaming iterator,
+/// and could rebuild the nodes while iterating.
+///
+/// There are also two technical problems:
+/// * Since the values could have changed, when we go back to rebuild the node,
+///   the locator might select a different subsegment, and therefore we might not rebuild some of the nodes
+///   we should have rebuilt.
+/// * We need to convince the compiler that we can safely walk down the tree mutably a second time
+///   after iteration finished. This can be sidestepped by a guard. Conveniently, the `Slice` struct can
+///   be used as a guard, but this makes the implementation of `Slice` weird: after iterating mutably,
+///   we can't use the slice again, instead we must drop it and make a new one.
+///
+///   This can almost be sidestepped by using a `RefCell`: the iterator would store a `RefCell` to the tree,
+///   and the inner frames would store `RefMut` references into the tree. Then, when the iterator would be dropped,
+///   all `RefMut`'s would be dropped and then we could get a fresh reference to the tree to rebuild it.
+///   However, this doesn't work because
+///   * The iterator could only give out `RefMut<'a, D::Value>` instead of regular references
+///   * The `RefMut::split` function can only split a `RefMut` in two, but not in three. Even though
+///     this could be trivially implemented in the standard library.
+///
+/// Therefore, this type isn't exposed - it can't be used productively.
+/// Instead, this type is wrapped inside the `ImmIterator` type, which is exported.
+struct MutIterator<'a, D : Data, L, T=()> {
     left : D::Summary,
     // a stack of the fragments, and for every fragment,
     // the summary of everything to its right
@@ -92,9 +117,16 @@ impl<'a, D : Data, L : Locator<D>, T> Iterator for MutIterator<'a, D, L, T> {
 }
 
 
-/// Immutable iterator. Requires borrowing the tree as mutable.
-/// An immutable iterator only requiring immutable access to the tree is possible,
-/// just not easy to write, so it's not included currently.
+/// Immutable iterator.
+/// The iterator receives a `&mut self` argument instead of a `&self` argument.
+/// Because of the way the trees work, immutable iterators can't be written without either mutable access
+/// to the tree, or assuming that the values are `Clone`.
+///
+/// That is essentially because the values stored in the tree still have actions that need to be performed in them
+/// to get the current updated value.
+///
+/// If you use interior mutability to update the values inside the tree, and these changes affect the summaries,
+/// the tree may behave incorrectly.
 pub struct ImmIterator<'a, D : Data, L, T=()> {
     mut_iter : MutIterator<'a, D, L, T>
 }

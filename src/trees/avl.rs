@@ -80,40 +80,6 @@ impl<D : Data> AVLTree<D> {
         AVLTree { tree : BasicTree::Empty }
     }
 
-    // TODO: fix
-    /// Iterates over the whole tree.
-	///```
-	/// use orchard::avl::*;
-	/// use orchard::example_data::StdNum;
-	///
-	/// let mut tree : AVLTree<StdNum> = (17..=89).collect();
-	///
-	/// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..=89).collect::<Vec<_>>());
-	/// # tree.assert_correctness();
-	///```
-	pub fn iter(&mut self) -> impl Iterator<Item=&D::Value> {
-		self.tree.iter()
-	}
-
-    // TODO: fix
-    /// Iterates over the given segment.
-	///```
-	/// use orchard::avl::*;
-	/// use orchard::example_data::StdNum;
-	/// use orchard::methods;
-	///
-	/// let mut tree : AVLTree<StdNum> = (20..80).collect();
-	/// let segment_iter = tree.iter_segment(3..13);
-	///
-	/// assert_eq!(segment_iter.cloned().collect::<Vec<_>>(), (23..33).collect::<Vec<_>>());
-	/// # tree.assert_correctness();
-	///```
-	pub fn iter_segment<L>(&mut self, loc : L) -> impl Iterator<Item=&D::Value> where
-    	L : locators::Locator<D>
-    {
-        self.tree.iter_segment(loc)
-    }
-
 	/// Checks that the tree is well formed.
 	/// Panics otherwise.
 	pub fn assert_correctness(&self) where D::Summary : Eq {
@@ -213,6 +179,11 @@ impl<D : Data> SomeTree<D> for AVLTree<D> {
             self.concatenate_right(mid);
         }
     }
+
+	type TreeData = u8;
+	fn iter_locator<'a, L : locators::Locator<D>>(&'a mut self, locator : L) -> basic_tree::iterators::ImmIterator<'a, D, L, u8> {
+		iterators::ImmIterator::new(&mut self.tree, locator)
+	}
 }
 
 impl<'a, D : Data> SomeTreeRef<D> for &'a mut AVLTree<D> {

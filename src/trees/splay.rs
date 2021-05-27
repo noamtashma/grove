@@ -58,40 +58,6 @@ impl<D : Data> SplayTree<D> {
         self.tree.assert_correctness()
     }
 
-    /// Iterates over the whole tree.
-	///```
-	/// use orchard::splay::*;
-	/// use orchard::example_data::StdNum;
-	///
-	/// let mut tree : SplayTree<StdNum> = (17..=89).collect();
-	///
-	/// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..=89).collect::<Vec<_>>());
-	/// # tree.assert_correctness();
-	///```
-	pub fn iter(&mut self) -> impl Iterator<Item=&D::Value> {
-		self.tree.iter()
-	}
-
-    // TODO: fix the bad complexity.
-    /// Iterates over the given segment.
-    /// Currently, might take worst case `O(n)` time.
-	///```
-	/// use orchard::splay::*;
-	/// use orchard::example_data::StdNum;
-	/// use orchard::methods;
-	///
-	/// let mut tree : SplayTree<StdNum> = (20..80).collect();
-	/// let segment_iter = tree.iter_segment(3..13); // should also try 3..5
-	///
-	/// assert_eq!(segment_iter.cloned().collect::<Vec<_>>(), (23..33).collect::<Vec<_>>());
-	/// # tree.assert_correctness();
-	///```
-	pub fn iter_segment<L>(&mut self, loc : L) -> impl Iterator<Item=&D::Value> where
-        L : locators::Locator<D>
-    {
-        self.tree.iter_segment(loc)
-    }
-
     /// Gets the tree into a state in which the locator's segment
     /// is a single subtree, and returns a walker at that subtree.
     pub fn isolate_segment<'a, L>(&'a mut self, locator : L) -> SplayWalker<'a, D> where
@@ -261,7 +227,6 @@ impl<'a, D : Data> Drop for SplayWalker<'a, D> {
 }
 
 impl<D : Data> SomeTree<D> for SplayTree<D> {
-    
     fn segment_summary<L>(&mut self, locator : L) -> D::Summary where
     L : locators::Locator<D>
     {
@@ -274,6 +239,11 @@ impl<D : Data> SomeTree<D> for SplayTree<D> {
             let mut walker = self.isolate_segment(locator);
             walker.act_subtree(action);
     }
+
+    type TreeData = ();
+    fn iter_locator<'a, L : locators::Locator<D>>(&'a mut self, locator : L) -> basic_tree::iterators::ImmIterator<'a, D, L> {
+		iterators::ImmIterator::new(&mut self.tree, locator)
+	}
 }
 
 impl<D : Data> SomeEntry<D> for SplayTree<D> {
