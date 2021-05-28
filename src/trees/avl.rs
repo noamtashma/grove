@@ -612,7 +612,7 @@ impl<D : Data> AVLTree<D> {
 		node.right = right.tree;
 		node.rebuild();
 		node.rebuild_ranks();
-		walker.walker.put_subtree(BasicTree::new(node)).unwrap();
+		walker.walker.put_subtree(BasicTree::from_node(node)).unwrap();
 		walker.rebalance();
 	}
 
@@ -645,7 +645,7 @@ impl<D : Data> AVLTree<D> {
 		node.left = left.tree;
 		node.rebuild();
 		node.rebuild_ranks();
-		walker.walker.put_subtree(BasicTree::new(node)).unwrap();
+		walker.walker.put_subtree(BasicTree::from_node(node)).unwrap();
 		walker.rebalance();
 	}
 }

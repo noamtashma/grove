@@ -360,7 +360,7 @@ impl<'a, D : Data> ModifiableWalker<D> for TreapWalker<'a, D> {
             new.left = std::mem::replace(self.walker.inner_mut(), BasicTree::Empty);
         }
         new.rebuild();
-        *self.walker.inner_mut() = BasicTree::new(new);
+        *self.walker.inner_mut() = BasicTree::from_node(new);
         Some(())
     }
 

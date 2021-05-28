@@ -10,6 +10,8 @@ mod implementations;
 pub use implementations::*;
 
 pub mod iterators;
+mod nonrecursive_deallocator;
+pub use nonrecursive_deallocator::deallocate_nonrecursive as deallocate_nonrecursive;
 
 use crate::*;
 //pub use crate::data::*; // because everyone will need to specify Data for the generic parameters
@@ -23,8 +25,12 @@ pub enum BasicTree<D : ?Sized + Data, T=()> {
 use BasicTree::*;
 
 impl<D : Data, T> BasicTree<D, T> {
+	pub fn new() -> Self {
+		Empty
+	}
+
 	/// Constructs a new non-empty tree from a node.
-	pub fn new(node : BasicNode<D, T>) -> BasicTree<D, T> {
+	pub fn from_node(node : BasicNode<D, T>) -> Self {
 		Root(Box::new(node))
 	}
 

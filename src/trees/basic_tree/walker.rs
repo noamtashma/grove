@@ -241,7 +241,7 @@ impl<'a, D : Data, T> BasicWalker<'a, D, T> {
 	pub fn insert_with_alg_data(&mut self, value : D::Value, alg_data : T) -> Option<()> {
 		match *self.tel {
 			Empty => {
-				*self.tel = BasicTree::new(BasicNode::new_alg(value, alg_data));
+				*self.tel = BasicTree::from_node(BasicNode::new_alg(value, alg_data));
 				Some(())
 			},
 			_ => None,

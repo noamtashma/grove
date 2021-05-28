@@ -165,7 +165,7 @@ pub fn build<D : Data, I>(mut iter : I) -> BasicTree<D> where
                 let mut prev_node = stack.pop().unwrap();
                 prev_node.right = tree;
                 prev_node.rebuild();
-                tree = BasicTree::new(prev_node);
+                tree = BasicTree::from_node(prev_node);
             }
             else {
                 let mut node = BasicNode::new(val);
@@ -181,7 +181,7 @@ pub fn build<D : Data, I>(mut iter : I) -> BasicTree<D> where
     for mut prev_node in stack.into_iter().rev() {
         prev_node.right = tree;
         prev_node.rebuild();
-        tree = BasicTree::new(prev_node);
+        tree = BasicTree::from_node(prev_node);
     }
     tree
 }

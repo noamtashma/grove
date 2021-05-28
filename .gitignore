@@ -1,3 +1,5 @@
 /target
-*.in
-*.out
+pyramid_base_test_files/*
+.idea*
+.vscode*
+Cargo.lock

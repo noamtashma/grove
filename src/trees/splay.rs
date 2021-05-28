@@ -30,7 +30,7 @@ use super::basic_tree::*;
 use crate::locators;
 
 
-
+#[derive(destructure)]
 pub struct SplayTree<D : Data> {
     tree : BasicTree<D>,
 }
@@ -42,7 +42,7 @@ impl<D : Data> SplayTree<D> {
     }
 
     pub fn into_inner(self) -> BasicTree<D> {
-        self.tree
+        self.destructure().0
     }
 
     pub fn new() -> SplayTree<D> {
@@ -101,6 +101,14 @@ impl<D : Data> SplayTree<D> {
 impl<D : Data> std::default::Default for SplayTree<D> {
     fn default() -> Self {
         SplayTree::new()
+    }
+}
+
+/// Deallocating a large splay tree can cause a stack overflow, since the tree might be unbalanced.
+/// Therefore we have a non-recursive deallocator.
+impl<D : Data> Drop for SplayTree<D> {
+    fn drop(&mut self) {
+        basic_tree::deallocate_nonrecursive(&mut self.tree);
     }
 }
 
