@@ -35,7 +35,6 @@ pub trait SomeTree<D : Data> :
     fn act_segment<L>(&mut self, action : D::Action, locator : L) where
         L : locators::Locator<D>;
 
-    // TODO: write a specific instantiation for splay that avoids complexity problems.
     /// Returns a value representing a specific subsegment of the tree. This gives a nicer
     /// Interface for tree operations: `tree.slice(3..50).act(action)` instead of
     /// `tree.act_segment(3..50, action)`. see [`slice::Slice`].

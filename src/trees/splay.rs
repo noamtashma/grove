@@ -63,27 +63,38 @@ impl<D : Data> SplayTree<D> {
     pub fn isolate_segment<'a, L>(&'a mut self, locator : L) -> SplayWalker<'a, D> where
         L : crate::Locator<D>
     {
+        if self.is_empty() { return self.walker() }
 
         let left_edge = locators::LeftEdgeOf(locator.clone());
         // reborrows the tree for a shorter time
-        let mut walker = methods::search(&mut *self, left_edge);
-        // walker.splay() // to ensure complexity guarantees
-        let b1 = methods::previous_filled(&mut walker).is_ok();
-        // walker.splay(); already happens because of the drop
+        let mut walker = self.slice(left_edge).search();
+        let b1 = walker.previous_filled().is_ok();
         drop(walker); // must drop here so that the next call to search can happen
 
+        // if we previously splayed a node, work only below it, in order to not move it
+        // when splaying
+        let (left_summary, helper_tree) = if b1 {
+            (self.left_subtree_summary().unwrap() + self.node_summary(), &mut self.tree.node_mut().unwrap().right)
+        } else {
+            (Default::default(), &mut self.tree)
+        };
         let right_edge = locators::RightEdgeOf(locator);
-        let mut walker2 = methods::search(&mut *self, right_edge);
-        let b2 = methods::next_filled(&mut walker2).is_ok();
+        let mut walker2 = SplayWalker {
+            walker : BasicWalker::new_with_context(helper_tree, left_summary, Default::default())
+        };
+        methods::search_walker(&mut walker2, right_edge);
+        let b2 = walker2.next_filled().is_ok();
+        walker2.splay(); drop(left_summary);
+        drop(walker2);
+        let mut walker3 = self.walker();
+        if b1 {
+            walker3.go_right().unwrap();
+        }
         if b2 {
-            walker2.splay_to_depth( if b1 {1} else {0});
-            walker2.go_left().unwrap();
-        } else if b1 {
-            // currently at the root.
-            walker2.go_right().unwrap();
+            walker3.go_left().unwrap();
         }
 
-        walker2
+        walker3
     }
 }
 
@@ -127,7 +138,7 @@ impl<'a, D : Data> SplayWalker<'a, D> {
     /// If at the root, do nothing.
     /// otherwise, do a single splay step upwards.
     /// If empty, go up once and return.
-
+    ///
     /// Amortized complexity of splay steps:
     /// The amortized cost of any splay step, except the zig step near the root, is at most
     /// `log(new_node.size) - log(old_node.size) - 1`
@@ -218,6 +229,69 @@ impl<'a, D : Data> SplayWalker<'a, D> {
             self.splay_step_depth(depth);
         }
     }
+
+    /// Finds the previous filled node.
+    /// If there isn't any, moves to root and return Err(()).
+    pub fn previous_filled(&mut self) -> Result<(), ()> {
+        match self.walker.node() {
+            None => {
+            },
+            Some(node) => {
+                if !node.left.is_empty() { // the previous node is in this node's left subtree case
+                    self.go_left().unwrap();
+                    while let Ok(_) = self.go_right()
+                        {}
+                    let r = self.go_up();
+                    assert_eq!(r, Ok(false));
+                    return Ok(());
+                }
+            }
+        }
+
+        // the next filled node is this node's first left ancestor
+        let count = match self.walker.steps_until_sided_ancestor(false) {
+            None => { self.splay(); return Err(()) },
+            Some(count) => count,
+        };
+
+        let depth = self.depth();
+        // splay to just below the previous filled value
+        self.splay_to_depth(depth - count + 1);
+        let r = self.go_up();
+        assert_eq!(r, Ok(false));
+        return Ok(());
+    }
+
+    /// Finds the next filled node.
+    /// If there isn't any, moves to root and return Err(()).
+    pub fn next_filled(&mut self) -> Result<(), ()> {
+        match self.walker.node() {
+            None => {},
+            Some(node) => {
+                if !node.right.is_empty() { // the previous node is in this node's right subtree case
+                    self.go_right().unwrap();
+                    while let Ok(_) = self.go_left()
+                        {}
+                    let r = self.go_up();
+                    assert_eq!(r, Ok(true));
+                    return Ok(());
+                }
+            }
+        }
+        // return methods::next_filled(self);
+        // the next filled node is this node's first right ancestor
+        let count = match self.walker.steps_until_sided_ancestor(true) {
+            None => { self.splay(); return Err(()) },
+            Some(count) => count,
+        };
+
+        let depth = self.depth();
+        // splay to just below the previous filled value
+        self.splay_to_depth(depth - count + 1);
+        let r = self.go_up();
+        assert_eq!(r, Ok(true));
+        return Ok(());
+    }
 }
 
 impl<'a, D : Data> Drop for SplayWalker<'a, D> {
@@ -242,6 +316,7 @@ impl<D : Data> SomeTree<D> for SplayTree<D> {
 
     type TreeData = ();
     fn iter_locator<'a, L : locators::Locator<D>>(&'a mut self, locator : L) -> basic_tree::iterators::ImmIterator<'a, D, L> {
+        self.isolate_segment(locator.clone());
 		iterators::ImmIterator::new(&mut self.tree, locator)
 	}
 }

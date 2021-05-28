@@ -287,6 +287,22 @@ impl<'a, D : Data, T> BasicWalker<'a, D, T> {
 		}
 		Some((node.node_value, node.alg_data))
     }
+
+	/// Returns how many times you need to go up in order to be a child of side `side`.
+	/// i.e, if `side == true`, it returns `1` if the current node is a left child.
+	/// If it is a right child, but its parent is a left child, it returns `2`.
+	/// And so on.
+	/// If there isn't any, returns `None`.
+	pub fn steps_until_sided_ancestor(&self, side : bool) -> Option<usize> {
+		let mut res = 0;
+		for s in self.is_left.iter().rev() {
+			res += 1;
+			if *s == side {
+				return Some(res);
+			}
+		}
+		return None;
+	}
 }
 
 /// This implementation exists in order to rebuild the nodes
