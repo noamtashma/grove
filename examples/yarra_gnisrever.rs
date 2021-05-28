@@ -134,7 +134,7 @@ fn search_split<TR : SplittableTreeRef<RevData>>(tree : TR, index : usize) -> TR
     walker.split_right().unwrap()
 }
 
-fn yarra<'a,T : ConcatenableTree<RevData>>(n : usize, k : usize) -> I where
+fn yarra<T : ConcatenableTree<RevData>>(n : usize, k : usize) -> I where
     for<'b> &'b mut T : SplittableTreeRef<RevData, T=T>,
 {
     let inter = Interval {start : 0, end : (n-1) as I};

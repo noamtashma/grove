@@ -232,9 +232,10 @@ fn search_split<TR : ModifiableTreeRef<MyData>>(tree : TR, index : usize)
     }
 }
 
-
 /// solves the pyramid_base problem
-fn solve(m : usize, n : usize, budget : I, obstacles : Vec<Obstacle>) -> usize {
+fn solve<T : SomeTree<MyData>>(m : usize, n : usize, budget : I, obstacles : Vec<Obstacle>) -> usize where
+    for<'b> &'b mut T : ModifiableTreeRef<MyData>,
+{
     let (mut opening_edges, mut closing_edges) : (Vec<Edge>, Vec<Edge>) 
         = obstacles.iter().map(|x| x.edges()).unzip();
 
@@ -250,7 +251,7 @@ fn solve(m : usize, n : usize, budget : I, obstacles : Vec<Obstacle>) -> usize {
 
         // this is the specific size, because squares with a large `x` coordinate
         // correspond after enlarging to pyramids that go out of the positive boundary
-        let mut tree : Treap<MyData>
+        let mut tree : T
             = vec![Segment { size : m + 1 - k , val : 0 }].into_iter().collect();
 
         // the list of updates we do to our tree as we scan it from a lower `y` coordinate
@@ -316,9 +317,10 @@ fn solve(m : usize, n : usize, budget : I, obstacles : Vec<Obstacle>) -> usize {
 }
 
 ///////////////////////////////////////////// input handling ////////////////////////////////////////////
-
 // runs the solution on a given input
-fn run_from<R: Read>(io: R) -> usize {
+fn run_from<R: Read, T : SomeTree<MyData>>(io: R) -> usize where
+    for<'b> &'b mut T : ModifiableTreeRef<MyData>,
+{
     let br = BufReader::new(io);
     
     let mut words_iter = br.lines()
@@ -335,9 +337,6 @@ fn run_from<R: Read>(io: R) -> usize {
     let p = words_iter.next().unwrap();
     print!(" p={: <6}", p);
     std::io::Write::flush(&mut std::io::stdout()).unwrap();
-    if p > 17_000 { // skip the third test case
-        return 0;
-    }
     let mut obstacles = vec![];
     for _ in 0..p {
         let e = "format not met";
@@ -352,46 +351,17 @@ fn run_from<R: Read>(io: R) -> usize {
     }
     
     let start = Instant::now();
-    let res = solve(m as usize, n as usize, budget, obstacles);
+    let res = solve::<T>(m as usize, n as usize, budget, obstacles);
     let duration = Instant::now().duration_since(start);
     print!(" {: <12} ", format!("{:?}", duration));
     res
 }
 
-// run the tests in the test directory.
-// you need to manually put the tests in the folder.
-fn check_all_tests() -> Result<(), Error> {
-    let current_dir = std::path::PathBuf::from_str("../orchard/pyramid_base_test_files").unwrap();
-    println!(
-        "Testing files from {:?}:",
-        current_dir
-    );
-
-    for entry in fs::read_dir(current_dir.clone())? {
-        let entry = entry?;
-        let path = entry.path();
-
-        let (name, filetype) = if let Some(pair) =
-            path
-            .file_name()
-            .and_then(|x| x.to_str())
-            .and_then(|x| x.split_once('.'))
-        {
-            pair
-        } else { continue };
-
-        if filetype != "in" {
-            continue;
-        }
-        run_on_file(name)?;
-    }
-
-    Ok(())
-}
-
 // run the solution of a specific file,
 // and print some metadata
-fn run_on_file(name : &str) -> Result<(), Error> {
+fn run_on_file<T : SomeTree<MyData>>(name : &str) -> Result<(), Error> where
+    for<'b> &'b mut T : ModifiableTreeRef<MyData>,
+{
     let current_dir = std::path::PathBuf::from_str("../orchard/pyramid_base_test_files").unwrap();
     print!("testing {: >8}.in:", name);
     let mut file_path = current_dir.clone();
@@ -417,10 +387,58 @@ fn run_on_file(name : &str) -> Result<(), Error> {
     Ok(())
 }
 
+// run the tests in the test directory.
+// you need to manually put the tests in the folder.
+fn check_all_tests<T : SomeTree<MyData>>() -> Result<(), Error> where
+    for<'b> &'b mut T : ModifiableTreeRef<MyData>,
+{
+    let current_dir = std::path::PathBuf::from_str("../orchard/pyramid_base_test_files").unwrap();
+    println!(
+        "Testing files from {:?}:",
+        current_dir
+    );
+
+    // sort the filenames in order, by difficulty. specifically, ordering by the number first
+    // and then by file name lexicographic ordering turns out to be the correct ordering.
+    let filenames : Vec<String> = fs::read_dir(current_dir.clone())?.filter_map(|entry| {
+        let entry = entry.unwrap();
+        let path = entry.path();
+
+        let (filename, filetype) =
+            path
+            .file_name()?
+            .to_str()?
+            .split_once('.')?;
+
+        if filetype == "in" {
+            Some(String::from(filename))
+        } else {
+            None
+        }
+    }).sorted_by(|file1, file2| {
+            let num1 : i32 = file1.trim_matches(char::is_alphabetic).parse().unwrap();
+            let num2 : i32 = file2.trim_matches(char::is_alphabetic).parse().unwrap();
+            num1.cmp(&num2)
+            .then(file1.cmp(file2))
+        }
+    ).collect();
+
+    let start = Instant::now();
+    for filename in filenames {
+        run_on_file(&filename)?;
+    }
+    let duration = Instant::now().duration_since(start);
+    println!("done all files: {: <16} overall", format!("{:?}", duration));
+
+    Ok(())
+}
+
 fn main() -> Result<(), Error> {
-    check_all_tests()?;
-    //let res = run_from(File::open("../orchard/pyramid_base_test_files/pbs10a.in")?);
-    //let res = run_from(std::io::stdin());
-    //println!("{}", res);
+    check_all_tests::<Treap<_>>()?;
+    println!("done treap\n");
+    check_all_tests::<SplayTree<_>>()?;
+    println!("done splay\n");
+    check_all_tests::<AVLTree<_>>()?;
+    println!("done avl\n");
     Ok(())
 }
