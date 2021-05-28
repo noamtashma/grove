@@ -289,7 +289,7 @@ impl<'a, D : Data> SomeWalker<D> for AVLWalker<'a, D> {
         self.walker.go_right()
     }
 
-    fn go_up(&mut self) -> Result<bool, ()> {
+    fn go_up(&mut self) -> Result<Side, ()> {
         let res = self.walker.go_up()?;
 		self.inner_mut().rebuild_ranks();
 		Ok(res)
@@ -394,18 +394,18 @@ impl<'a, D : Data> AVLWalker<'a, D> {
 		self.walker.rot_right_with_custom_rebuilder(rebuilder)
 	}
 
-	fn rot_up(&mut self) -> Result<bool, ()> {
+	fn rot_up(&mut self) -> Result<Side, ()> {
 		let rebuilder = | node : &mut BasicNode<D, T> | {
 			node.rebuild_ranks();
 		};
 		self.walker.rot_up_with_custom_rebuilder(rebuilder)
 	}
 
-	fn rot_side(&mut self, b : bool) -> Option<()> {
+	fn rot_side(&mut self, side : Side) -> Option<()> {
 		let rebuilder = | node : &mut BasicNode<D, T> | {
 			node.rebuild_ranks();
 		};
-		self.walker.rot_side_with_custom_rebuilder(b, rebuilder)
+		self.walker.rot_side_with_custom_rebuilder(side, rebuilder)
 	}
 
 	/// This function gets called when a node is deleted or inserted,
@@ -428,7 +428,7 @@ impl<'a, D : Data> AVLWalker<'a, D> {
 						self.go_left().unwrap();
 						self.rot_left().unwrap(); // TODO
 						let res = self.rot_up();
-						assert!(res == Ok(true));
+						assert!(res == Ok(Side::Left));
 					}
 				},
 
@@ -441,7 +441,7 @@ impl<'a, D : Data> AVLWalker<'a, D> {
 						self.go_right().unwrap();
 						self.rot_right().unwrap();
 						let res = self.rot_up();
-						assert!(res == Ok(false));
+						assert!(res == Ok(Side::Right));
 					}
 				},
 
@@ -492,7 +492,7 @@ impl<'a, D : Data> ModifiableWalker<D> for AVLWalker<'a, D> {
 			let mut walker = node.right.walker();
 			while let Ok(_) = walker.go_left()
 				{}
-			let res = walker.go_up(); assert_eq!(res, Ok(true));
+			let res = walker.go_up(); assert_eq!(res, Ok(Side::Left));
 
 			let mut boxed_replacement_node = walker.take_subtree().into_node_boxed().unwrap();
 			assert!(boxed_replacement_node.left.is_empty());
@@ -541,12 +541,15 @@ impl<'a, D : Data> SplittableWalker<D> for AVLWalker<'a, D> {
 
 		while let Ok(side) = self.go_up() {
 			let node = self.walker.take_subtree().into_node().unwrap();
-			if side {
-				assert!(node.left.is_empty());
-				right.concatenate_middle_right(node.node_value, AVLTree { tree : node.right } );
-			} else {
-				assert!(node.right.is_empty());
-				left.concatenate_middle_left(AVLTree { tree : node.left }, node.node_value);
+			match side {
+				Side::Left => {
+					assert!(node.left.is_empty());
+					right.concatenate_middle_right(node.node_value, AVLTree { tree : node.right } );
+				},
+				Side::Right => {
+					assert!(node.right.is_empty());
+					left.concatenate_middle_left(AVLTree { tree : node.left }, node.node_value);
+				},
 			}
 		}
 

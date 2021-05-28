@@ -165,15 +165,15 @@ impl<'a, D : Data> SplayWalker<'a, D> {
         };
 
         let b2 = match self.walker.is_left_son() {
-            None => { self.walker.rot_side(!b1).unwrap(); return }, // became the root - zig step
+            None => { self.walker.rot_side(b1.flip()).unwrap(); return }, // became the root - zig step
             Some(b2) => b2,
         };
 
         if b1 == b2 { // zig-zig case
             self.walker.rot_up().unwrap();
-            self.walker.rot_side(!b1).unwrap();
+            self.walker.rot_side(b1.flip()).unwrap();
         } else { // zig-zag case
-            self.walker.rot_side(!b1).unwrap();
+            self.walker.rot_side(b1.flip()).unwrap();
             self.walker.rot_up().unwrap();
         }
     }
@@ -198,7 +198,7 @@ impl<'a, D : Data> SplayWalker<'a, D> {
         };
 
         if self.depth() <= depth { // zig case
-            self.walker.rot_side(!b1).unwrap();
+            self.walker.rot_side(b1.flip()).unwrap();
             return;
         } 
         else {
@@ -209,9 +209,9 @@ impl<'a, D : Data> SplayWalker<'a, D> {
             
             if b1 == b2 { // zig-zig case
                 self.walker.rot_up().unwrap();
-                self.walker.rot_side(!b1).unwrap();
+                self.walker.rot_side(b1.flip()).unwrap();
             } else { // zig-zag case
-                self.walker.rot_side(!b1).unwrap();
+                self.walker.rot_side(b1.flip()).unwrap();
                 self.walker.rot_up().unwrap();
             }
         }
@@ -250,14 +250,14 @@ impl<'a, D : Data> SplayWalker<'a, D> {
                     while let Ok(_) = self.go_right()
                         {}
                     let r = self.go_up();
-                    assert_eq!(r, Ok(false));
+                    assert_eq!(r, Ok(Side::Right));
                     return Ok(());
                 }
             }
         }
 
         // the next filled node is this node's first left ancestor
-        let count = match self.walker.steps_until_sided_ancestor(false) {
+        let count = match self.walker.steps_until_sided_ancestor(Side::Right) {
             None => { self.splay(); return Err(()) },
             Some(count) => count,
         };
@@ -266,7 +266,7 @@ impl<'a, D : Data> SplayWalker<'a, D> {
         // splay to just below the previous filled value
         self.splay_to_depth(depth - count + 1);
         let r = self.go_up();
-        assert_eq!(r, Ok(false));
+        assert_eq!(r, Ok(Side::Right));
         return Ok(());
     }
 
@@ -281,14 +281,14 @@ impl<'a, D : Data> SplayWalker<'a, D> {
                     while let Ok(_) = self.go_left()
                         {}
                     let r = self.go_up();
-                    assert_eq!(r, Ok(true));
+                    assert_eq!(r, Ok(Side::Left));
                     return Ok(());
                 }
             }
         }
         // return methods::next_filled(self);
         // the next filled node is this node's first right ancestor
-        let count = match self.walker.steps_until_sided_ancestor(true) {
+        let count = match self.walker.steps_until_sided_ancestor(Side::Left) {
             None => { self.splay(); return Err(()) },
             Some(count) => count,
         };
@@ -297,7 +297,7 @@ impl<'a, D : Data> SplayWalker<'a, D> {
         // splay to just below the previous filled value
         self.splay_to_depth(depth - count + 1);
         let r = self.go_up();
-        assert_eq!(r, Ok(true));
+        assert_eq!(r, Ok(Side::Left));
         return Ok(());
     }
 }
@@ -407,7 +407,7 @@ impl<'a, D : Data> SomeWalker<D> for SplayWalker<'a, D> {
     /// If already at the root of the tree, returns `Err(())`.
     /// You shouldn't use this method too much, or you might lose the
     /// SplayTree's complexity properties - see documentation aboud splay tree.
-    fn go_up(&mut self) -> Result<bool, ()> {
+    fn go_up(&mut self) -> Result<Side, ()> {
         self.walker.go_up()
     }
 
@@ -497,7 +497,7 @@ impl<'a, D : Data> ModifiableWalker<D> for SplayWalker<'a, D> {
 			let mut walker = node.right.walker();
 			while let Ok(_) = walker.go_left()
 				{}
-            let res = walker.go_up(); assert_eq!(res, Ok(true));
+            let res = walker.go_up(); assert_eq!(res, Ok(Side::Left));
 
 			let mut boxed_replacement_node = walker.take_subtree().into_node_boxed().unwrap();
 			assert!(boxed_replacement_node.left.is_empty());
@@ -540,8 +540,8 @@ impl<D : Data> ConcatenableTree<D> for SplayTree<D> {
                 *self = other;
                 return;
             },
-            Ok(false) => (),
-            Ok(true) => unreachable!(),
+            Ok(Side::Right) => (),
+            Ok(Side::Left) => unreachable!(),
         };
         walker.splay();
         let node = walker.inner_mut().node_mut().unwrap();
@@ -583,7 +583,7 @@ impl<'a, D : Data> SplittableWalker<D> for SplayWalker<'a, D> {
         if !self.is_empty() { return None }
         
         // to know which side we should cut
-        let b = match self.go_up() {
+        let side = match self.go_up() {
             Err(()) => { return Some(SplayTree::new()) }, // this is the empty tree
             Ok(b) => b,
         };
@@ -592,15 +592,18 @@ impl<'a, D : Data> SplittableWalker<D> for SplayWalker<'a, D> {
             Some(node) => node,
             _ => panic!(),
         };
-        if b {
-            let mut tree = std::mem::replace(&mut node.left, BasicTree::Empty);
-            node.rebuild();
-            std::mem::swap(self.inner_mut(), &mut tree);
-            return Some(SplayTree{ tree });
-        } else {
-            let tree = std::mem::replace(&mut node.right, BasicTree::Empty);
-            node.rebuild();
-            return Some(SplayTree { tree });
+        match side {
+            Side::Left => {
+                let mut tree = std::mem::replace(&mut node.left, BasicTree::Empty);
+                node.rebuild();
+                std::mem::swap(self.inner_mut(), &mut tree);
+                return Some(SplayTree{ tree });
+            }
+            Side::Right => {
+                let tree = std::mem::replace(&mut node.right, BasicTree::Empty);
+                node.rebuild();
+                return Some(SplayTree { tree });
+            },
         }
     }
 

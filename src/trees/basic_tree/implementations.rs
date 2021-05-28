@@ -67,7 +67,7 @@ impl<'a, D : Data, T> SomeWalker<D> for BasicWalker<'a, D, T> {
 		);
 		// push side information
 		if res.is_ok() {
-			self.is_left.push(true); // went left
+			self.is_left.push(Side::Left); // went left
 			self.vals.push(frame);
 		}
 		return res;
@@ -87,13 +87,13 @@ impl<'a, D : Data, T> SomeWalker<D> for BasicWalker<'a, D, T> {
 		);
 		// push side information
 		if res.is_ok() {
-			self.is_left.push(false); // went right
+			self.is_left.push(Side::Right); // went right
 			self.vals.push(frame);
 		}
 		return res;
 	}
 
-	fn go_up(&mut self) -> Result<bool, ()> {
+	fn go_up(&mut self) -> Result<Side, ()> {
 		match self.is_left.pop() {
 			None => Err(()),
 			Some(b) => { 

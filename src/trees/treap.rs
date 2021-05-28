@@ -240,7 +240,7 @@ impl<'a, D : Data> SomeWalker<D> for TreapWalker<'a, D> {
         self.walker.go_right()
     }
 
-    fn go_up(&mut self) -> Result<bool, ()> {
+    fn go_up(&mut self) -> Result<Side, ()> {
         self.walker.go_up()
     }
 
@@ -323,25 +323,23 @@ impl<'a, D : Data> ModifiableWalker<D> for TreapWalker<'a, D> {
         let priority : T = rand::random();
         let mut temp = BasicTree::Empty;
         // in the first round, this value is irrelevent. choosing this will skip the first if.
-        let mut prev_side = self.walker.is_left_son().unwrap_or(false);
+        let mut prev_side = self.walker.is_left_son().unwrap_or(Side::Right);
         while let Ok(side) = self.go_up() {
             if self.priority().unwrap() > priority {
                 // move to the position in which the node should be inserted
                 // then break. insertion happens after the break outside the loop.
-                if side == true {
-                    self.walker.go_left().unwrap();
-                } else {
-                    self.walker.go_right().unwrap();
-                };
+                match side {
+                    Side::Left => self.walker.go_left().unwrap(),
+                    Side::Right => self.walker.go_right().unwrap(),
+                }
                 break;
             }
             if self.priority().unwrap() == priority { eprintln!("found equal priorities") }
             if prev_side != side {
                 let node = self.walker.node_mut().unwrap();
-                let son = if side == true {
-                    &mut node.left
-                } else {
-                    &mut node.right
+                let son = match side {
+                    Side::Left => &mut node.left,
+                    Side::Right => &mut node.right,
                 };
                 std::mem::swap(&mut temp, son);
             }
@@ -352,12 +350,15 @@ impl<'a, D : Data> ModifiableWalker<D> for TreapWalker<'a, D> {
         // insert the new node, at the current position.
         let mut new : BasicNode<D,_> = BasicNode::new_alg(val, priority);
         
-        if prev_side == true {
-            new.left = temp;
-            new.right = std::mem::replace(self.walker.inner_mut(), BasicTree::Empty);
-        } else {
-            new.right = temp;
-            new.left = std::mem::replace(self.walker.inner_mut(), BasicTree::Empty);
+        match prev_side {
+                Side::Left => {
+                new.left = temp;
+                new.right = std::mem::replace(self.walker.inner_mut(), BasicTree::Empty);
+            },
+            Side::Right => {
+                new.right = temp;
+                new.left = std::mem::replace(self.walker.inner_mut(), BasicTree::Empty);
+            },
         }
         new.rebuild();
         *self.walker.inner_mut() = BasicTree::from_node(new);
@@ -531,15 +532,14 @@ impl<'a, D : Data> SplittableWalker<D> for TreapWalker<'a, D> {
         
         let mut temp = BasicTree::Empty;
         // in the first round, this value is irrelevent. choosing this will skip the first if.
-        let mut prev_side = self.walker.is_left_son().unwrap_or(false);
+        let mut prev_side = self.walker.is_left_son().unwrap_or(Side::Right);
         
         while let Ok(side) = self.go_up() {
             if prev_side != side {
                 let node = self.walker.node_mut().unwrap();
-                let son = if side == true {
-                    &mut node.left
-                } else {
-                    &mut node.right
+                let son = match side {
+                    Side::Left => &mut node.left,
+                    Side::Right => &mut node.right,
                 };
                 std::mem::swap(&mut temp, son);
                 node.rebuild();
@@ -547,7 +547,7 @@ impl<'a, D : Data> SplittableWalker<D> for TreapWalker<'a, D> {
             prev_side = side;
         }
 
-        if prev_side == true {
+        if prev_side == Side::Left {
             std::mem::swap(self.walker.inner_mut(), &mut temp);
         }
         Some(Treap {tree : temp})

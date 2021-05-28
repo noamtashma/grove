@@ -56,7 +56,7 @@ pub struct BasicWalker<'a, D : Data, T=()> {
 	/// is its left son or the right son. (true corresponds to the left son).
 	/// This array is always one shorter than [`BasicWalker::tel`] and [`BasicWalker::vals`],
 	/// because the last node has no son in the walker.
-	pub(super) is_left : Vec<bool>,
+	pub(super) is_left : Vec<Side>,
 }
 
 impl<'a, D : Data, T> BasicWalker<'a, D, T> {
@@ -89,10 +89,10 @@ impl<'a, D : Data, T> BasicWalker<'a, D, T> {
 		self.is_left.is_empty()
 	}
 
-	/// If the current position is the left son of a node, returns [`Some(true)`].
-	/// If the current position is the right son of a node, returns [`Some(false)`].
+	/// If the current position is the left son of a node, returns [`Some(Left)`].
+	/// If the current position is the right son of a node, returns [`Some(Right)`].
 	/// If at the root, returns [`None`].
-	pub fn is_left_son(&self) -> Option<bool> {
+	pub fn is_left_son(&self) -> Option<Side> {
 		self.is_left.last().cloned()
 	}
 
@@ -188,41 +188,39 @@ impl<'a, D : Data, T> BasicWalker<'a, D, T> {
 		Some(())
 	}
 
-	/// Performs rot_left if b is true
+	/// Performs rot_left if `side` is [`Side::Left`]
 	/// rot_right otherwise
-	pub fn rot_side(&mut self, b : bool) -> Option<()> {
-		if b {
-			self.rot_left()
-		} else {
-			self.rot_right()
+	pub fn rot_side(&mut self, side : Side) -> Option<()> {
+		match side {
+			Side::Left => self.rot_left(),
+			Side::Right => self.rot_right(),
 		}
 	}
 
 	/// Performs rot_left if b is true
 	/// rot_right otherwise
-	pub fn rot_side_with_custom_rebuilder<F : FnMut(&mut BasicNode<D, T>)>(&mut self, b : bool, rebuilder : F) -> Option<()> {
-		if b {
-			self.rot_left_with_custom_rebuilder(rebuilder)
-		} else {
-			self.rot_right_with_custom_rebuilder(rebuilder)
+	pub fn rot_side_with_custom_rebuilder<F : FnMut(&mut BasicNode<D, T>)>(&mut self, side : Side, rebuilder : F) -> Option<()> {
+		match side {
+			Side::Left => self.rot_left_with_custom_rebuilder(rebuilder),
+			Side::Right => self.rot_right_with_custom_rebuilder(rebuilder),
 		}
 	}
 
 	/// Rotates so that the current node moves up.
 	/// Basically moves up and then calls rot_side.
 	/// Fails if the current node is the root.
-	pub fn rot_up(&mut self) -> Result<bool, ()> {
+	pub fn rot_up(&mut self) -> Result<Side, ()> {
 		let b = self.go_up()?;
-		self.rot_side(!b).expect("original node went missing?");
+		self.rot_side(b.flip()).expect("original node went missing?");
 		Ok(b)
 	}
 
 	/// Rotates so that the current node moves up.
 	/// Basically moves up and then calls rot_side.
 	/// Fails if the current node is the root.
-	pub fn rot_up_with_custom_rebuilder<F : FnMut(&mut BasicNode<D, T>)>(&mut self, rebuilder : F) -> Result<bool, ()> {
+	pub fn rot_up_with_custom_rebuilder<F : FnMut(&mut BasicNode<D, T>)>(&mut self, rebuilder : F) -> Result<Side, ()> {
 		let b = self.go_up()?;
-		self.rot_side_with_custom_rebuilder::<F>(!b, rebuilder).expect("original node went missing?");
+		self.rot_side_with_custom_rebuilder::<F>(b.flip(), rebuilder).expect("original node went missing?");
 		Ok(b)
 	}
 
@@ -273,7 +271,7 @@ impl<'a, D : Data, T> BasicWalker<'a, D, T> {
 			let mut walker = node.right.walker();
 			while let Ok(_) = walker.go_left()
 				{}
-			let res = walker.go_up(); assert_eq!(res, Ok(true));
+			let res = walker.go_up(); assert_eq!(res, Ok(Side::Left));
 
 			let mut boxed_replacement_node = walker.take_subtree().into_node_boxed().unwrap();
 			assert!(boxed_replacement_node.left.is_empty());
@@ -289,11 +287,11 @@ impl<'a, D : Data, T> BasicWalker<'a, D, T> {
     }
 
 	/// Returns how many times you need to go up in order to be a child of side `side`.
-	/// i.e, if `side == true`, it returns `1` if the current node is a left child.
+	/// i.e, if `side == Left`, it returns `1` if the current node is a left child.
 	/// If it is a right child, but its parent is a left child, it returns `2`.
 	/// And so on.
 	/// If there isn't any, returns `None`.
-	pub fn steps_until_sided_ancestor(&self, side : bool) -> Option<usize> {
+	pub fn steps_until_sided_ancestor(&self, side : Side) -> Option<usize> {
 		let mut res = 0;
 		for s in self.is_left.iter().rev() {
 			res += 1;

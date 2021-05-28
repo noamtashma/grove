@@ -45,8 +45,8 @@ pub fn next_filled<W : SomeWalker<A>, A : Data>(walker : &mut W) -> Result<(), (
     }
     loop {
         match walker.go_up() {
-            Ok(true) => break,
-            Ok(false) => (),
+            Ok(Side::Left) => break,
+            Ok(Side::Right) => (),
             Err(_) => return Err(()), // there was no next node
         }
     }
@@ -62,8 +62,8 @@ pub fn previous_filled<W : SomeWalker<A>, A : Data>(walker : &mut W) -> Result<(
     }
     loop {
         match walker.go_up() {
-            Ok(false) => break,
-            Ok(true) => (),
+            Ok(Side::Right) => break,
+            Ok(Side::Left) => (),
             Err(_) => return Err(()), // there was no next node
         }
     }

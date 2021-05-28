@@ -19,6 +19,22 @@ pub mod slice;
 use crate::data::*;
 use crate::locators;
 
+/// Used to specify sidedness
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum Side {
+    Left,
+    Right,
+}
+
+impl Side {
+    pub fn flip(self) -> Self {
+        match self {
+            Side::Left => Self::Right,
+            Side::Right => Self::Left,
+        }
+    }
+}
+
 /// This trait is the top-level trait that the different trees implement.
 /// Every tree that implements this trait can be used directly by the functions
 /// immediately in this trait.
@@ -106,7 +122,7 @@ pub trait SomeWalker<D : Data> : SomeEntry<D> {
 
     /// If successful, returns whether or not the previous current value was the left son.
     /// If already at the root of the tree, returns `Err(())`.
-    fn go_up(&mut self) -> Result<bool, ()>;
+    fn go_up(&mut self) -> Result<Side, ()>;
 
     /// Goes to the root.
     /// May restructure the tree while doing so. For example, in splay trees,
