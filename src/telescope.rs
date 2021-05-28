@@ -5,7 +5,7 @@ use void::ResultVoidExt;
 
 // TODO: switch to `NonNull` when rust 1.53 arrives.
 /// A Telescope
-/// This struct is used to allow recursively reborrow mutable references in a dynamic
+/// This struct is used to allow recursively reborrowing mutable references in a dynamic
 /// but safe way.
 pub struct Telescope<'a, T : ?Sized> {
 	head : *mut T,
@@ -29,11 +29,6 @@ impl<'a, T : ?Sized> Telescope<'a, T> {
 	pub fn size(&self) -> usize {
 		self.vec.len() + 1
 	}
-
-	// possible extention: using a special trait, create a version of `extend`
-	// that accepts function of the sort
-	// `for<'b> where 'a : 'b, fn(&'b mut T) -> &'b mut T`
-	// which is syntactically impossible to type.
 
 	/// This function extends the telescope one time. That meaans, if the latest layer
 	/// of the telescope is a reference `ref`, then this call extends the telescope
@@ -63,7 +58,6 @@ impl<'a, T : ?Sized> Telescope<'a, T> {
 	///
 	/// But that would invalidate the whole point of using the telescope - You couldn't extend
 	/// more than once, and it couldn't be any better than a regular mutable reference.
-	///
 	pub fn extend<F : for<'b> FnOnce(&'b mut T) -> &'b mut T>(&mut self, func : F) {
 		self.extend_result(|r| Ok(func(r))).void_unwrap()
 	}
@@ -77,13 +71,15 @@ impl<'a, T : ?Sized> Telescope<'a, T> {
 
 	/// Same as [`Self::extend`], but allows the function to return an error value,
 	/// and also tells the inner function that `'a : 'b` using a phantom argument.
-	pub fn extend_result_precise<'x, E, F>(&mut self, func : F) -> Result<(),E> where
-		F : 'x + for<'b> FnOnce(&'b mut T, PhantomData<&'b &'a ()>) -> Result<&'b mut T, E>
+	pub fn extend_result_precise<E, F>(&mut self, func : F) -> Result<(),E> where
+		F : for<'b> FnOnce(&'b mut T, PhantomData<&'b &'a ()>) -> Result<&'b mut T, E>
 	{
 		// The compiler has to be told explicitly that the lifetime is `'a`.
+		// Otherwise the lifetime is left unconstrained.
 		// It probably doesn't matter much in practice, since we specifically require `func` to be able to work
 		// with any lifetime, and the references are converted to pointers immediately.
-		// however, that is the correct lifetime.
+		// However, that is the "most correct" lifetime - its actual lifetime may be anything up to `'a`,
+		// depending on whether the user will pop it earlier than that.
 		let head_ref : &'a mut T = unsafe {
 			self.head.as_mut()
 		}.expect(NULL_POINTER_ERROR);
@@ -96,16 +92,55 @@ impl<'a, T : ?Sized> Telescope<'a, T> {
 			Err(e) => Err(e),
 		}
 	}
+
+	/// This function maps the top of the telescope. It's similar to [`Self::extend`], but
+	/// it doesn't keep the previous reference. See [`Self::extend`] for more details.
+	pub fn map<F : for<'b> FnOnce(&'b mut T) -> &'b mut T>(&mut self, func : F) {
+		self.map_result(|r| Ok(func(r))).void_unwrap()
+	}
+
+	/// Same as [`Self::map`], but allows the function to return an error value.
+	pub fn map_result<E, F>(&mut self, func : F) -> Result<(),E> where
+		F : for<'b> FnOnce(&'b mut T) -> Result<&'b mut T, E>
+	{
+		self.map_result_precise(|r, _| func(r))
+	}
+
+	/// Same as [`Self::map`], but allows the function to return an error value,
+	/// and also tells the inner function that `'a : 'b` using a phantom argument.
+	pub fn map_result_precise<E, F>(&mut self, func : F) -> Result<(),E> where
+		F : for<'b> FnOnce(&'b mut T, PhantomData<&'b &'a ()>) -> Result<&'b mut T, E>
+	{
+		// The compiler has to be told explicitly that the lifetime is `'a`.
+		// Otherwise the lifetime is left unconstrained.
+		// It probably doesn't matter much in practice, since we specifically require `func` to be able to work
+		// with any lifetime, and the references are converted to pointers immediately.
+		// However, that is the "most correct" lifetime - its actual lifetime may be anything up to `'a`,
+		// depending on whether the user will pop it earlier than that.
+		let head_ref : &'a mut T = unsafe {
+			self.head.as_mut()
+		}.expect(NULL_POINTER_ERROR);
+
+		match func(head_ref, PhantomData) {
+			Ok(p) => {
+				self.head = p as *mut T;
+				Ok(())
+			}
+			Err(e) => Err(e),
+		}
+	}
 	
-	/// Push another reference, unrelated to the current one.
+	/// Push another reference to the telescope, unrelated to the current one.
 	/// `tel.push(ref)` is morally equivalent to `tel.extend_result_precise(move |_, _| { Ok(ref) })`.
 	/// However, you might have some trouble making the anonymous function conform to the
 	/// right type.
-	pub fn push<'x>(&'x mut self, r : &'a mut T) {
+	pub fn push(&mut self, r : &'a mut T) {
 		self.vec.push(self.head);
 		self.head = r as *mut T;
 
 		/* alternative definition using a call to `self.extend_result_precise`.
+		// in order to name 'x, replace the signature with:
+		// pub fn push<'x>(&'x mut self, r : &'a mut T) {
 		// this is used in order to tell the closure to conform to the right type
 		fn helper<'a,'x, T : ?Sized, F> (f : F) -> F where
 				F : for<'b> FnOnce(&'b mut T, PhantomData<&'b &'a ()>)
@@ -133,11 +168,25 @@ impl<'a, T : ?Sized> Telescope<'a, T> {
 	/// Discards the telescope and returns the last reference.
 	/// The difference between this and using [`Self::pop`] are:
 	/// * This will consume the telescope
-	/// * [`Self::pop`] will never pop the first original reference. [`Self::into_ref`] will.
+	/// * [`Self::pop`] will never pop the first original reference, because that would produce an
+	///   invalid telescope. [`Self::into_ref`] will.
 	pub fn into_ref(self) -> &'a mut T {
 		unsafe {
 			self.head.as_mut()
 		}.expect(NULL_POINTER_ERROR)
+	}
+
+	/// Gets the [`std::ptr::NonNull`] pointer that is i'th from the top of the telescope.
+	/// The intended usage is for using the pointers as the inputs to `ptr_eq`.
+	/// However, using the pointers themselves (which requires `unsafe`) will almost definitely
+	/// break rust's guarantees.
+	pub fn get_nonnull(&self, i : usize) -> std::ptr::NonNull<T> {
+		let ptr = if i == 0 {
+			self.head
+		} else {
+			self.vec[self.vec.len() - i]
+		};
+		std::ptr::NonNull::new(ptr).expect(NULL_POINTER_ERROR)
 	}
 }
 
