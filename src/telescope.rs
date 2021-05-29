@@ -1,3 +1,82 @@
+//! Telescope
+//! This module provides a way to dynamically walk on recursive structures safely.
+//!
+//! Say we have a recursive linked list structure:
+//!```
+//!enum List<T> {
+//!    Root(Box<Node<T>>),
+//!    Empty,
+//!}
+//!struct Node<T> {
+//!    value: T,
+//!    next: List<T>,
+//!}
+//!```
+//! Then we can wrap the telescope in a struct allowing us to walk up and down
+//! our list:
+//!```
+//! # enum List<T> {
+//! # Root(Box<Node<T>>),
+//! # Empty,
+//! # }
+//! # struct Node<T> {
+//! # value: T,
+//! # next: List<T>,
+//! # }
+//! use orchard::telescope::*;
+//! struct Walker<'a, T> {
+//!     tel : Telescope<'a, List<T>>
+//! }
+//! impl<'a, T> Walker<'a, T> {
+//!     pub fn new(list: &'a mut List<T>) -> Self {
+//!         Walker {
+//!             tel : Telescope::new(list)
+//!         }
+//!     }
+//!
+//!     /// Returns `None` when at the tail end of the list
+//!     pub fn next(&mut self) -> Option<()> {
+//!         self.tel.extend_result(|current| match current {
+//!             List::Empty => Err(()),
+//!             List::Root(node) => Ok(&mut node.next),
+//!         }).ok()
+//!     }
+//!
+//!     /// Returns `None` when at the head of the list
+//!     pub fn prev(&mut self) -> Option<()> {
+//!         self.tel.pop()?;
+//!         Some(())
+//!     }
+//!
+//!     /// Returns `None` when at the tail end of the list
+//!     pub fn value_mut(&mut self) -> Option<&mut T> {
+//!         match &mut *self.tel {
+//!             List::Root(node) => Some(&mut node.value),
+//!             List::Empty => None,
+//!         }
+//!     }
+//! }
+//!
+//! fn main() {
+//!     let node1 = Node { value : 5, next : List::Empty };
+//!     let node2 = Node { value : 2, next : List::Root(Box::new(node1)) };
+//!     let mut list = List::Root(Box::new(node2));
+//!
+//!     let mut walker = Walker::new(&mut list);
+//!     assert_eq!(walker.value_mut().cloned(), Some(2));
+//!     *walker.value_mut().unwrap() = 7;
+//!     walker.next().unwrap();
+//!     assert_eq!(walker.value_mut().cloned(), Some(5));
+//!     walker.next().unwrap();
+//!     assert_eq!(walker.value_mut().cloned(), None); // end of the list
+//!     walker.prev().unwrap();
+//!     assert_eq!(walker.value_mut().cloned(), Some(5));
+//!     walker.prev().unwrap();
+//!     assert_eq!(walker.value_mut().cloned(), Some(7)); // we changed the value at the head
+//! }
+//!```
+//!
+
 use std::marker::PhantomData;
 use std::ops::Deref;
 use std::ops::DerefMut;
