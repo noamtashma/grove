@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use orchard::*;
 
 use example_data::RevAction;
@@ -171,6 +173,7 @@ where
     };
     let mut tree: T = vec![inter].into_iter().collect();
 
+    let start_calculation = Instant::now();
     let mut sn = 1;
     let mut tn = 1;
     for _ in 0..k {
@@ -189,7 +192,7 @@ where
         tn += sn;
         tn %= n;
     }
-
+    let calculation_duration = Instant::now().duration_since(start_calculation);
     // compute the final sum:
     let mut index = 0;
     let mut index_sum = 0;
@@ -198,7 +201,11 @@ where
         index_sum %= MODULUS;
         index += inter.size();
     }
-    dbg!(index_sum);
+    println!("n = {}, k = {}", n, k);
+    println!(
+        "result = {: >9}, main calculation time = {: >17?}",
+        index_sum, calculation_duration
+    );
     index_sum
 }
 
@@ -206,17 +213,17 @@ pub fn main() {
     println!("splay:");
     let res = yarra::<SplayTree<_>>(1000_000_000_000_000_000, 1000_000);
     assert_eq!(res, 563917241);
-    println!("done splay");
+    println!("done splay\n");
 
     println!("avl:");
     let res = yarra::<AVLTree<_>>(1000_000_000_000_000_000, 1000_000);
     assert_eq!(res, 563917241);
-    println!("done avl");
+    println!("done avl\n");
 
     println!("treap:");
     let res = yarra::<Treap<_>>(1000_000_000_000_000_000, 1000_000);
     assert_eq!(res, 563917241);
-    println!("done treap");
+    println!("done treap\n");
 }
 
 #[test]
