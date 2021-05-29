@@ -280,6 +280,12 @@ pub struct AVLWalker<'a, D : Data> {
 	walker : BasicWalker<'a, D, T>,
 }
 
+impl<'a, D : Data> std::ops::Drop for AVLWalker<'a, D> {
+    fn drop(&mut self) {
+        self.go_to_root()
+    }
+}
+
 impl<'a, D : Data> SomeWalker<D> for AVLWalker<'a, D> {
     fn go_left(&mut self) -> Result<(), ()> {
         self.walker.go_left()
@@ -291,7 +297,8 @@ impl<'a, D : Data> SomeWalker<D> for AVLWalker<'a, D> {
 
     fn go_up(&mut self) -> Result<Side, ()> {
         let res = self.walker.go_up()?;
-		self.inner_mut().rebuild_ranks();
+		let changed = self.inner_mut().rebuild_ranks();
+		assert_eq!(changed, false); // it shouldn't have changed without being rebalanced already
 		Ok(res)
     }
 
@@ -412,11 +419,13 @@ impl<'a, D : Data> AVLWalker<'a, D> {
 	/// at the current position.
 	fn rebalance(&mut self) {
 		if self.is_empty() {
-			let res = self.go_up();
+			let res = self.walker.go_up(); // ranks may be incorrect, so go up with the inner walker
 			if res.is_err() {
 				return;
 			}
 		}
+
+		self.rebuild_ranks();
 
 		loop {
 			let node = self.inner().node().unwrap();
@@ -450,7 +459,7 @@ impl<'a, D : Data> AVLWalker<'a, D> {
 
 			// current node has been balanced. now go up a node,
 			// and check if we need to continue rebalancing.
-			let res = self.walker.go_up();
+			let res = self.walker.go_up(); // ranks may be incorrect, so go up with the inner walker
 			let changed = self.inner_mut().rebuild_ranks();
 			let rd = self.inner().rank_diff();
 			if !changed && -1 <= rd && rd <= 1 { // tree is now balanced correctly
@@ -462,31 +471,15 @@ impl<'a, D : Data> AVLWalker<'a, D> {
 		}
 	}
 
-	fn rebuild(&mut self) {
-		self.inner_mut().rebuild();
-		self.rebuild_ranks();
-	}
-}
-
-impl<'a, D : Data> ModifiableWalker<D> for AVLWalker<'a, D> {
-	/// Inserts the value into the tree at the current empty position.
-    /// If the current position is not empty, return [`None`].
-    /// When the function returns, the walker will be at a position which is an ancestor of the
-	/// newly inserted node.
-    fn insert(&mut self, val : D::Value) -> Option<()> {
-        self.walker.insert_with_alg_data(val, 1 /* rank of a node with no sons */)?;
-		let _ = self.go_up();
-		self.rebalance();
-		Some(())
-    }
-
 	// TODO: specify where the walker will be.
-    fn delete(&mut self) -> Option<D::Value> {
+	/// Deletes a node and returns it with the box.
+    fn delete_boxed(&mut self) -> Option<Box<BasicNode<D, T>>> {
 		// the delete implementation is copied from `BasicTree`,
         // in order for rebalancing to be done properly.
-        let mut node = self.walker.take_subtree().into_node()?;
+        let mut node = self.walker.take_subtree().into_node_boxed()?;
 		if node.right.is_empty() {
 			self.walker.put_subtree(node.left).unwrap();
+			node.left = BasicTree::Empty;
 			self.rebalance();
 		} else { // find the next node and move it to the current position
 			let mut walker = node.right.walker();
@@ -499,14 +492,30 @@ impl<'a, D : Data> ModifiableWalker<D> for AVLWalker<'a, D> {
 			walker.put_subtree(boxed_replacement_node.right).unwrap();
 			AVLWalker { walker : walker }.rebalance(); // rebalance here
 
-			boxed_replacement_node.left = node.left;
-			boxed_replacement_node.right = node.right;
+			boxed_replacement_node.left = node.left; node.left = BasicTree::Empty;
+			boxed_replacement_node.right = node.right; node.right = BasicTree::Empty;
 			boxed_replacement_node.rebuild();
-			boxed_replacement_node.rebuild_ranks(); // rebalance expects the ranks at the current node to be rebuilt
 			self.walker.put_subtree(BasicTree::Root(boxed_replacement_node)).unwrap();
 			self.rebalance(); // rebalance here
 		}
-		Some(node.node_value)
+		Some(node)
+    }
+}
+
+impl<'a, D : Data> ModifiableWalker<D> for AVLWalker<'a, D> {
+	/// Inserts the value into the tree at the current empty position.
+    /// If the current position is not empty, return [`None`].
+    /// When the function returns, the walker will be at a position which is an ancestor of the
+	/// newly inserted node.
+    fn insert(&mut self, val : D::Value) -> Option<()> {
+        self.walker.insert_with_alg_data(val, 1 /* rank of a node with no sons */)?;
+		self.rebalance();
+		Some(())
+    }
+
+	// TODO: specify where the walker will be.
+    fn delete(&mut self) -> Option<D::Value> {
+		Some(self.delete_boxed()?.node_value)
     }
 }
 
@@ -539,16 +548,21 @@ impl<'a, D : Data> SplittableWalker<D> for AVLWalker<'a, D> {
 		let mut left = AVLTree::new();
 		let mut right = AVLTree::new();
 
-		while let Ok(side) = self.go_up() {
-			let node = self.walker.take_subtree().into_node().unwrap();
+		// ranks may be incorrect, so go up with the inner walker
+		while let Ok(side) = self.walker.go_up() {
+			let mut node = self.walker.take_subtree().into_node_boxed().unwrap();
 			match side {
 				Side::Left => {
 					assert!(node.left.is_empty());
-					right.concatenate_middle_right(node.node_value, AVLTree { tree : node.right } );
+					let auxiliary_right = AVLTree { tree : node.right };
+					node.right = BasicTree::Empty;
+					right.concatenate_boxed_middle_right(node, auxiliary_right);
 				},
 				Side::Right => {
 					assert!(node.right.is_empty());
-					left.concatenate_middle_left(AVLTree { tree : node.left }, node.node_value);
+					let auxiliary_left = AVLTree { tree : node.left };
+					node.left = BasicTree::Empty;
+					left.concatenate_boxed_middle_left(auxiliary_left, node);
 				},
 			}
 		}
@@ -600,22 +614,26 @@ impl<D : Data> AVLTree<D> {
     /// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..=89).chain(5..=5).chain(13..=25).collect::<Vec<_>>());
     /// # tree.assert_correctness();
     ///```
-	pub fn concatenate_middle_right(&mut self, mid : D::Value, mut right : AVLTree<D>) {
+	pub fn concatenate_middle_right(&mut self, mid : D::Value, right : AVLTree<D>) {
+		let node = BasicNode::new_alg(mid, 0 /* dummy value */);
+		self.concatenate_boxed_middle_right(Box::new(node), right);
+	}
+
+	fn concatenate_boxed_middle_right(&mut self, mut mid : Box<BasicNode<D,T>>, mut right : AVLTree<D>) {
 		if self.rank() < right.rank() {
 			std::mem::swap(self, &mut right);
-			self.concatenate_middle_left(right, mid);
+			self.concatenate_boxed_middle_left(right, mid);
 			return;
 		}
 		let mut walker = self.walker();
 		while walker.rank() > right.rank() {
 			walker.go_right().unwrap();
 		}
-		let mut node = BasicNode::new_alg(mid, 0 /* dummy value */);
-		node.left = walker.walker.take_subtree();
-		node.right = right.tree;
-		node.rebuild();
-		node.rebuild_ranks();
-		walker.walker.put_subtree(BasicTree::from_node(node)).unwrap();
+		mid.alg_data = 0;
+		mid.left = walker.walker.take_subtree();
+		mid.right = right.tree;
+		mid.rebuild();
+		walker.walker.put_subtree(BasicTree::Root(mid)).unwrap();
 		walker.rebalance();
 	}
 
@@ -633,22 +651,26 @@ impl<D : Data> AVLTree<D> {
     /// assert_eq!(tree2.iter().cloned().collect::<Vec<_>>(), (17..=89).chain(5..=5).chain(13..=25).collect::<Vec<_>>());
     /// # tree2.assert_correctness();
     ///```
-	pub fn concatenate_middle_left(&mut self, mut left : AVLTree<D>, mid : D::Value) {
+	pub fn concatenate_middle_left(&mut self, left : AVLTree<D>, mid : D::Value) {
+		let node = BasicNode::new_alg(mid, 0 /* dummy value */);
+		self.concatenate_boxed_middle_left(left, Box::new(node));
+	}
+
+	fn concatenate_boxed_middle_left(&mut self, mut left : AVLTree<D>, mut mid : Box<BasicNode<D, T>>) {
 		if self.rank() < left.rank() {
 			std::mem::swap(self, &mut left);
-			self.concatenate_middle_right(mid, left);
+			self.concatenate_boxed_middle_right(mid, left);
 			return;
 		}
 		let mut walker = self.walker();
 		while walker.rank() > left.rank() {
 			walker.go_left().unwrap();
 		}
-		let mut node = BasicNode::new_alg(mid, 0 /* dummy value */);
-		node.right = walker.walker.take_subtree();
-		node.left = left.tree;
-		node.rebuild();
-		node.rebuild_ranks();
-		walker.walker.put_subtree(BasicTree::from_node(node)).unwrap();
+		mid.alg_data = 0;
+		mid.right = walker.walker.take_subtree();
+		mid.left = left.tree;
+		mid.rebuild();
+		walker.walker.put_subtree(BasicTree::Root(mid)).unwrap();
 		walker.rebalance();
 	}
 }
@@ -672,9 +694,9 @@ impl<D : Data> ConcatenableTree<D> for AVLTree<D> {
 		if !right.is_empty() {
 			let mut walker = methods::search(&mut right, locators::LeftEdgeOf(..));
 			walker.go_up().unwrap();
-			let mid = walker.delete().unwrap(); // TODO: deallocated node only to reallocate it later. fix.
+			let mid = walker.delete_boxed().unwrap(); // TODO: deallocated node only to reallocate it later. fix.
 			drop(walker);
-			self.concatenate_middle_right(mid, right);
+			self.concatenate_boxed_middle_right(mid, right);
 		}
 	}
 }
