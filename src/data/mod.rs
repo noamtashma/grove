@@ -8,9 +8,8 @@
 //! In addition, this module provides the [`SizedSummary`] and [`Keyed`] traits,
 //! and some common possible instantiations in the [`example_data`] module.
 
-
 pub mod example_data;
-pub use example_data::{SizedSummary, Keyed};
+pub use example_data::{Keyed, SizedSummary};
 
 use std::ops::Add;
 
@@ -60,7 +59,7 @@ use std::ops::Add;
 /// which always returns false.
 /// * Have an identity action and empty summary: These are represented by the bounds [`Self::Action`]` : `[`Default`],
 /// [`Self::Summary`]` : `[`Default`].
-/// * Test actions for being the identity. This is represented by [`Action::is_identity()`]. 
+/// * Test actions for being the identity. This is represented by [`Action::is_identity()`].
 ///
 /// # Rules
 /// In order for the segment trees to work correctly, all of these operations must play nicely with each other.
@@ -111,47 +110,50 @@ use std::ops::Add;
 ///   D::to_reverse(action2 + action1) === D::to_reverse(action2) ^ D::to_reverse(action1)
 ///   ```
 pub trait Data {
-	/// The values that reside in trees.
-	type Value;
-	/// The summaries of values over segments. When querying a segment,
-	/// you get a summary of the segment, represented by a value of type `Self::Summary`.
-	type Summary : Copy + Default + Add<Output=Self::Summary>;
-	/// The actions you can perform on the values
-	type Action : Action + Acts<Self::Value> + Acts<Self::Summary>;
+    /// The values that reside in trees.
+    type Value;
+    /// The summaries of values over segments. When querying a segment,
+    /// you get a summary of the segment, represented by a value of type `Self::Summary`.
+    type Summary: Copy + Default + Add<Output = Self::Summary>;
+    /// The actions you can perform on the values
+    type Action: Action + Acts<Self::Value> + Acts<Self::Summary>;
 
-	/// Creates the summary of a single value.
-	fn to_summary(val : &Self::Value) -> Self::Summary;
+    /// Creates the summary of a single value.
+    fn to_summary(val: &Self::Value) -> Self::Summary;
 }
 
 /// Trait representing actions. this entailes having an identity action ([`Default`]), being able to compose actions
 /// ([`Add`]`<Output=Self>`), checking whether an action is the identity action, and checking whether this action
 /// reverses subsegments.
-pub trait Action : Copy + Default + Add<Output=Self> {	
-	/// Test whether this action is the identity action.
-	fn is_identity(self) -> bool;
+pub trait Action: Copy + Default + Add<Output = Self> {
+    /// Test whether this action is the identity action.
+    fn is_identity(self) -> bool;
 
-	/// This function should be implemented if you want to be able to reverse subsegments of your tree.
-	/// The default implementation always returns `false`.
-	///
-	/// Note that if the action reverses a segment, it shouldn't be used with [`crate::methods::act_segment`].
-	/// Instead, use a tree type that supports reversals (e.g, SplayTree, Treap) and use its native
-	/// [`crate::SomeTree::act_segment`] function.
-	///
-	/// This function should return whether this action reverses the segment it is applied to.
-	fn to_reverse(self) -> bool {
-		false
-	}
+    /// This function should be implemented if you want to be able to reverse subsegments of your tree.
+    /// The default implementation always returns `false`.
+    ///
+    /// Note that if the action reverses a segment, it shouldn't be used with [`crate::methods::act_segment`].
+    /// Instead, use a tree type that supports reversals (e.g, SplayTree, Treap) and use its native
+    /// [`crate::SomeTree::act_segment`] function.
+    ///
+    /// This function should return whether this action reverses the segment it is applied to.
+    fn to_reverse(self) -> bool {
+        false
+    }
 }
 
 /// Trait representation actions on a type `V`. If `A : Acts<V>` that means that given any `action : A`,
 /// we can apply it to any `val : V`. This trait is used to represent the actions on
 /// values and summaries used by segment trees.
 pub trait Acts<V> {
-	/// Act on a value in-place.
-	fn act_inplace(&self, object : &mut V);
-	/// Act on a value and return the result. `V : Copy` as a lint.
-	fn act(&self, mut object : V) -> V where V : Copy {
-		self.act_inplace(&mut object);
-		object
-	}
+    /// Act on a value in-place.
+    fn act_inplace(&self, object: &mut V);
+    /// Act on a value and return the result. `V : Copy` as a lint.
+    fn act(&self, mut object: V) -> V
+    where
+        V: Copy,
+    {
+        self.act_inplace(&mut object);
+        object
+    }
 }

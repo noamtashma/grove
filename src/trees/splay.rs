@@ -25,17 +25,16 @@
 //! ensuring that nodes that need to be rebuilt are rebuilt, but also that
 //! the splaytree's complexity properties remain.
 
-use super::*;
 use super::basic_tree::*;
+use super::*;
 use crate::locators;
 
-
 #[derive(destructure)]
-pub struct SplayTree<D : Data> {
-    tree : BasicTree<D>,
+pub struct SplayTree<D: Data> {
+    tree: BasicTree<D>,
 }
 
-impl<D : Data> SplayTree<D> {
+impl<D: Data> SplayTree<D> {
     /// Note: using this directly may cause the tree to lose its properties as a splay tree
     pub fn basic_walker(&mut self) -> BasicWalker<D> {
         BasicWalker::new(&mut self.tree)
@@ -46,24 +45,30 @@ impl<D : Data> SplayTree<D> {
     }
 
     pub fn new() -> SplayTree<D> {
-        SplayTree{ tree : BasicTree::Empty }
+        SplayTree {
+            tree: BasicTree::Empty,
+        }
     }
 
     /// Checks that invariants remain correct. i.e., that every node's summary
-	/// is the sum of the summaries of its children.
-	/// If it is not, panics.
-	pub fn assert_correctness(&self) where
-        D::Summary : Eq,
+    /// is the sum of the summaries of its children.
+    /// If it is not, panics.
+    pub fn assert_correctness(&self)
+    where
+        D::Summary: Eq,
     {
         self.tree.assert_correctness()
     }
 
     /// Gets the tree into a state in which the locator's segment
     /// is a single subtree, and returns a walker at that subtree.
-    pub fn isolate_segment<'a, L>(&'a mut self, locator : L) -> SplayWalker<'a, D> where
-        L : crate::Locator<D>
+    pub fn isolate_segment<'a, L>(&'a mut self, locator: L) -> SplayWalker<'a, D>
+    where
+        L: crate::Locator<D>,
     {
-        if self.is_empty() { return self.walker() }
+        if self.is_empty() {
+            return self.walker();
+        }
 
         let left_edge = locators::LeftEdgeOf(locator.clone());
         // reborrows the tree for a shorter time
@@ -74,17 +79,21 @@ impl<D : Data> SplayTree<D> {
         // if we previously splayed a node, work only below it, in order to not move it
         // when splaying
         let (left_summary, helper_tree) = if b1 {
-            (self.left_subtree_summary().unwrap() + self.node_summary(), &mut self.tree.node_mut().unwrap().right)
+            (
+                self.left_subtree_summary().unwrap() + self.node_summary(),
+                &mut self.tree.node_mut().unwrap().right,
+            )
         } else {
             (Default::default(), &mut self.tree)
         };
         let right_edge = locators::RightEdgeOf(locator);
         let mut walker2 = SplayWalker {
-            walker : BasicWalker::new_with_context(helper_tree, left_summary, Default::default())
+            walker: BasicWalker::new_with_context(helper_tree, left_summary, Default::default()),
         };
         methods::search_walker(&mut walker2, right_edge);
         let b2 = walker2.next_filled().is_ok();
-        walker2.splay(); drop(left_summary);
+        walker2.splay();
+        drop(left_summary);
         drop(walker2);
         let mut walker3 = self.walker();
         if b1 {
@@ -98,7 +107,7 @@ impl<D : Data> SplayTree<D> {
     }
 }
 
-impl<D : Data> std::default::Default for SplayTree<D> {
+impl<D: Data> std::default::Default for SplayTree<D> {
     fn default() -> Self {
         SplayTree::new()
     }
@@ -106,19 +115,18 @@ impl<D : Data> std::default::Default for SplayTree<D> {
 
 /// Deallocating a large splay tree can cause a stack overflow, since the tree might be unbalanced.
 /// Therefore we have a non-recursive deallocator.
-impl<D : Data> Drop for SplayTree<D> {
+impl<D: Data> Drop for SplayTree<D> {
     fn drop(&mut self) {
         basic_tree::deallocate_nonrecursive(&mut self.tree);
     }
 }
 
-
 #[derive(destructure)]
-pub struct SplayWalker<'a, D : Data> {
-    walker : BasicWalker<'a, D>,
+pub struct SplayWalker<'a, D: Data> {
+    walker: BasicWalker<'a, D>,
 }
 
-impl<'a, D : Data> SplayWalker<'a, D> {
+impl<'a, D: Data> SplayWalker<'a, D> {
     pub fn inner(&self) -> &BasicTree<D> {
         self.walker.inner()
     }
@@ -127,22 +135,22 @@ impl<'a, D : Data> SplayWalker<'a, D> {
     // use wisely
     // this function shouldn't really be public
     // TODO: should this function exist?
-    pub (super)  fn inner_mut(&mut self) -> &mut BasicTree<D> {
+    pub(super) fn inner_mut(&mut self) -> &mut BasicTree<D> {
         self.walker.inner_mut()
     }
 
     pub fn into_inner(self) -> BasicWalker<'a, D> {
-        // this is a workaround for the problem that, 
+        // this is a workaround for the problem that,
         // we can't move out of a type implementing Drop
 
         let (walker,) = self.destructure();
         walker
     }
 
-    pub fn new(walker : BasicWalker<'a, D>) -> Self {
+    pub fn new(walker: BasicWalker<'a, D>) -> Self {
         SplayWalker { walker }
     }
-    
+
     /// If at the root, do nothing.
     /// otherwise, do a single splay step upwards.
     /// If empty, go up once and return.
@@ -165,52 +173,61 @@ impl<'a, D : Data> SplayWalker<'a, D> {
         };
 
         let b2 = match self.walker.is_left_son() {
-            None => { self.walker.rot_side(b1.flip()).unwrap(); return }, // became the root - zig step
+            None => {
+                self.walker.rot_side(b1.flip()).unwrap();
+                return;
+            } // became the root - zig step
             Some(b2) => b2,
         };
 
-        if b1 == b2 { // zig-zig case
+        if b1 == b2 {
+            // zig-zig case
             self.walker.rot_up().unwrap();
             self.walker.rot_side(b1.flip()).unwrap();
-        } else { // zig-zag case
+        } else {
+            // zig-zag case
             self.walker.rot_side(b1.flip()).unwrap();
             self.walker.rot_up().unwrap();
         }
     }
 
     /// Same as [`SplayWalker::splay_step`], but splays up to the specified depth.
-    pub fn splay_step_depth(&mut self, depth : usize) {
-        if self.depth() <= depth { return; }
+    pub fn splay_step_depth(&mut self, depth: usize) {
+        if self.depth() <= depth {
+            return;
+        }
 
         // if the walker points to an empty position,
         // we can't splay it, just go upwards once.
         if self.walker.is_empty() {
-            if let Err(()) = self.walker.go_up() { // if already the root, exit. otherwise, go up
+            if let Err(()) = self.walker.go_up() {
+                // if already the root, exit. otherwise, go up
                 panic!(); // shouldn't happen, because if we are at the root, the previous condition would have caught it.
             };
             return;
         }
-
 
         let b1 = match self.walker.go_up() {
             Ok(b1) => b1,
             Err(()) => panic!(), // shouldn't happen, the previous condition would have caught this
         };
 
-        if self.depth() <= depth { // zig case
+        if self.depth() <= depth {
+            // zig case
             self.walker.rot_side(b1.flip()).unwrap();
             return;
-        } 
-        else {
+        } else {
             let b2 = match self.walker.is_left_son() {
-                None => panic!(), // we couldn't have gone into this branch 
+                None => panic!(), // we couldn't have gone into this branch
                 Some(b2) => b2,
             };
-            
-            if b1 == b2 { // zig-zig case
+
+            if b1 == b2 {
+                // zig-zig case
                 self.walker.rot_up().unwrap();
                 self.walker.rot_side(b1.flip()).unwrap();
-            } else { // zig-zag case
+            } else {
+                // zig-zag case
                 self.walker.rot_side(b1.flip()).unwrap();
                 self.walker.rot_up().unwrap();
             }
@@ -231,7 +248,7 @@ impl<'a, D : Data> SplayWalker<'a, D> {
     /// Splays a node into a given depth. Doesn't make any changes to any nodes closer to the root.
     /// If the node is at a shallower depth already, the function panics.
     /// See the [`splay`] function.
-    pub fn splay_to_depth(&mut self, depth : usize) {
+    pub fn splay_to_depth(&mut self, depth: usize) {
         assert!(self.depth() >= depth);
         while self.walker.depth() != depth {
             self.splay_step_depth(depth);
@@ -242,13 +259,12 @@ impl<'a, D : Data> SplayWalker<'a, D> {
     /// If there isn't any, moves to root and return Err(()).
     pub fn previous_filled(&mut self) -> Result<(), ()> {
         match self.walker.node() {
-            None => {
-            },
+            None => {}
             Some(node) => {
-                if !node.left.is_empty() { // the previous node is in this node's left subtree case
+                if !node.left.is_empty() {
+                    // the previous node is in this node's left subtree case
                     self.go_left().unwrap();
-                    while let Ok(_) = self.go_right()
-                        {}
+                    while let Ok(_) = self.go_right() {}
                     let r = self.go_up();
                     assert_eq!(r, Ok(Side::Right));
                     return Ok(());
@@ -258,7 +274,10 @@ impl<'a, D : Data> SplayWalker<'a, D> {
 
         // the next filled node is this node's first left ancestor
         let count = match self.walker.steps_until_sided_ancestor(Side::Right) {
-            None => { self.splay(); return Err(()) },
+            None => {
+                self.splay();
+                return Err(());
+            }
             Some(count) => count,
         };
 
@@ -274,12 +293,12 @@ impl<'a, D : Data> SplayWalker<'a, D> {
     /// If there isn't any, moves to root and return Err(()).
     pub fn next_filled(&mut self) -> Result<(), ()> {
         match self.walker.node() {
-            None => {},
+            None => {}
             Some(node) => {
-                if !node.right.is_empty() { // the previous node is in this node's right subtree case
+                if !node.right.is_empty() {
+                    // the previous node is in this node's right subtree case
                     self.go_right().unwrap();
-                    while let Ok(_) = self.go_left()
-                        {}
+                    while let Ok(_) = self.go_left() {}
                     let r = self.go_up();
                     assert_eq!(r, Ok(Side::Left));
                     return Ok(());
@@ -289,7 +308,10 @@ impl<'a, D : Data> SplayWalker<'a, D> {
         // return methods::next_filled(self);
         // the next filled node is this node's first right ancestor
         let count = match self.walker.steps_until_sided_ancestor(Side::Left) {
-            None => { self.splay(); return Err(()) },
+            None => {
+                self.splay();
+                return Err(());
+            }
             Some(count) => count,
         };
 
@@ -302,34 +324,40 @@ impl<'a, D : Data> SplayWalker<'a, D> {
     }
 }
 
-impl<'a, D : Data> Drop for SplayWalker<'a, D> {
+impl<'a, D: Data> Drop for SplayWalker<'a, D> {
     fn drop(&mut self) {
         self.splay();
     }
 }
 
-impl<D : Data> SomeTree<D> for SplayTree<D> {
-    fn segment_summary<L>(&mut self, locator : L) -> D::Summary where
-    L : locators::Locator<D>
+impl<D: Data> SomeTree<D> for SplayTree<D> {
+    fn segment_summary<L>(&mut self, locator: L) -> D::Summary
+    where
+        L: locators::Locator<D>,
     {
         let walker = self.isolate_segment(locator);
         walker.subtree_summary()
     }
 
-    fn act_segment<L>(&mut self, action : D::Action, locator : L) where
-        L : crate::Locator<D> {
-            let mut walker = self.isolate_segment(locator);
-            walker.act_subtree(action);
+    fn act_segment<L>(&mut self, action: D::Action, locator: L)
+    where
+        L: crate::Locator<D>,
+    {
+        let mut walker = self.isolate_segment(locator);
+        walker.act_subtree(action);
     }
 
     type TreeData = ();
-    fn iter_locator<'a, L : locators::Locator<D>>(&'a mut self, locator : L) -> basic_tree::iterators::ImmIterator<'a, D, L> {
+    fn iter_locator<'a, L: locators::Locator<D>>(
+        &'a mut self,
+        locator: L,
+    ) -> basic_tree::iterators::ImmIterator<'a, D, L> {
         self.isolate_segment(locator.clone());
-		iterators::ImmIterator::new(&mut self.tree, locator)
-	}
+        iterators::ImmIterator::new(&mut self.tree, locator)
+    }
 }
 
-impl<D : Data> SomeEntry<D> for SplayTree<D> {
+impl<D: Data> SomeEntry<D> for SplayTree<D> {
     fn node_summary(&self) -> D::Summary {
         self.tree.node_summary()
     }
@@ -346,47 +374,52 @@ impl<D : Data> SomeEntry<D> for SplayTree<D> {
         self.tree.right_subtree_summary()
     }
 
-    fn with_value<F, R>(&mut self, f : F) -> Option<R> where 
-        F : FnOnce(&mut D::Value) -> R {
+    fn with_value<F, R>(&mut self, f: F) -> Option<R>
+    where
+        F: FnOnce(&mut D::Value) -> R,
+    {
         self.tree.with_value(f)
     }
 
-    fn act_subtree(&mut self, action : D::Action) {
+    fn act_subtree(&mut self, action: D::Action) {
         self.tree.act_subtree(action);
-        
     }
 
-    fn act_node(&mut self, action : D::Action) -> Option<()> {
+    fn act_node(&mut self, action: D::Action) -> Option<()> {
         self.tree.act_node(action)
     }
 
-    fn act_left_subtree(&mut self, action : D::Action) -> Option<()> {
+    fn act_left_subtree(&mut self, action: D::Action) -> Option<()> {
         self.tree.act_left_subtree(action)
     }
 
-    fn act_right_subtree(&mut self, action : D::Action) -> Option<()> {
+    fn act_right_subtree(&mut self, action: D::Action) -> Option<()> {
         self.tree.act_right_subtree(action)
     }
 }
 
-impl<'a, D : Data> SomeTreeRef<D> for &'a mut SplayTree<D> {
+impl<'a, D: Data> SomeTreeRef<D> for &'a mut SplayTree<D> {
     type Walker = SplayWalker<'a, D>;
-    fn walker(self : &'a mut SplayTree<D>) -> SplayWalker<'a, D> {
-        SplayWalker { walker : self.basic_walker() }
+    fn walker(self: &'a mut SplayTree<D>) -> SplayWalker<'a, D> {
+        SplayWalker {
+            walker: self.basic_walker(),
+        }
     }
 }
 
-impl<'a, D : Data> ModifiableTreeRef<D> for &'a mut SplayTree<D> {
+impl<'a, D: Data> ModifiableTreeRef<D> for &'a mut SplayTree<D> {
     type ModifiableWalker = Self::Walker;
 }
 
-impl<D : Data> std::iter::FromIterator<D::Value> for SplayTree<D> {
+impl<D: Data> std::iter::FromIterator<D::Value> for SplayTree<D> {
     fn from_iter<T: IntoIterator<Item = D::Value>>(iter: T) -> Self {
-        SplayTree { tree : iter.into_iter().collect() }
+        SplayTree {
+            tree: iter.into_iter().collect(),
+        }
     }
 }
 
-impl<D : Data> IntoIterator for SplayTree<D> {
+impl<D: Data> IntoIterator for SplayTree<D> {
     type Item = D::Value;
     type IntoIter = <BasicTree<D> as IntoIterator>::IntoIter;
     fn into_iter(self) -> Self::IntoIter {
@@ -394,7 +427,7 @@ impl<D : Data> IntoIterator for SplayTree<D> {
     }
 }
 
-impl<'a, D : Data> SomeWalker<D> for SplayWalker<'a, D> {
+impl<'a, D: Data> SomeWalker<D> for SplayWalker<'a, D> {
     fn go_left(&mut self) -> Result<(), ()> {
         self.walker.go_left()
     }
@@ -403,7 +436,7 @@ impl<'a, D : Data> SomeWalker<D> for SplayWalker<'a, D> {
         self.walker.go_right()
     }
 
-	/// If successful, returns whether or not the previous current value was the left son.
+    /// If successful, returns whether or not the previous current value was the left son.
     /// If already at the root of the tree, returns `Err(())`.
     /// You shouldn't use this method too much, or you might lose the
     /// SplayTree's complexity properties - see documentation aboud splay tree.
@@ -435,7 +468,7 @@ impl<'a, D : Data> SomeWalker<D> for SplayWalker<'a, D> {
     }
 }
 
-impl<'a, D : Data> SomeEntry<D> for SplayWalker<'a, D> {
+impl<'a, D: Data> SomeEntry<D> for SplayWalker<'a, D> {
     fn node_summary(&self) -> D::Summary {
         self.walker.node_summary()
     }
@@ -452,34 +485,36 @@ impl<'a, D : Data> SomeEntry<D> for SplayWalker<'a, D> {
         self.walker.right_subtree_summary()
     }
 
-    fn with_value<F, R>(&mut self, f : F) -> Option<R> where 
-        F : FnOnce(&mut D::Value) -> R {
+    fn with_value<F, R>(&mut self, f: F) -> Option<R>
+    where
+        F: FnOnce(&mut D::Value) -> R,
+    {
         self.walker.with_value(f)
     }
 
-    fn act_subtree(&mut self, action : D::Action) {
+    fn act_subtree(&mut self, action: D::Action) {
         self.walker.act_subtree(action);
     }
 
-    fn act_node(&mut self, action : D::Action) -> Option<()> {
+    fn act_node(&mut self, action: D::Action) -> Option<()> {
         self.walker.act_node(action)
     }
 
-    fn act_left_subtree(&mut self, action : D::Action) -> Option<()> {
+    fn act_left_subtree(&mut self, action: D::Action) -> Option<()> {
         self.walker.act_left_subtree(action)
     }
 
-    fn act_right_subtree(&mut self, action : D::Action) -> Option<()> {
+    fn act_right_subtree(&mut self, action: D::Action) -> Option<()> {
         self.walker.act_right_subtree(action)
     }
 }
 
-impl<'a, D : Data> ModifiableWalker<D> for SplayWalker<'a, D> {
+impl<'a, D: Data> ModifiableWalker<D> for SplayWalker<'a, D> {
     /// Inserts the value into the tree at the current empty position.
     /// If the current position is not empty, return [`None`].
     /// When the function returns, the walker will be at the position the node
     /// was inserted.
-    fn insert(&mut self, value : D::Value) -> Option<()> {
+    fn insert(&mut self, value: D::Value) -> Option<()> {
         self.walker.insert(value)
     }
 
@@ -490,31 +525,33 @@ impl<'a, D : Data> ModifiableWalker<D> for SplayWalker<'a, D> {
         // the delete implementation is copied from `BasicTree`,
         // in order that splaying could be done on the second part of the path,
         // to preserve the splay tree's complexity properties.
-		let mut node = self.walker.take_subtree().into_node()?;
-		if node.right.is_empty() {
-			self.walker.put_subtree(node.left).unwrap();
-		} else { // find the next node and move it to the current position
-			let mut walker = node.right.walker();
-			while let Ok(_) = walker.go_left()
-				{}
-            let res = walker.go_up(); assert_eq!(res, Ok(Side::Left));
+        let mut node = self.walker.take_subtree().into_node()?;
+        if node.right.is_empty() {
+            self.walker.put_subtree(node.left).unwrap();
+        } else {
+            // find the next node and move it to the current position
+            let mut walker = node.right.walker();
+            while let Ok(_) = walker.go_left() {}
+            let res = walker.go_up();
+            assert_eq!(res, Ok(Side::Left));
 
-			let mut boxed_replacement_node = walker.take_subtree().into_node_boxed().unwrap();
-			assert!(boxed_replacement_node.left.is_empty());
+            let mut boxed_replacement_node = walker.take_subtree().into_node_boxed().unwrap();
+            assert!(boxed_replacement_node.left.is_empty());
             walker.put_subtree(boxed_replacement_node.right).unwrap();
-			drop(SplayWalker { walker : walker }); // splay to preserve the tree's complexity
+            drop(SplayWalker { walker: walker }); // splay to preserve the tree's complexity
 
-			boxed_replacement_node.left = node.left;
-			boxed_replacement_node.right = node.right;
-			boxed_replacement_node.rebuild();
-			self.walker.put_subtree(BasicTree::Root(boxed_replacement_node)).unwrap();
-		}
-		Some(node.node_value)
+            boxed_replacement_node.left = node.left;
+            boxed_replacement_node.right = node.right;
+            boxed_replacement_node.rebuild();
+            self.walker
+                .put_subtree(BasicTree::Root(boxed_replacement_node))
+                .unwrap();
+        }
+        Some(node.node_value)
     }
 }
 
-
-impl<D : Data> ConcatenableTree<D> for SplayTree<D> {
+impl<D: Data> ConcatenableTree<D> for SplayTree<D> {
     // `tree3 = union(tree1, tree2)`, not
     // `tree1.concatenate(tree2)`.
     /// Concatenates the other tree into this tree.
@@ -530,16 +567,16 @@ impl<D : Data> ConcatenableTree<D> for SplayTree<D> {
     /// assert_eq!(tree3.iter().cloned().collect::<Vec<_>>(), (17..=89).chain(13..=25).collect::<Vec<_>>());
     /// # tree3.assert_correctness();
     ///```
-    fn concatenate_right(&mut self, other : Self) {
+    fn concatenate_right(&mut self, other: Self) {
         let mut walker = self.walker();
-        while let Ok(_) = walker.go_right()
-            {}
+        while let Ok(_) = walker.go_right() {}
         match walker.go_up() {
-            Err(()) => { // the tree is empty; just substitute the other tree.
+            Err(()) => {
+                // the tree is empty; just substitute the other tree.
                 drop(walker);
                 *self = other;
                 return;
-            },
+            }
             Ok(Side::Right) => (),
             Ok(Side::Left) => unreachable!(),
         };
@@ -551,13 +588,13 @@ impl<D : Data> ConcatenableTree<D> for SplayTree<D> {
     }
 }
 
-impl<'a, D : Data> SplittableTreeRef<D> for &'a mut SplayTree<D> {
+impl<'a, D: Data> SplittableTreeRef<D> for &'a mut SplayTree<D> {
     type T = SplayTree<D>;
 
     type SplittableWalker = SplayWalker<'a, D>;
 }
 
-impl<'a, D : Data> SplittableWalker<D> for SplayWalker<'a, D> {
+impl<'a, D: Data> SplittableWalker<D> for SplayWalker<'a, D> {
     type T = SplayTree<D>;
 
     /// Will only do anything if the current position is empty.
@@ -570,7 +607,7 @@ impl<'a, D : Data> SplittableWalker<D> for SplayWalker<'a, D> {
     /// use orchard::trees::*;
     /// use orchard::splay::*;
     /// use orchard::example_data::StdNum;
-    /// use orchard::methods::*; 
+    /// use orchard::methods::*;
     ///
     /// let mut tree : SplayTree<StdNum> = (17..88).collect();
     /// let mut tree2 = tree.slice(7..7).split_right().unwrap();
@@ -580,11 +617,13 @@ impl<'a, D : Data> SplittableWalker<D> for SplayWalker<'a, D> {
     /// # tree.assert_correctness();
     ///```
     fn split_right(&mut self) -> Option<SplayTree<D>> {
-        if !self.is_empty() { return None }
-        
+        if !self.is_empty() {
+            return None;
+        }
+
         // to know which side we should cut
         let side = match self.go_up() {
-            Err(()) => { return Some(SplayTree::new()) }, // this is the empty tree
+            Err(()) => return Some(SplayTree::new()), // this is the empty tree
             Ok(b) => b,
         };
         self.splay();
@@ -597,13 +636,13 @@ impl<'a, D : Data> SplittableWalker<D> for SplayWalker<'a, D> {
                 let mut tree = std::mem::replace(&mut node.left, BasicTree::Empty);
                 node.rebuild();
                 std::mem::swap(self.inner_mut(), &mut tree);
-                return Some(SplayTree{ tree });
+                return Some(SplayTree { tree });
             }
             Side::Right => {
                 let tree = std::mem::replace(&mut node.right, BasicTree::Empty);
                 node.rebuild();
                 return Some(SplayTree { tree });
-            },
+            }
         }
     }
 
@@ -616,35 +655,43 @@ impl<'a, D : Data> SplittableWalker<D> for SplayWalker<'a, D> {
 
 #[test]
 fn splay_delete() {
-    let arr : Vec<_> =(0..500).collect();
-	for i in 0..arr.len() {
-		let mut tree : SplayTree<example_data::StdNum> = arr.iter().cloned().collect();
-		let mut walker = methods::search(&mut tree, i);
-		assert_eq!(walker.value().cloned(), Some(arr[i]));
-		let res = walker.delete();
-		assert_eq!(res, Some(arr[i]));
-		drop(walker);
-		assert_eq!(tree.into_iter().collect::<Vec<_>>(),
-			arr[..i].iter()
-			.chain(arr[i+1..].iter())
-			.cloned().collect::<Vec<_>>());
-	}
+    let arr: Vec<_> = (0..500).collect();
+    for i in 0..arr.len() {
+        let mut tree: SplayTree<example_data::StdNum> = arr.iter().cloned().collect();
+        let mut walker = methods::search(&mut tree, i);
+        assert_eq!(walker.value().cloned(), Some(arr[i]));
+        let res = walker.delete();
+        assert_eq!(res, Some(arr[i]));
+        drop(walker);
+        assert_eq!(
+            tree.into_iter().collect::<Vec<_>>(),
+            arr[..i]
+                .iter()
+                .chain(arr[i + 1..].iter())
+                .cloned()
+                .collect::<Vec<_>>()
+        );
+    }
 }
 
 #[test]
 fn splay_insert() {
-    let arr : Vec<_> =(0..500).collect();
-	for i in 0 ..= arr.len() {
-		let new_val = 13;
-		let mut tree : SplayTree<example_data::StdNum> = arr.iter().cloned().collect();
-		let mut walker = methods::search(&mut tree, i..i);
-		walker.insert(new_val);
-		assert_eq!(walker.value().cloned(), Some(new_val));
-		drop(walker);
-		assert_eq!(tree.into_iter().collect::<Vec<_>>(),
-			arr[..i].iter()
-			.chain([new_val].iter())
-			.chain(arr[i..].iter())
-			.cloned().collect::<Vec<_>>());
-	}
+    let arr: Vec<_> = (0..500).collect();
+    for i in 0..=arr.len() {
+        let new_val = 13;
+        let mut tree: SplayTree<example_data::StdNum> = arr.iter().cloned().collect();
+        let mut walker = methods::search(&mut tree, i..i);
+        walker.insert(new_val);
+        assert_eq!(walker.value().cloned(), Some(new_val));
+        drop(walker);
+        assert_eq!(
+            tree.into_iter().collect::<Vec<_>>(),
+            arr[..i]
+                .iter()
+                .chain([new_val].iter())
+                .chain(arr[i..].iter())
+                .cloned()
+                .collect::<Vec<_>>()
+        );
+    }
 }

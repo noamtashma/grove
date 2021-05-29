@@ -8,18 +8,14 @@
 //! and so some generic functions which use `go_up` may have linear complexity when used with
 //! splay trees.
 
-
 use crate::*;
 use locators::*;
-
-
-
 
 // TODO - make this work for both filled and empty starting positions
 // TODO - figure out how to make this callable like walker.next_empty()
 /// If the walker is at an empty position, return an error.
 /// Goes to the next empty position
-pub fn next_empty<W : SomeWalker<A>, A : Data>(walker : &mut W) -> Result<(), ()> {
+pub fn next_empty<W: SomeWalker<A>, A: Data>(walker: &mut W) -> Result<(), ()> {
     walker.go_right()?; // if we're at an empty node, return error
     while !walker.is_empty() {
         walker.go_left().unwrap();
@@ -29,7 +25,7 @@ pub fn next_empty<W : SomeWalker<A>, A : Data>(walker : &mut W) -> Result<(), ()
 
 /// If the walker is at an empty position, return an error.
 /// Goes to the previous empty position
-pub fn previous_empty<W : SomeWalker<A>, A : Data>(walker : &mut W) -> Result<(), ()> {
+pub fn previous_empty<W: SomeWalker<A>, A: Data>(walker: &mut W) -> Result<(), ()> {
     walker.go_left()?; // if we're at an empty node, return error
     while !walker.is_empty() {
         walker.go_right().unwrap();
@@ -39,7 +35,7 @@ pub fn previous_empty<W : SomeWalker<A>, A : Data>(walker : &mut W) -> Result<()
 
 /// Finds the next filled node.
 /// If there isn't any, moves to root and return Err(()).
-pub fn next_filled<W : SomeWalker<A>, A : Data>(walker : &mut W) -> Result<(), ()> {
+pub fn next_filled<W: SomeWalker<A>, A: Data>(walker: &mut W) -> Result<(), ()> {
     if !walker.is_empty() {
         next_empty(walker).unwrap();
     }
@@ -53,10 +49,9 @@ pub fn next_filled<W : SomeWalker<A>, A : Data>(walker : &mut W) -> Result<(), (
     return Ok(());
 }
 
-
 /// Finds the previous filled node.
 /// If there isn't any, moves to root and return Err(()).
-pub fn previous_filled<W : SomeWalker<A>, A : Data>(walker : &mut W) -> Result<(), ()> {
+pub fn previous_filled<W: SomeWalker<A>, A: Data>(walker: &mut W) -> Result<(), ()> {
     if !walker.is_empty() {
         previous_empty(walker).unwrap();
     }
@@ -74,9 +69,10 @@ pub fn previous_filled<W : SomeWalker<A>, A : Data>(walker : &mut W) -> Result<(
 /// Finds any node that the locator `Accept`s. Looks inside the whole tree.
 /// If there isn't any, it finds the empty location where that node would be instead.
 /// Returns a walker at the wanted position.
-pub fn search_walker<W, D : Data, L>(walker : &mut W, locator : L) where
-    W : crate::trees::SomeWalker<D>,
-    L : Locator<D>,
+pub fn search_walker<W, D: Data, L>(walker: &mut W, locator: L)
+where
+    W: crate::trees::SomeWalker<D>,
+    L: Locator<D>,
 {
     walker.go_to_root();
     search_subtree(walker, locator);
@@ -85,9 +81,10 @@ pub fn search_walker<W, D : Data, L>(walker : &mut W, locator : L) where
 /// Finds any node that the locator `Accept`s. Looks only inside the current subtree.
 /// If there isn't any, it finds the empty location where that node would be instead.
 /// Returns a walker at the wanted position.
-pub fn search_subtree<W, D : Data, L>(walker : &mut W, locator : L) where
-    W : crate::trees::SomeWalker<D>,
-    L : Locator<D>,
+pub fn search_subtree<W, D: Data, L>(walker: &mut W, locator: L)
+where
+    W: crate::trees::SomeWalker<D>,
+    L: Locator<D>,
 {
     while let Some(res) = walker_locate(walker, &locator) {
         match res {
@@ -101,9 +98,10 @@ pub fn search_subtree<W, D : Data, L>(walker : &mut W, locator : L) where
 /// Finds any node that the locator `Accept`s.
 /// If there isn't any, it finds the empty location where that node would be instead.
 /// Returns a walker at the wanted position.
-pub fn search<TR, D : Data, L>(tree : TR, locator : L) -> TR::Walker where
-    TR : crate::trees::SomeTreeRef<D>,
-    L : Locator<D>,
+pub fn search<TR, D: Data, L>(tree: TR, locator: L) -> TR::Walker
+where
+    TR: crate::trees::SomeTreeRef<D>,
+    L: Locator<D>,
 {
     let mut walker = tree.walker();
     search_walker(&mut walker, locator);
@@ -113,12 +111,12 @@ pub fn search<TR, D : Data, L>(tree : TR, locator : L) -> TR::Walker where
 /// Returns the accumulated values on the locator's segment
 /// Do not use with splay trees - it might mess up the complexity,
 /// because it uses go_up().
-/// 
+///
 /// Instead, use the specific [`SomeTree::segment_summary`]
-pub fn segment_summary<TR, L, D : Data>(tree : TR, locator : L) -> 
-        D::Summary where
-    TR : SomeTreeRef<D>,
-    L : Locator<D>,
+pub fn segment_summary<TR, L, D: Data>(tree: TR, locator: L) -> D::Summary
+where
+    TR: SomeTreeRef<D>,
+    L: Locator<D>,
 {
     use LocResult::*;
 
@@ -142,7 +140,7 @@ pub fn segment_summary<TR, L, D : Data>(tree : TR, locator : L) ->
                 let second_half = segment_summary_on_prefix(&mut walker, locator);
 
                 return first_half + node_value + second_half;
-            },
+            }
         }
     }
 
@@ -150,10 +148,10 @@ pub fn segment_summary<TR, L, D : Data>(tree : TR, locator : L) ->
     Default::default()
 }
 
-fn segment_summary_on_suffix<W, L, A : Data>(walker : &mut W, locator : L) ->
-       A::Summary where
-    W : SomeWalker<A>,
-    L : Locator<A>,
+fn segment_summary_on_suffix<W, L, A: Data>(walker: &mut W, locator: L) -> A::Summary
+where
+    W: SomeWalker<A>,
+    L: Locator<A>,
 {
     let mut res = Default::default();
     use LocResult::*;
@@ -163,7 +161,7 @@ fn segment_summary_on_suffix<W, L, A : Data>(walker : &mut W, locator : L) ->
             Accept => {
                 res = walker.node_summary() + walker.right_subtree_summary().unwrap() + res;
                 walker.go_left().unwrap();
-            },
+            }
             GoRight => walker.go_right().unwrap(),
             GoLeft => panic!("inconsistent locator"),
         }
@@ -172,10 +170,10 @@ fn segment_summary_on_suffix<W, L, A : Data>(walker : &mut W, locator : L) ->
     res
 }
 
-fn segment_summary_on_prefix<W, L, A : Data>(walker : &mut W, locator : L) ->
-        A::Summary where
-    W : SomeWalker<A>,
-    L : Locator<A>,
+fn segment_summary_on_prefix<W, L, A: Data>(walker: &mut W, locator: L) -> A::Summary
+where
+    W: SomeWalker<A>,
+    L: Locator<A>,
 {
     let mut res = Default::default();
     use LocResult::*;
@@ -185,9 +183,9 @@ fn segment_summary_on_prefix<W, L, A : Data>(walker : &mut W, locator : L) ->
             Accept => {
                 res = res + walker.left_subtree_summary().unwrap() + walker.node_summary();
                 walker.go_right().unwrap();
-            },
+            }
             GoRight => panic!("inconsistent locator"),
-            GoLeft => walker.go_left().unwrap(), 
+            GoLeft => walker.go_left().unwrap(),
         }
     }
 
@@ -199,11 +197,12 @@ fn segment_summary_on_prefix<W, L, A : Data>(walker : &mut W, locator : L) ->
 /// because it uses go_up().
 ///
 /// Don't use with actions that reverse segments. Panics otherwise.
-/// 
+///
 /// Instead, use [`SomeTree::act_segment`]
-pub fn act_segment<TR, L, D : Data>(tree : TR, action : D::Action, locator : L) where
-    TR : SomeTreeRef<D>,
-    L : Locator<D>,
+pub fn act_segment<TR, L, D: Data>(tree: TR, action: D::Action, locator: L)
+where
+    TR: SomeTreeRef<D>,
+    L: Locator<D>,
 {
     assert!(action.to_reverse() == false);
     use LocResult::*;
@@ -227,15 +226,16 @@ pub fn act_segment<TR, L, D : Data>(tree : TR, action : D::Action, locator : L) 
                 walker.go_right().unwrap();
                 act_on_prefix(&mut walker, action, locator);
                 return;
-            },
+            }
         }
     }
 }
 
 // Only works if `action.to_reverse()` is false. does not check.
-fn act_on_suffix<W, L, D : Data>(walker : &mut W, action : D::Action, locator : L) where
-    W : SomeWalker<D>,
-    L : Locator<D>,
+fn act_on_suffix<W, L, D: Data>(walker: &mut W, action: D::Action, locator: L)
+where
+    W: SomeWalker<D>,
+    L: Locator<D>,
 {
     use LocResult::*;
 
@@ -245,18 +245,18 @@ fn act_on_suffix<W, L, D : Data>(walker : &mut W, action : D::Action, locator : 
                 walker.act_node(action);
                 walker.act_right_subtree(action).unwrap();
                 walker.go_left().unwrap();
-            },
+            }
             GoRight => walker.go_right().unwrap(),
             GoLeft => panic!("inconsistent locator"),
         }
     }
 }
 
-
 // Only works if `action.to_reverse()` is false. does not check.
-fn act_on_prefix<W, L, D : Data>(walker : &mut W, action : D::Action, locator : L) where
-    W : SomeWalker<D>,
-    L : Locator<D>,
+fn act_on_prefix<W, L, D: Data>(walker: &mut W, action: D::Action, locator: L)
+where
+    W: SomeWalker<D>,
+    L: Locator<D>,
 {
     use LocResult::*;
 
@@ -266,10 +266,9 @@ fn act_on_prefix<W, L, D : Data>(walker : &mut W, action : D::Action, locator : 
                 walker.act_node(action);
                 walker.act_left_subtree(action).unwrap();
                 walker.go_right().unwrap();
-            },
+            }
             GoRight => panic!("inconsistent locator"),
-            GoLeft => walker.go_left().unwrap(), 
+            GoLeft => walker.go_left().unwrap(),
         }
     }
 }
-

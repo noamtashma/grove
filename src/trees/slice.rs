@@ -1,6 +1,6 @@
-use std::marker::PhantomData;
-use crate::*;
 use super::*;
+use crate::*;
+use std::marker::PhantomData;
 
 /// Returns a value representing a specific subsegment of the tree. This gives a nicer
 /// Interface for tree operations: `tree.slice(3..50).act(action)` instead of
@@ -8,17 +8,18 @@ use super::*;
 ///
 /// This struct essentially just forwards calls, mostly to the methods in the traits in [`crate::trees`].
 pub struct Slice<'a, D, T, L> {
-    phantom : PhantomData<D>,
-    tree : &'a mut T,
-    locator : L,
+    phantom: PhantomData<D>,
+    tree: &'a mut T,
+    locator: L,
 }
 
-impl<'a, D : Data, T : SomeTree<D>, L : Locator<D>> Slice<'a, D, T, L> where
-    for <'b> &'b mut T : SomeTreeRef<D>,
+impl<'a, D: Data, T: SomeTree<D>, L: Locator<D>> Slice<'a, D, T, L>
+where
+    for<'b> &'b mut T: SomeTreeRef<D>,
 {
-    pub fn new(tree : &'a mut T, locator : L) -> Self {
+    pub fn new(tree: &'a mut T, locator: L) -> Self {
         Slice {
-            phantom : PhantomData,
+            phantom: PhantomData,
             tree,
             locator,
         }
@@ -30,14 +31,14 @@ impl<'a, D : Data, T : SomeTree<D>, L : Locator<D>> Slice<'a, D, T, L> where
     }
 
     /// Apply an action on this subsegment.
-    pub fn act(&mut self, action : D::Action) {
+    pub fn act(&mut self, action: D::Action) {
         self.tree.act_segment(action, self.locator.clone());
     }
 
     /// Finds any node in the current subsegment.
     /// If there isn't any, it finds the empty location where that node would be instead.
     /// Returns a walker at the wanted position.
-    pub fn search(self) -> <&'a mut T as SomeTreeRef<D>> :: Walker {
+    pub fn search(self) -> <&'a mut T as SomeTreeRef<D>>::Walker {
         methods::search(self.tree, self.locator)
     }
 
@@ -57,47 +58,49 @@ impl<'a, D : Data, T : SomeTree<D>, L : Locator<D>> Slice<'a, D, T, L> where
     }
 }
 
-impl<'a, D : Data, T : SomeTree<D>, L : Locator<D>> Slice<'a, D, T, L> where 
-    for<'b> &'b mut T : ModifiableTreeRef<D>,
+impl<'a, D: Data, T: SomeTree<D>, L: Locator<D>> Slice<'a, D, T, L>
+where
+    for<'b> &'b mut T: ModifiableTreeRef<D>,
 {
     /// Assumes that the this subsegment is empty.
     /// Inserts the value into the tree into the position of this empty subsegment.
     /// If the current subsegment is not empty, returns [`None`].
-    pub fn insert(&mut self, value : D::Value) -> Option<()> {
-        let mut walker
-         = methods::search(&mut *self.tree, self.locator.clone());
+    pub fn insert(&mut self, value: D::Value) -> Option<()> {
+        let mut walker = methods::search(&mut *self.tree, self.locator.clone());
         walker.insert(value)
     }
 
     /// Removes any value from this subsegment from tree, and returns it.
     /// If this subsegment is empty, returns [`None`].
     pub fn delete(&mut self) -> Option<D::Value> {
-        let mut walker
-         = methods::search(&mut *self.tree, self.locator.clone());
+        let mut walker = methods::search(&mut *self.tree, self.locator.clone());
         walker.delete()
     }
 }
 
-
-impl<'a, D : Data, T : SomeTree<D>, L : Locator<D>> Slice<'a, D, T, L> where 
-    for<'b> &'b mut T : SplittableTreeRef<D>,
+impl<'a, D: Data, T: SomeTree<D>, L: Locator<D>> Slice<'a, D, T, L>
+where
+    for<'b> &'b mut T: SplittableTreeRef<D>,
 {
     /// Assumes that the this subsegment is empty.
     /// Split out everything to the right of this subsegment, if it is an empty subsegment.
     /// Otherwise returns [`None`].
-    pub fn split_right(&mut self) -> Option<<<&mut T as SplittableTreeRef<D>>::SplittableWalker as SplittableWalker<D>>::T> {
-        let mut walker
-         = methods::search(&mut *self.tree, self.locator.clone());
+    pub fn split_right(
+        &mut self,
+    ) -> Option<<<&mut T as SplittableTreeRef<D>>::SplittableWalker as SplittableWalker<D>>::T>
+    {
+        let mut walker = methods::search(&mut *self.tree, self.locator.clone());
         walker.split_right()
     }
 
     /// Assumes that the this subsegment is empty.
     /// Split out everything to the left of the this subsegment, if it is an empty subsegment.
     /// Otherwise returns [`None`].
-    pub fn split_left(&mut self) -> Option<<<&mut T as SplittableTreeRef<D>>::SplittableWalker as SplittableWalker<D>>::T> {
-        let mut walker
-         = methods::search(&mut *self.tree, self.locator.clone());
+    pub fn split_left(
+        &mut self,
+    ) -> Option<<<&mut T as SplittableTreeRef<D>>::SplittableWalker as SplittableWalker<D>>::T>
+    {
+        let mut walker = methods::search(&mut *self.tree, self.locator.clone());
         walker.split_left()
     }
 }
-

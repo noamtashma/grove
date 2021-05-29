@@ -13,23 +13,23 @@ impl<D : Data> Simulator<D> {
 }
 */
 
-
+use example_data::StdNum;
 use orchard::example_data::RevAffineAction;
 use rand::{self, Rng};
-use example_data::StdNum;
 
-pub fn check_consistency<T1, T2>() where
-    T1 : SomeTree<StdNum>,
-    for<'a> &'a mut T1 : SomeTreeRef<StdNum>,
-    T2 : SomeTree<StdNum>,
-    for<'a> &'a mut T2 : SomeTreeRef<StdNum>,
+pub fn check_consistency<T1, T2>()
+where
+    T1: SomeTree<StdNum>,
+    for<'a> &'a mut T1: SomeTreeRef<StdNum>,
+    T2: SomeTree<StdNum>,
+    for<'a> &'a mut T2: SomeTreeRef<StdNum>,
 {
-    const LEN : usize = 200;
-    const MAX_ADD : i32 = 200;
+    const LEN: usize = 200;
+    const MAX_ADD: i32 = 200;
 
     fn random_range() -> std::ops::Range<usize> {
         let mut rng = rand::thread_rng();
-        let res = (rng.gen_range(0..LEN+1), rng.gen_range(0..LEN+1));
+        let res = (rng.gen_range(0..LEN + 1), rng.gen_range(0..LEN + 1));
         if res.0 <= res.1 {
             res.0..res.1
         } else {
@@ -40,15 +40,15 @@ pub fn check_consistency<T1, T2>() where
     fn random_action() -> RevAffineAction {
         let mut rng = rand::thread_rng();
         RevAffineAction {
-            to_reverse : rng.gen(),
-            mul : if rng.gen() { 1 } else { -1 },
-            add : rng.gen_range(-MAX_ADD..=MAX_ADD),
+            to_reverse: rng.gen(),
+            mul: if rng.gen() { 1 } else { -1 },
+            add: rng.gen_range(-MAX_ADD..=MAX_ADD),
         }
     }
 
     let range = 0..(LEN as _);
-    let mut tree1 : T1 = range.clone().collect();
-    let mut tree2 : T2 = range.collect();
+    let mut tree1: T1 = range.clone().collect();
+    let mut tree2: T2 = range.collect();
     for _ in 0..10_000 {
         let range = &random_range();
         if rand::random() {

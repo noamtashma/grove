@@ -1,6 +1,5 @@
-
 //! The Orchard library is a library that implements "segment trees" in a generic way.
-//! 
+//!
 //! In Orchard, a segment tree is a data structure containing a sequence of values,
 //! that can answer queries about contiguous subsegments of values,
 //! and/or apply actions to contiguous subsegments of values, in logarithmic time, in addition
@@ -12,7 +11,7 @@
 //!
 //! In order to specify what queries and action can be made, the user needs to specify
 //! a type that implements the [`Data`] trait, defined in the [`data`] module.
-//! 
+//!
 //! Overall, the operations you can do with a segment tree are (every one in logarithmic time):
 //! * Insert, delete and modify specific values
 //! * Compute a summary value of a subsegment
@@ -43,12 +42,12 @@
 #[macro_use]
 extern crate derive_destructure;
 
-pub mod telescope; // TODO: should this be public? this should really be its own crate
-pub mod trees;
 pub mod data;
 pub mod locators;
+pub mod telescope; // TODO: should this be public? this should really be its own crate
+pub mod trees;
 
 pub use data::*;
-pub use trees::*;
 pub use locators::Locator;
+pub use trees::*;
 // pub use trees::methods::*;
