@@ -81,15 +81,6 @@ impl<D: Data> AVLTree<D> {
         }
     }
 
-    /// Checks that the tree is well formed.
-    /// Panics otherwise.
-    pub fn assert_correctness(&self)
-    where
-        D::Summary: Eq,
-    {
-        Self::assert_correctness_internal(&self.tree);
-    }
-
     fn assert_correctness_internal(tree: &BasicTree<D, T>)
     where
         D::Summary: Eq,
@@ -99,15 +90,6 @@ impl<D: Data> AVLTree<D> {
             Self::assert_ranks_locally_internal(&node);
             Self::assert_correctness_internal(&node.left);
             Self::assert_correctness_internal(&node.right);
-        }
-    }
-
-    pub fn assert_correctness_locally(&self)
-    where
-        D::Summary: Eq,
-    {
-        if let Some(node) = self.tree.node() {
-            Self::assert_ranks_locally_internal(&node);
         }
     }
 
@@ -205,6 +187,13 @@ impl<D: Data> SomeTree<D> for AVLTree<D> {
     ) -> basic_tree::iterators::ImmIterator<'a, D, L, u8> {
         iterators::ImmIterator::new(&mut self.tree, locator)
     }
+
+    fn assert_correctness(&self)
+    where
+        D::Summary: Eq,
+    {
+        Self::assert_correctness_internal(&self.tree);
+    }
 }
 
 impl<'a, D: Data> SomeTreeRef<D> for &'a mut AVLTree<D> {
@@ -265,6 +254,16 @@ impl<D: Data> SomeEntry<D> for AVLTree<D> {
 
     fn act_right_subtree(&mut self, action: D::Action) -> Option<()> {
         self.tree.act_right_subtree(action)
+    }
+
+    fn assert_correctness_locally(&self)
+    where
+        D::Summary: Eq,
+    {
+        self.tree.assert_correctness_locally();
+        if let Some(node) = self.tree.node() {
+            Self::assert_ranks_locally_internal(&node);
+        }
     }
 }
 
@@ -379,6 +378,16 @@ impl<'a, D: Data> SomeEntry<D> for AVLWalker<'a, D> {
 
     fn act_right_subtree(&mut self, action: D::Action) -> Option<()> {
         self.walker.act_right_subtree(action)
+    }
+
+    fn assert_correctness_locally(&self)
+    where
+        D::Summary: Eq,
+    {
+        self.walker.assert_correctness_locally();
+        if let Some(node) = self.walker.node() {
+            AVLTree::assert_ranks_locally_internal(&node);
+        }
     }
 }
 
@@ -767,52 +776,4 @@ pub fn concatenate_with_middle<D: Data>(
 ) -> AVLTree<D> {
     left.concatenate_middle_right(mid, right);
     left
-}
-
-#[test]
-fn avl_delete() {
-    let arr: Vec<_> = (0..500).collect();
-    for i in 0..arr.len() {
-        let mut tree: AVLTree<example_data::StdNum> = arr.iter().cloned().collect();
-        let mut walker = methods::search(&mut tree, i);
-        assert_eq!(walker.value().cloned(), Some(arr[i]));
-        let res = walker.delete();
-        assert_eq!(res, Some(arr[i]));
-        drop(walker);
-        assert_eq!(
-            tree.into_iter().collect::<Vec<_>>(),
-            arr[..i]
-                .iter()
-                .chain(arr[i + 1..].iter())
-                .cloned()
-                .collect::<Vec<_>>()
-        );
-    }
-}
-
-#[test]
-fn avl_insert() {
-    let arr: Vec<_> = (0..500).collect();
-    for i in 0..=arr.len() {
-        let new_val = 13;
-        let mut tree: AVLTree<example_data::StdNum> = arr.iter().cloned().collect();
-        let mut walker = methods::search(&mut tree, i..i);
-        walker.insert(new_val);
-        // after inserting, the walker can move, because of rebalancing.
-        // however, in avl trees, the walker should be in an ancestor of the inserted value.
-        // therefore, we check with `search_subtree`.
-        methods::search_subtree(&mut walker, i);
-        assert_eq!(walker.value().cloned(), Some(new_val));
-        drop(walker);
-        tree.assert_correctness();
-        assert_eq!(
-            tree.into_iter().collect::<Vec<_>>(),
-            arr[..i]
-                .iter()
-                .chain([new_val].iter())
-                .chain(arr[i..].iter())
-                .cloned()
-                .collect::<Vec<_>>()
-        );
-    }
 }

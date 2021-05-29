@@ -355,6 +355,13 @@ impl<D: Data> SomeTree<D> for SplayTree<D> {
         self.isolate_segment(locator.clone());
         iterators::ImmIterator::new(&mut self.tree, locator)
     }
+
+    fn assert_correctness(&self)
+    where
+        D::Summary: Eq,
+    {
+        self.tree.assert_correctness();
+    }
 }
 
 impl<D: Data> SomeEntry<D> for SplayTree<D> {
@@ -395,6 +402,13 @@ impl<D: Data> SomeEntry<D> for SplayTree<D> {
 
     fn act_right_subtree(&mut self, action: D::Action) -> Option<()> {
         self.tree.act_right_subtree(action)
+    }
+
+    fn assert_correctness_locally(&self)
+    where
+        D::Summary: Eq,
+    {
+        self.tree.assert_correctness_locally();
     }
 }
 
@@ -506,6 +520,13 @@ impl<'a, D: Data> SomeEntry<D> for SplayWalker<'a, D> {
 
     fn act_right_subtree(&mut self, action: D::Action) -> Option<()> {
         self.walker.act_right_subtree(action)
+    }
+
+    fn assert_correctness_locally(&self)
+    where
+        D::Summary: Eq,
+    {
+        self.walker.assert_correctness_locally();
     }
 }
 
@@ -650,48 +671,5 @@ impl<'a, D: Data> SplittableWalker<D> for SplayWalker<'a, D> {
         let mut right = self.split_right()?;
         std::mem::swap(self.inner_mut(), &mut right.tree);
         Some(right)
-    }
-}
-
-#[test]
-fn splay_delete() {
-    let arr: Vec<_> = (0..500).collect();
-    for i in 0..arr.len() {
-        let mut tree: SplayTree<example_data::StdNum> = arr.iter().cloned().collect();
-        let mut walker = methods::search(&mut tree, i);
-        assert_eq!(walker.value().cloned(), Some(arr[i]));
-        let res = walker.delete();
-        assert_eq!(res, Some(arr[i]));
-        drop(walker);
-        assert_eq!(
-            tree.into_iter().collect::<Vec<_>>(),
-            arr[..i]
-                .iter()
-                .chain(arr[i + 1..].iter())
-                .cloned()
-                .collect::<Vec<_>>()
-        );
-    }
-}
-
-#[test]
-fn splay_insert() {
-    let arr: Vec<_> = (0..500).collect();
-    for i in 0..=arr.len() {
-        let new_val = 13;
-        let mut tree: SplayTree<example_data::StdNum> = arr.iter().cloned().collect();
-        let mut walker = methods::search(&mut tree, i..i);
-        walker.insert(new_val);
-        assert_eq!(walker.value().cloned(), Some(new_val));
-        drop(walker);
-        assert_eq!(
-            tree.into_iter().collect::<Vec<_>>(),
-            arr[..i]
-                .iter()
-                .chain([new_val].iter())
-                .chain(arr[i..].iter())
-                .cloned()
-                .collect::<Vec<_>>()
-        );
     }
 }

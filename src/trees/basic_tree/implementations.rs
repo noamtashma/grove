@@ -28,6 +28,20 @@ impl<D: Data> SomeTree<D> for BasicTree<D> {
     ) -> basic_tree::iterators::ImmIterator<'a, D, L> {
         iterators::ImmIterator::new(self, locator)
     }
+
+    /// Checks that invariants remain correct. i.e., that every node's summary
+    /// is the sum of the summaries of its children.
+    /// If it is not, panics.
+    fn assert_correctness(&self)
+    where
+        D::Summary: Eq,
+    {
+        self.assert_correctness_locally();
+        if let Root(node) = self {
+            node.left.assert_correctness();
+            node.right.assert_correctness();
+        }
+    }
 }
 
 impl<D: Data> Default for BasicTree<D> {
@@ -206,6 +220,19 @@ impl<D: Data, T> SomeEntry<D> for BasicTree<D, T> {
         node.rebuild();
         Some(())
     }
+
+    fn assert_correctness_locally(&self)
+    where
+        D::Summary: Eq,
+    {
+        if let Root(node) = self {
+            let ns = node.subtree_summary;
+            let os: D::Summary = node.left.subtree_summary()
+                + D::to_summary(&node.node_value)
+                + node.right.subtree_summary();
+            assert!(ns == os);
+        }
+    }
 }
 
 impl<'a, D: Data, T> SomeEntry<D> for BasicWalker<'a, D, T> {
@@ -256,6 +283,13 @@ impl<'a, D: Data, T> SomeEntry<D> for BasicWalker<'a, D, T> {
         node.right.act_subtree(action);
         node.rebuild();
         Some(())
+    }
+
+    fn assert_correctness_locally(&self)
+    where
+        D::Summary: Eq,
+    {
+        self.inner().assert_correctness_locally();
     }
 }
 

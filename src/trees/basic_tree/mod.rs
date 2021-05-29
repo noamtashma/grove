@@ -63,33 +63,6 @@ impl<D: Data, T> BasicTree<D, T> {
         }
     }
 
-    /// Checks that invariants remain correct. i.e., that every node's summary
-    /// is the sum of the summaries of its children.
-    /// If it is not, panics.
-    pub fn assert_correctness(&self)
-    where
-        D::Summary: Eq,
-    {
-        self.assert_correctness_locally();
-        if let Root(node) = self {
-            node.left.assert_correctness();
-            node.right.assert_correctness();
-        }
-    }
-
-    pub fn assert_correctness_locally(&self)
-    where
-        D::Summary: Eq,
-    {
-        if let Root(node) = self {
-            let ns = node.subtree_summary;
-            let os: D::Summary = node.left.subtree_summary()
-                + D::to_summary(&node.node_value)
-                + node.right.subtree_summary();
-            assert!(ns == os);
-        }
-    }
-
     /// Returns The inner node.
     pub fn node(&self) -> Option<&BasicNode<D, T>> {
         match self {

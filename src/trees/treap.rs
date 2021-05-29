@@ -68,6 +68,16 @@ impl<D: Data> SomeTree<D> for Treap<D> {
     ) -> basic_tree::iterators::ImmIterator<'a, D, L, T> {
         iterators::ImmIterator::new(&mut self.tree, locator)
     }
+
+    /// Checks that invariants remain correct. i.e., that every node's summary
+    /// is the sum of the summaries of its children, and that the priorities are ordered.
+    /// If it finds a collision of priority values, or any other violation, it panics.
+    fn assert_correctness(&self)
+    where
+        D::Summary: Eq,
+    {
+        Self::assert_correctness_internal(&self.tree);
+    }
 }
 
 impl<D: Data> Default for Treap<D> {
@@ -129,6 +139,16 @@ impl<D: Data> SomeEntry<D> for Treap<D> {
     fn act_right_subtree(&mut self, action: D::Action) -> Option<()> {
         self.tree.act_right_subtree(action)
     }
+
+    fn assert_correctness_locally(&self)
+    where
+        D::Summary: Eq,
+    {
+        self.tree.assert_correctness_locally();
+        if let Some(node) = self.tree.node() {
+            Self::assert_priorities_locally_internal(&node);
+        }
+    }
 }
 
 impl<D: Data> BasicTree<D, T> {
@@ -169,16 +189,6 @@ impl<D: Data> Treap<D> {
         union_internal(&mut self.tree, tree2);
     }
 
-    /// Checks that invariants remain correct. i.e., that every node's summary
-    /// is the sum of the summaries of its children, and that the priorities are ordered.
-    /// If it finds a collision of priority values, or any other violation, it panics.
-    pub fn assert_correctness(&self)
-    where
-        D::Summary: Eq,
-    {
-        Self::assert_correctness_internal(&self.tree);
-    }
-
     fn assert_correctness_internal(tree: &BasicTree<D, T>)
     where
         D::Summary: Eq,
@@ -188,15 +198,6 @@ impl<D: Data> Treap<D> {
             Self::assert_priorities_locally_internal(&node);
             Self::assert_correctness_internal(&node.left);
             Self::assert_correctness_internal(&node.right);
-        }
-    }
-
-    pub fn assert_correctness_locally(&self)
-    where
-        D::Summary: Eq,
-    {
-        if let Some(node) = self.tree.node() {
-            Self::assert_priorities_locally_internal(&node);
         }
     }
 
@@ -328,6 +329,16 @@ impl<'a, D: Data> SomeEntry<D> for TreapWalker<'a, D> {
 
     fn act_right_subtree(&mut self, action: D::Action) -> Option<()> {
         self.walker.act_right_subtree(action)
+    }
+
+    fn assert_correctness_locally(&self)
+    where
+        D::Summary: Eq,
+    {
+        self.walker.assert_correctness_locally();
+        if let Some(node) = self.walker.node() {
+            Treap::assert_priorities_locally_internal(&node);
+        }
     }
 }
 
@@ -617,48 +628,5 @@ impl<'a, D: Data> SplittableWalker<D> for TreapWalker<'a, D> {
         let mut right = self.split_right()?;
         std::mem::swap(self.inner_mut(), &mut right.tree);
         Some(right)
-    }
-}
-
-#[test]
-fn treap_delete() {
-    let arr: Vec<_> = (0..500).collect();
-    for i in 0..arr.len() {
-        let mut tree: Treap<example_data::StdNum> = arr.iter().cloned().collect();
-        let mut walker = methods::search(&mut tree, i);
-        assert_eq!(walker.value().cloned(), Some(arr[i]));
-        let res = walker.delete();
-        assert_eq!(res, Some(arr[i]));
-        drop(walker);
-        assert_eq!(
-            tree.into_iter().collect::<Vec<_>>(),
-            arr[..i]
-                .iter()
-                .chain(arr[i + 1..].iter())
-                .cloned()
-                .collect::<Vec<_>>()
-        );
-    }
-}
-
-#[test]
-fn treap_insert() {
-    let arr: Vec<_> = (0..500).collect();
-    for i in 0..=arr.len() {
-        let new_val = 13;
-        let mut tree: Treap<example_data::StdNum> = arr.iter().cloned().collect();
-        let mut walker = methods::search(&mut tree, i..i);
-        walker.insert(new_val);
-        assert_eq!(walker.value().cloned(), Some(new_val));
-        drop(walker);
-        assert_eq!(
-            tree.into_iter().collect::<Vec<_>>(),
-            arr[..i]
-                .iter()
-                .chain([new_val].iter())
-                .chain(arr[i..].iter())
-                .cloned()
-                .collect::<Vec<_>>()
-        );
     }
 }

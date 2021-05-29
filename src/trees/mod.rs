@@ -102,6 +102,12 @@ where
     ) -> basic_tree::iterators::ImmIterator<'_, D, std::ops::RangeFull, Self::TreeData> {
         self.iter_locator(..)
     }
+
+    /// Used for testing purposes.
+    /// Should panic if the invariants aren't satisfied.
+    fn assert_correctness(&self)
+    where
+        D::Summary: Eq;
 }
 
 /// This is a workaround for not having Generic Associated Types in Rust yet.
@@ -228,6 +234,12 @@ pub trait SomeEntry<D: Data> {
     fn act_left_subtree(&mut self, action: D::Action) -> Option<()>;
     /// Applies the given action on this node's right son.
     fn act_right_subtree(&mut self, action: D::Action) -> Option<()>;
+
+    /// Used for testing purposes.
+    /// Should panic if the local invariants aren't satisfied.
+    fn assert_correctness_locally(&self)
+    where
+        D::Summary: Eq;
 }
 
 /// Trait for trees that can be modified, i.e., values can be inserted and deleted.
