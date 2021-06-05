@@ -528,6 +528,11 @@ impl<D: Data> ConcatenableTree<D> for Treap<D> {
     fn concatenate_right(&mut self, tree2: Treap<D>) {
         let mut walker = self.walker();
         let mut tree_r = tree2.tree;
+
+        // if we don't access here, then tree_r might be swapped into the walker
+        // (in the first std::mem::swap) when it's not in a clean state, which is an assumed invariant.
+        // this can mess up things, especially when reversals are present.
+        tree_r.access();
         loop {
             match (walker.priority(), tree_r.priority()) {
                 (None, _) => {
