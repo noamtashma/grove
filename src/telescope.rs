@@ -75,7 +75,30 @@
 //!     assert_eq!(walker.value_mut().cloned(), Some(7)); // we changed the value at the head
 //! }
 //!```
+//! This works by having a stack of references in the telescope. You can do these toperations:
+//! * You can always use the reference
+//!  on top of the stack (the current reference) - the telescope is a smart pointer to it.
+//! * using [`extend`][Telescope::extend], freeze the current reference
+//!  and extend the telescope with a new reference derived from it.
+//!  for example, pushing to the stack the child of the current node.
+//! * pop the stack to get back to the previous references, unfreezing them.
 //!
+//! # Safety
+//! The telescope obey's rust's borrowing rules, by simulating freezing. Whenever
+//! you extend the telescope with a reference `child_ref` that is derived from the current
+//! reference `parent_ref`, the telescope freezes `parent_ref`, and no longer allows
+//! `parent_ref` to be used.
+//! When `child_ref` will be popped from the telescope,
+//! `parent_ref` will be allowed to be used again.
+//!
+//! This is essentially the same as what would have happened if you wrote your functions recursively,
+//! but decoupled from the actual call stack.
+//!
+//! Another important point to consider is the safety of
+//! the actual call to [`extend`][Telescope::extend]: see its documentation.
+//!
+//! Internally, the telescope keeps a stack of pointers, instead of reference, in order not
+//! to violate rust's invariants.
 
 use std::marker::PhantomData;
 use std::ops::Deref;
@@ -113,20 +136,35 @@ impl<'a, T: ?Sized> Telescope<'a, T> {
         self.vec.len() + 1
     }
 
-    /// This function extends the telescope one time. That meaans, if the latest layer
-    /// of the telescope is a reference `ref`, then this call extends the telescope
-    /// and the new latest layer will have the reference `ref2 = func(ref)`.
-    /// After this call, the telescope will expose the new `ref2`, and `ref`
-    /// will be frozen (As it is borrowed by `ref2`), until this layer is
-    /// popped off.
+    /// This function extends the telescope one time. That means, if the current
+    /// reference is `current_ref: &mut T`, then this call extends the telescope
+    /// with the new reference `ref2: &mut T = func(current_ref)`.
+    /// After this call, the telescope will expose the new `ref2`, and `current_ref`
+    /// will be frozen (As it is borrowed by `ref2`), until `ref2` is
+    /// popped off, unfreezing `current_ref`.
     ///
     /// # Safety:
     /// The type ensures no leaking is possible, since `func` can't guarantee that
-    /// the reference given to it will live for any length of time, so it can't leak it anywhere.
-    /// It can only use it inside the function, and use it to return a new reference, which is the
+    /// `current_ref` will live for any length of time, so it can't leak it anywhere.
+    /// It can only use `current_ref` inside the function, and use it in order to return `ref2`, which is the
     /// intended usage.
     ///
-    /// Altenatively, if the type was just
+    /// A different point of view is this: we have to borrow `current_ref` to `func`
+    /// with the actual correct lifetime: the lifetime in which it is allowed to
+    /// freeze `current_ref` in order to use `ref2`.
+    ///
+    /// However, we don't know yet what that
+    /// lifetime is: it will be whatever amount of time passes until `ref2` will be
+    /// popped back, unfreezing `current_ref`. (and that lifetime can even be decided dynamically).
+    /// Whatever lifetime `'freeze_time` that turns out to be, the type of `func` should have been
+    /// `func: FnOnce(&'freeze_time mut T) -> &'freeze_time mut T`.
+    ///
+    /// Therefore, we require that `func` will be able to work with any value of `'freeze_time`, so we
+    /// are sure that the code would've worked correctly if we put the correct lifetime there.
+    /// So that ensures the code is safe.
+    ///
+    /// Another point of view is considering what other types we could have given to this function:
+    /// If the type was just
     /// ```rust,ignore
     /// fn extend<'a, F : FnOnce(&'a mut T) -> &'a mut T>(&mut self, func : F)
     /// ```
@@ -139,8 +177,8 @@ impl<'a, T: ?Sized> Telescope<'a, T> {
     /// fn extend<'a, F : FnOnce(&'a mut T) -> &'a mut T>(&'a mut self, func : F)
     /// ```
     ///
-    /// But that would invalidate the whole point of using the telescope - You couldn't extend
-    /// more than once, and it couldn't be any better than a regular mutable reference.
+    /// But that would invalidate the whole point of using the telescope - You couldn't
+    /// use it after extending even once, and it couldn't be any better than a regular mutable reference.
     pub fn extend<F: for<'b> FnOnce(&'b mut T) -> &'b mut T>(&mut self, func: F) {
         self.extend_result(|r| Ok(func(r))).void_unwrap()
     }
@@ -177,7 +215,7 @@ impl<'a, T: ?Sized> Telescope<'a, T> {
     }
 
     /// This function maps the top of the telescope. It's similar to [`Self::extend`], but
-    /// it doesn't keep the previous reference. See [`Self::extend`] for more details.
+    /// it replaces the current reference instead of keeping it. See [`Self::extend`] for more details.
     pub fn map<F: for<'b> FnOnce(&'b mut T) -> &'b mut T>(&mut self, func: F) {
         self.map_result(|r| Ok(func(r))).void_unwrap()
     }
@@ -214,7 +252,7 @@ impl<'a, T: ?Sized> Telescope<'a, T> {
     }
 
     /// Push another reference to the telescope, unrelated to the current one.
-    /// `tel.push(ref)` is morally equivalent to `tel.extend_result_precise(move |_, _| { Ok(ref) })`.
+    /// `tel.push(new_ref)` is morally equivalent to `tel.extend_result_precise(move |_, _| { Ok(new_ref) })`.
     /// However, you might have some trouble making the anonymous function conform to the
     /// right type.
     pub fn push(&mut self, r: &'a mut T) {
@@ -238,6 +276,7 @@ impl<'a, T: ?Sized> Telescope<'a, T> {
 
     /// Lets the user use the last reference for some time, and discards it completely.
     /// After the user uses it, the next time they inspect the telescope, it won't be there.
+    /// Can't pop the last reference, as the telescope can't be empty, and returns `None` instead.
     pub fn pop(&mut self) -> Option<&mut T> {
         let res = unsafe { self.head.as_mut() }.expect(NULL_POINTER_ERROR);
         self.head = self.vec.pop()?; // We can't pop the original reference. In that case, Return None.
