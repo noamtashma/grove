@@ -74,36 +74,29 @@ impl<D: Data> SplayTree<D> {
         // reborrows the tree for a shorter time
         let mut walker = self.slice(left_edge).search();
         let b1 = walker.previous_filled().is_ok();
-        drop(walker); // must drop here so that the next call to search can happen
+        walker.splay(); // must drop here so that the next call to search can happen
 
         // if we previously splayed a node, work only below it, in order to not move it
         // when splaying
-        let (left_summary, helper_tree) = if b1 {
-            (
-                self.left_subtree_summary().unwrap() + self.node_summary(),
-                &mut self.tree.node_mut().unwrap().right,
-            )
-        } else {
-            (Default::default(), &mut self.tree)
-        };
-        let right_edge = locators::RightEdgeOf(locator);
+        if b1 {
+            walker.go_right().unwrap();
+        }
+
         let mut walker2 = SplayWalker {
-            walker: BasicWalker::new_with_context(helper_tree, left_summary, Default::default()),
+            walker: walker.walker.detached_walker(),
         };
+
+        let right_edge = locators::RightEdgeOf(locator);
         methods::search_walker(&mut walker2, right_edge);
         let b2 = walker2.next_filled().is_ok();
         walker2.splay();
-        drop(left_summary);
         drop(walker2);
-        let mut walker3 = self.walker();
-        if b1 {
-            walker3.go_right().unwrap();
-        }
+
         if b2 {
-            walker3.go_left().unwrap();
+            walker.go_left().unwrap();
         }
 
-        walker3
+        walker
     }
 }
 
