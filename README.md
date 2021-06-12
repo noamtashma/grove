@@ -1,2 +1,2 @@
 # orchard
-a rust library for pairing different implementations of balanced trees with different kinds of data that can be stored in the tree nodes.
+A Rust library for segment trees allowing user-defined segment queries and segment updates, paired with different kinds of balanced binary trees (splay trees, avl trees, and so on).
