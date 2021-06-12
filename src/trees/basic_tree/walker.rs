@@ -2,7 +2,7 @@
 // instead look for documentation of the `BasicWalker` struct.
 
 use super::*;
-use crate::telescope::*;
+use recursive_reference::*;
 
 use crate::trees::SomeWalker; // in order to be able to use our own go_up method
 
@@ -54,7 +54,7 @@ impl<D: Data> Frame<D> {
 pub struct BasicWalker<'a, D: Data, T = ()> {
     /// The telescope, holding references to all the subtrees from the root to the
     /// current position.
-    pub(super) tel: Telescope<'a, BasicTree<D, T>>,
+    pub(super) tel: RecRef<'a, BasicTree<D, T>>,
 
     /// This array holds the accumulation of all the values left of the subtree, and
     /// all of the values right of the subtree, for every subtree from the root to
@@ -72,7 +72,7 @@ impl<'a, D: Data, T> BasicWalker<'a, D, T> {
     pub fn new(tree: &'a mut BasicTree<D, T>) -> BasicWalker<'a, D, T> {
         tree.access();
         BasicWalker {
-            tel: Telescope::new(tree),
+            tel: RecRef::new(tree),
             vals: vec![Frame::empty()],
             is_left: vec![],
         }
@@ -88,7 +88,7 @@ impl<'a, D: Data, T> BasicWalker<'a, D, T> {
     ) -> BasicWalker<'a, D, T> {
         tree.access();
         BasicWalker {
-            tel: Telescope::new(tree),
+            tel: RecRef::new(tree),
             vals: vec![Frame {
                 left: left_summary,
                 right: right_summary,
@@ -268,6 +268,16 @@ impl<'a, D: Data, T> BasicWalker<'a, D, T> {
         self.go_to_root();
         let (tel, _, _) = self.destructure();
         tel.into_ref()
+    }
+
+    /// Creates a walker that can only access the current subtree. However,
+    /// it knows the context of the tree around it, so that locators still work on it as expected
+    /// (e.g, looking for the seventh element will still find the element that is the seventh in
+    /// the whole tree, and not the seventh in the subtree).
+    pub fn detached_walker(&mut self) -> BasicWalker<D, T> {
+        let left = self.far_left_summary();
+        let right = self.far_right_summary();
+        BasicWalker::new_with_context(self.inner_mut(), left, right)
     }
 
     pub fn insert_with_alg_data(&mut self, value: D::Value, alg_data: T) -> Option<()> {

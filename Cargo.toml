@@ -3,6 +3,8 @@ name = "orchard"
 version = "0.1.0"
 authors = ["Noam Ta Shma noam.tashma@gmail.com"]
 edition = "2018"
+keywords = ["interval", "segment", "tree", "BST"]
+categories = ["data-structures", "algorithms"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -10,6 +12,7 @@ edition = "2018"
 derive_destructure = "1.0.0"
 void = "*"
 rand = "*"
+recursive_reference = {version = "0.1.*", path = "../recursive_reference" }
 
 [dev-dependencies]
 itertools = "*"

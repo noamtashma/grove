@@ -4,7 +4,7 @@
 
 use super::super::*; // crate::trees::*
 use super::*;
-use crate::telescope::NO_VALUE_ERROR;
+use recursive_reference::NO_VALUE_ERROR;
 
 impl<D: Data> SomeTree<D> for BasicTree<D> {
     fn segment_summary<L>(&mut self, locator: L) -> D::Summary
@@ -77,7 +77,7 @@ impl<'a, D: Data, T> SomeWalker<D> for BasicWalker<'a, D, T> {
         let mut frame = self
             .vals
             .last()
-            .expect(crate::telescope::NO_VALUE_ERROR)
+            .expect(recursive_reference::NO_VALUE_ERROR)
             .clone();
         let res = self.tel.extend_result(|tree| {
             if let Some(node) = tree.node_mut() {
@@ -101,7 +101,7 @@ impl<'a, D: Data, T> SomeWalker<D> for BasicWalker<'a, D, T> {
         let mut frame = self
             .vals
             .last()
-            .expect(crate::telescope::NO_VALUE_ERROR)
+            .expect(recursive_reference::NO_VALUE_ERROR)
             .clone();
         let res = self.tel.extend_result(|tree| {
             if let Some(node) = tree.node_mut() {

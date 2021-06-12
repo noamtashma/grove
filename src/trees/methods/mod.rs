@@ -68,7 +68,7 @@ pub fn previous_filled<W: SomeWalker<A>, A: Data>(walker: &mut W) -> Result<(), 
 // TODO: finger searching.
 /// Finds any node that the locator `Accept`s. Looks inside the whole tree.
 /// If there isn't any, it finds the empty location where that node would be instead.
-/// Returns a walker at the wanted position.
+/// Moves the walker to the wanted position.
 pub fn search_walker<W, D: Data, L>(walker: &mut W, locator: L)
 where
     W: crate::trees::SomeWalker<D>,
