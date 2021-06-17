@@ -4,7 +4,9 @@
 
 use super::super::*; // crate::trees::*
 use super::*;
-use recursive_reference::NO_VALUE_ERROR;
+use recursive_reference::RecRef;
+
+const NO_VALUE_ERROR: &str = "invariant violated: RecRef can't be empty";
 
 impl<D: Data> SomeTree<D> for BasicTree<D> {
     fn segment_summary<L>(&mut self, locator: L) -> D::Summary
@@ -74,12 +76,8 @@ impl<'a, D: Data, T> SomeTreeRef<D> for &'a mut BasicTree<D, T> {
 
 impl<'a, D: Data, T> SomeWalker<D> for BasicWalker<'a, D, T> {
     fn go_left(&mut self) -> Result<(), ()> {
-        let mut frame = self
-            .vals
-            .last()
-            .expect(recursive_reference::NO_VALUE_ERROR)
-            .clone();
-        let res = self.tel.extend_result(|tree| {
+        let mut frame = self.vals.last().expect(NO_VALUE_ERROR).clone();
+        let res = RecRef::extend_result(&mut self.tel, |tree| {
             if let Some(node) = tree.node_mut() {
                 // update values
                 frame.right = node.node_summary() + node.right.subtree_summary() + frame.right;
@@ -98,12 +96,8 @@ impl<'a, D: Data, T> SomeWalker<D> for BasicWalker<'a, D, T> {
     }
 
     fn go_right(&mut self) -> Result<(), ()> {
-        let mut frame = self
-            .vals
-            .last()
-            .expect(recursive_reference::NO_VALUE_ERROR)
-            .clone();
-        let res = self.tel.extend_result(|tree| {
+        let mut frame = self.vals.last().expect(NO_VALUE_ERROR).clone();
+        let res = RecRef::extend_result(&mut self.tel, |tree| {
             if let Some(node) = tree.node_mut() {
                 // update values
                 frame.left = frame.left + node.left.subtree_summary() + node.node_summary();
@@ -126,7 +120,7 @@ impl<'a, D: Data, T> SomeWalker<D> for BasicWalker<'a, D, T> {
         match self.is_left.pop() {
             None => Err(()),
             Some(b) => {
-                self.tel.pop().expect(NO_VALUE_ERROR);
+                RecRef::pop(&mut self.tel).expect(NO_VALUE_ERROR);
                 self.vals.pop().expect(NO_VALUE_ERROR);
                 self.tel.rebuild();
                 Ok(b)

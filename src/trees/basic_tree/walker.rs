@@ -48,7 +48,7 @@ impl<D: Data> Frame<D> {
 /// The walker will automatically go back up the tree to the root when dropped,
 /// in order to [`BasicNode::rebuild`] all the nodes.
 ///
-/// Internally, a [`Telescope`] type is used, in order to be able to dynamically
+/// Internally, [`recursive_reference::RecRef`] is used, in order to be able to dynamically
 /// go up and down the tree without upsetting the borrow checker.
 #[derive(destructure)]
 pub struct BasicWalker<'a, D: Data, T = ()> {
@@ -267,7 +267,7 @@ impl<'a, D: Data, T> BasicWalker<'a, D, T> {
         // go to the root
         self.go_to_root();
         let (tel, _, _) = self.destructure();
-        tel.into_ref()
+        RecRef::into_ref(tel)
     }
 
     /// Creates a walker that can only access the current subtree. However,

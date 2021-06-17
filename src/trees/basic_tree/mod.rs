@@ -14,7 +14,6 @@ mod nonrecursive_deallocator;
 pub use nonrecursive_deallocator::deallocate_nonrecursive;
 
 use crate::*;
-//pub use crate::data::*; // because everyone will need to specify Data for the generic parameters
 
 /// A basic tree. might be empty.
 /// The `T` parameter is for algorithm-specific bookeeping data.
