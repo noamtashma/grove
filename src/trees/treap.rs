@@ -489,6 +489,81 @@ where
     node.rebuild();
 }
 
+#[cfg(feature = "async_union")]
+use async_recursion::async_recursion;
+
+#[cfg(feature = "async_union")]
+/// Computes the union of two splay trees, ordered by keys.
+/// We order the resulting tree based on the `D::Value : Keyed` instance, assuming that
+/// the values in the existing trees are also in the correct order.
+/// This is different from concatenate, because concatenate puts first all elements of the first tree,
+/// and then all of the elements of the second tree.
+///
+/// If elements with equal keys are found, they are placed in an arbitrary order.
+///
+/// # Complexity
+/// If the sizes of the two trees are `n,k`, with `n < k`, then the complexity is
+/// `O(n*log(1+k/n))` in the average case. It is aolso equal to `O(log(n+k 'choose' n))`.
+/// This has the effect that if you start with `n` different singletone trees,
+/// and you united them together in any way whatsoever, the overall complexity would be
+/// `O(n*log(n))`.
+#[async_recursion]
+async fn union_internal_concurrent<D: Data>(tree1: &mut BasicTree<D, T>, mut tree2: Treap<D>)
+where
+    D::Value: Keyed,
+    <D::Value as Keyed>::Key: Send,
+    D::Action: Send,
+    D::Summary: Send,
+    D::Value: Send,
+{
+    if tree2.is_empty() {
+        return;
+    }
+    if tree1.is_empty() {
+        *tree1 = tree2.tree;
+        return;
+    }
+    if tree1.priority().unwrap() > tree2.priority().unwrap() {
+        std::mem::swap(tree1, &mut tree2.tree);
+    }
+    let node = tree1.node_mut().unwrap();
+
+    // formulation with less calls to panic, but less elegant
+    /*
+    let node = match (tree1.node_mut(), tree2.priority()) {
+        (None, _) => { *tree1 = tree2.tree; return; },
+        (_, None) => { return; },
+        (Some(node), Some(priority)) => {
+            if *node.alg_data() > priority {
+                std::mem::swap(tree1, &mut tree2.tree);
+                tree1.node_mut().unwrap()
+            } else {
+                node
+            }
+        },
+    };
+    */
+
+    let key = node.node_value().get_key(); // this performs access()
+
+    // TODO: replace by a locator that does the handling of the equality case by itself
+    let mut split_walker = methods::search(&mut tree2, locators::ByKey((key,)));
+    // if an element with the same key was found, arbitrarily decide to put it more to the right
+    if split_walker.is_empty() == false {
+        methods::previous_empty(&mut split_walker).unwrap();
+    }
+    // split
+    let right = split_walker.split_right().unwrap();
+    drop(split_walker);
+    let left = tree2;
+
+    futures::join!(
+        union_internal_concurrent(&mut node.left, left),
+        union_internal_concurrent(&mut node.right, right)
+    );
+    node.rebuild();
+}
+
 /// Computes the union of two splay trees, ordered by keys.
 /// We order the resulting tree based on the `D::Value : Keyed` instance, assuming that
 /// the values in the existing trees are also in the correct order.
