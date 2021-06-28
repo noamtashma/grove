@@ -1,3 +1,4 @@
+#[cfg(not(miri))] // miri can't access system resources
 use std::time::Instant;
 
 use orchard::*;
@@ -173,7 +174,9 @@ where
     };
     let mut tree: T = vec![inter].into_iter().collect();
 
+    #[cfg(not(miri))] // miri can't access system resources
     let start_calculation = Instant::now();
+    
     let mut sn = 1;
     let mut tn = 1;
     for _ in 0..k {
@@ -192,7 +195,11 @@ where
         tn += sn;
         tn %= n;
     }
+    #[cfg(not(miri))] // miri can't access system resources
     let calculation_duration = Instant::now().duration_since(start_calculation);
+    #[cfg(miri)]
+    let calculation_duration = "???";
+
     // compute the final sum:
     let mut index = 0;
     let mut index_sum = 0;
@@ -230,22 +237,31 @@ pub fn main() {
 pub fn yarra_splay() {
     let res = yarra::<SplayTree<_>>(100, 100);
     assert_eq!(res, 246597);
-    let res = yarra::<SplayTree<_>>(10000, 10000);
-    assert_eq!(res, 275481640);
+    #[cfg(not(miri))] // miri is too slow for this
+    {
+        let res = yarra::<SplayTree<_>>(10000, 10000);
+        assert_eq!(res, 275481640);
+    }
 }
 
 #[test]
 pub fn yarra_treap() {
     let res = yarra::<Treap<_>>(100, 100);
     assert_eq!(res, 246597);
-    let res = yarra::<Treap<_>>(10000, 10000);
-    assert_eq!(res, 275481640);
+    #[cfg(not(miri))] // miri is too slow for this
+    {
+        let res = yarra::<Treap<_>>(10000, 10000);
+        assert_eq!(res, 275481640);
+    }
 }
 
 #[test]
 pub fn yarra_avl() {
     let res = yarra::<AVLTree<_>>(100, 100);
     assert_eq!(res, 246597);
-    let res = yarra::<AVLTree<_>>(10000, 10000);
-    assert_eq!(res, 275481640);
+    #[cfg(not(miri))] // miri is too slow for this
+    {
+        let res = yarra::<AVLTree<_>>(10000, 10000);
+        assert_eq!(res, 275481640);
+    }
 }
