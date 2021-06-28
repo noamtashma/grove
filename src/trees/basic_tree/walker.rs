@@ -54,7 +54,7 @@ impl<D: Data> Frame<D> {
 pub struct BasicWalker<'a, D: Data, T = ()> {
     /// The telescope, holding references to all the subtrees from the root to the
     /// current position.
-    pub(super) tel: RecRef<'a, BasicTree<D, T>>,
+    pub(super) rec_ref: RecRef<'a, BasicTree<D, T>>,
 
     /// This array holds the accumulation of all the values left of the subtree, and
     /// all of the values right of the subtree, for every subtree from the root to
@@ -72,7 +72,7 @@ impl<'a, D: Data, T> BasicWalker<'a, D, T> {
     pub fn new(tree: &'a mut BasicTree<D, T>) -> BasicWalker<'a, D, T> {
         tree.access();
         BasicWalker {
-            tel: RecRef::new(tree),
+            rec_ref: RecRef::new(tree),
             vals: vec![Frame::empty()],
             is_left: vec![],
         }
@@ -88,7 +88,7 @@ impl<'a, D: Data, T> BasicWalker<'a, D, T> {
     ) -> BasicWalker<'a, D, T> {
         tree.access();
         BasicWalker {
-            tel: RecRef::new(tree),
+            rec_ref: RecRef::new(tree),
             vals: vec![Frame {
                 left: left_summary,
                 right: right_summary,
@@ -99,7 +99,7 @@ impl<'a, D: Data, T> BasicWalker<'a, D, T> {
 
     /// Returns true if at an empty position.
     pub fn is_empty(&self) -> bool {
-        self.tel.is_empty()
+        self.rec_ref.is_empty()
     }
 
     /// Returns if this is the empty tree
@@ -119,30 +119,30 @@ impl<'a, D: Data, T> BasicWalker<'a, D, T> {
     /// Not public since the walker should maintain the invariant that the current position
     /// is always clean. Ergo, for internal use.
     pub (in super::super) fn access(&mut self) {
-        self.tel.access();
+        self.rec_ref.access();
     }
     */
 
     /// Not public since the walker should maintain the invariant that the current position
     /// is always clean. Ergo, for internal use.
     pub(in super::super) fn rebuild(&mut self) {
-        self.tel.rebuild();
+        self.rec_ref.rebuild();
     }
 
     pub fn inner(&self) -> &BasicTree<D, T> {
-        &*self.tel
+        &*self.rec_ref
     }
 
     pub(in super::super) fn inner_mut(&mut self) -> &mut BasicTree<D, T> {
-        &mut *self.tel
+        &mut *self.rec_ref
     }
 
     pub fn node(&self) -> Option<&BasicNode<D, T>> {
-        self.tel.node()
+        self.rec_ref.node()
     }
 
     pub(in super::super) fn node_mut(&mut self) -> Option<&mut BasicNode<D, T>> {
-        self.tel.node_mut()
+        self.rec_ref.node_mut()
     }
 
     /// Performs a left rotation
@@ -159,7 +159,7 @@ impl<'a, D: Data, T> BasicWalker<'a, D, T> {
         &mut self,
         mut rebuilder: F,
     ) -> Option<()> {
-        let owned_tree = std::mem::replace(&mut *self.tel, BasicTree::Empty);
+        let owned_tree = std::mem::replace(&mut *self.rec_ref, BasicTree::Empty);
 
         let mut bn1: Box<BasicNode<D, T>> = owned_tree.into_node_boxed()?;
         assert!(bn1.action.is_identity());
@@ -175,7 +175,7 @@ impl<'a, D: Data, T> BasicWalker<'a, D, T> {
         // bn2.rebuild()
         rebuilder(&mut *bn2);
 
-        *self.tel = Root(bn2); // restore the node back
+        *self.rec_ref = Root(bn2); // restore the node back
         Some(())
     }
 
@@ -193,7 +193,7 @@ impl<'a, D: Data, T> BasicWalker<'a, D, T> {
         &mut self,
         mut rebuilder: F,
     ) -> Option<()> {
-        let owned_tree = std::mem::replace(&mut *self.tel, BasicTree::Empty);
+        let owned_tree = std::mem::replace(&mut *self.rec_ref, BasicTree::Empty);
 
         let mut bn1: Box<BasicNode<D, T>> = owned_tree.into_node_boxed()?;
         assert!(bn1.action.is_identity());
@@ -209,7 +209,7 @@ impl<'a, D: Data, T> BasicWalker<'a, D, T> {
         // bn2.rebuild()
         rebuilder(&mut *bn2);
 
-        *self.tel = Root(bn2); // restore the node back
+        *self.rec_ref = Root(bn2); // restore the node back
         Some(())
     }
 
@@ -281,9 +281,9 @@ impl<'a, D: Data, T> BasicWalker<'a, D, T> {
     }
 
     pub fn insert_with_alg_data(&mut self, value: D::Value, alg_data: T) -> Option<()> {
-        match *self.tel {
+        match *self.rec_ref {
             Empty => {
-                *self.tel = BasicTree::from_node(BasicNode::new_alg(value, alg_data));
+                *self.rec_ref = BasicTree::from_node(BasicNode::new_alg(value, alg_data));
                 Some(())
             }
             _ => None,
@@ -293,14 +293,14 @@ impl<'a, D: Data, T> BasicWalker<'a, D, T> {
     /// Takes the current subtree out of the tree, and writes `Empty` instead.
     /// Intended to help writing tree algorithms.
     pub(in super::super) fn take_subtree(&mut self) -> BasicTree<D, T> {
-        std::mem::replace(&mut *self.tel, BasicTree::Empty)
+        std::mem::replace(&mut *self.rec_ref, BasicTree::Empty)
     }
 
     /// If the current position is empty, puts the given value there instead.
     /// Intended to help writing tree algorithms.
     pub(in super::super) fn put_subtree(&mut self, new: BasicTree<D, T>) -> Option<()> {
-        if self.tel.is_empty() {
-            *self.tel = new;
+        if self.rec_ref.is_empty() {
+            *self.rec_ref = new;
             Some(())
         } else {
             None

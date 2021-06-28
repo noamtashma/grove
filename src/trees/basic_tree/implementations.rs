@@ -77,7 +77,7 @@ impl<'a, D: Data, T> SomeTreeRef<D> for &'a mut BasicTree<D, T> {
 impl<'a, D: Data, T> SomeWalker<D> for BasicWalker<'a, D, T> {
     fn go_left(&mut self) -> Result<(), ()> {
         let mut frame = self.vals.last().expect(NO_VALUE_ERROR).clone();
-        let res = RecRef::extend_result(&mut self.tel, |tree| {
+        let res = RecRef::extend_result(&mut self.rec_ref, |tree| {
             if let Some(node) = tree.node_mut() {
                 // update values
                 frame.right = node.node_summary() + node.right.subtree_summary() + frame.right;
@@ -97,7 +97,7 @@ impl<'a, D: Data, T> SomeWalker<D> for BasicWalker<'a, D, T> {
 
     fn go_right(&mut self) -> Result<(), ()> {
         let mut frame = self.vals.last().expect(NO_VALUE_ERROR).clone();
-        let res = RecRef::extend_result(&mut self.tel, |tree| {
+        let res = RecRef::extend_result(&mut self.rec_ref, |tree| {
             if let Some(node) = tree.node_mut() {
                 // update values
                 frame.left = frame.left + node.left.subtree_summary() + node.node_summary();
@@ -120,9 +120,9 @@ impl<'a, D: Data, T> SomeWalker<D> for BasicWalker<'a, D, T> {
         match self.is_left.pop() {
             None => Err(()),
             Some(b) => {
-                RecRef::pop(&mut self.tel).expect(NO_VALUE_ERROR);
+                RecRef::pop(&mut self.rec_ref).expect(NO_VALUE_ERROR);
                 self.vals.pop().expect(NO_VALUE_ERROR);
-                self.tel.rebuild();
+                self.rec_ref.rebuild();
                 Ok(b)
             }
         }
@@ -140,11 +140,11 @@ impl<'a, D: Data, T> SomeWalker<D> for BasicWalker<'a, D, T> {
     }
 
     // fn inner(&self) -> &BasicTree<A> {
-    //     &*self.tel
+    //     &*self.rec_ref
     // }
 
     fn value(&self) -> Option<&D::Value> {
-        let value = self.tel.node()?.node_value_clean();
+        let value = self.rec_ref.node()?.node_value_clean();
         Some(value)
     }
 }
@@ -231,49 +231,49 @@ impl<D: Data, T> SomeEntry<D> for BasicTree<D, T> {
 
 impl<'a, D: Data, T> SomeEntry<D> for BasicWalker<'a, D, T> {
     fn node_summary(&self) -> D::Summary {
-        self.tel.node_summary()
+        self.rec_ref.node_summary()
     }
 
     fn subtree_summary(&self) -> D::Summary {
-        self.tel.subtree_summary()
+        self.rec_ref.subtree_summary()
     }
 
     fn left_subtree_summary(&self) -> Option<D::Summary> {
-        self.tel.left_subtree_summary()
+        self.rec_ref.left_subtree_summary()
     }
 
     fn right_subtree_summary(&self) -> Option<D::Summary> {
-        self.tel.right_subtree_summary()
+        self.rec_ref.right_subtree_summary()
     }
 
     fn with_value<F, R>(&mut self, f: F) -> Option<R>
     where
         F: FnOnce(&mut D::Value) -> R,
     {
-        self.tel.with_value(f)
+        self.rec_ref.with_value(f)
     }
 
     fn act_subtree(&mut self, action: D::Action) {
-        self.tel.act_subtree(action);
-        self.tel.access();
+        self.rec_ref.act_subtree(action);
+        self.rec_ref.access();
     }
 
     fn act_node(&mut self, action: D::Action) -> Option<()> {
-        let node = self.tel.node_mut()?;
+        let node = self.rec_ref.node_mut()?;
         action.act_inplace(&mut node.node_value);
         node.rebuild();
         Some(())
     }
 
     fn act_left_subtree(&mut self, action: D::Action) -> Option<()> {
-        let node = self.tel.node_mut()?;
+        let node = self.rec_ref.node_mut()?;
         node.left.act_subtree(action);
         node.rebuild();
         Some(())
     }
 
     fn act_right_subtree(&mut self, action: D::Action) -> Option<()> {
-        let node = self.tel.node_mut()?;
+        let node = self.rec_ref.node_mut()?;
         node.right.act_subtree(action);
         node.rebuild();
         Some(())
