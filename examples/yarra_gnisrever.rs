@@ -176,7 +176,7 @@ where
 
     #[cfg(not(miri))] // miri can't access system resources
     let start_calculation = Instant::now();
-    
+
     let mut sn = 1;
     let mut tn = 1;
     for _ in 0..k {

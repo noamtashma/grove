@@ -303,6 +303,15 @@ impl Data for StdNum {
 // TODO: consider retiring this and just requiring Value: Ord instead.
 /// The convention is that smaller values go on the left
 pub trait Keyed {
-    type Key: std::cmp::Ord + Clone;
-    fn get_key(&self) -> <Self as Keyed>::Key;
+    type Key: std::cmp::Ord;
+    fn get_key(&self) -> &Self::Key;
+}
+
+pub struct Ordered<T>(T);
+
+impl<T: Ord> Keyed for Ordered<T> {
+    type Key = T;
+    fn get_key(&self) -> &Self::Key {
+        &self.0
+    }
 }

@@ -511,7 +511,7 @@ use async_recursion::async_recursion;
 async fn union_internal_concurrent<D: Data>(tree1: &mut BasicTree<D, T>, mut tree2: Treap<D>)
 where
     D::Value: Keyed,
-    <D::Value as Keyed>::Key: Send,
+    <D::Value as Keyed>::Key: Sync,
     D::Action: Send,
     D::Summary: Send,
     D::Value: Send,
