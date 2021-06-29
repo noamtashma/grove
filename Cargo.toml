@@ -20,6 +20,7 @@ async-recursion = {version = "*", optional = true}
 itertools = "*"
 text_io = "*"
 tokio = "*"
+tokio-test = "*"
 
 [lib]
 name = "orchard"

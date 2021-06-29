@@ -449,7 +449,7 @@ where
         *tree1 = tree2.tree;
         return;
     }
-    if tree1.priority().unwrap() > tree2.priority().unwrap() {
+    if tree1.priority().unwrap() < tree2.priority().unwrap() {
         std::mem::swap(tree1, &mut tree2.tree);
     }
     let node = tree1.node_mut().unwrap();
@@ -508,7 +508,7 @@ use async_recursion::async_recursion;
 /// and you united them together in any way whatsoever, the overall complexity would be
 /// `O(n*log(n))`.
 #[async_recursion]
-async fn union_internal_concurrent<D: Data>(tree1: &mut BasicTree<D, T>, mut tree2: Treap<D>)
+pub async fn union_internal_concurrent<D: Data>(tree1: &mut BasicTree<D, T>, mut tree2: Treap<D>)
 where
     D::Value: Keyed,
     <D::Value as Keyed>::Key: Sync,
@@ -523,7 +523,7 @@ where
         *tree1 = tree2.tree;
         return;
     }
-    if tree1.priority().unwrap() > tree2.priority().unwrap() {
+    if tree1.priority().unwrap() < tree2.priority().unwrap() {
         std::mem::swap(tree1, &mut tree2.tree);
     }
     let node = tree1.node_mut().unwrap();
@@ -564,6 +564,7 @@ where
     node.rebuild();
 }
 
+#[cfg(feature = "async_union")]
 /// Computes the union of two splay trees, ordered by keys.
 /// We order the resulting tree based on the `D::Value : Keyed` instance, assuming that
 /// the values in the existing trees are also in the correct order.
@@ -571,6 +572,61 @@ where
 /// and then all of the elements of the second tree.
 ///
 /// If elements with equal keys are found, they are placed in an arbitrary order.
+///
+///```rust
+///use orchard::*;
+///use orchard::treap::*;
+///use orchard::example_data::{NoAction, Ordered};
+///
+///type T = Treap<NoAction<Ordered<i32>>>;
+///let tree1: T = (0..7).map(|x| Ordered(x)).collect();
+///let tree2: T = (4..9).map(|x| Ordered(x)).collect();
+///let tree = tokio_test::block_on(union_concurrent(tree1, tree2));
+/// # tree.assert_correctness();
+///assert_eq!(
+///    tree.into_iter().collect::<Vec<_>>(),
+///    [0,1,2,3,4,4,5,5,6,6,7,8].iter().map(|x| Ordered(*x)).collect::<Vec<_>>()
+///);
+///```
+///
+/// # Complexity
+/// If the sizes of the two trees are `n,k`, with `n < k`, then the complexity is
+/// `O(n*log(1+k/n))` in the average case. It is aolso equal to `O(log(n+k 'choose' n))`.
+/// This has the effect that if you start with `n` different singletone trees,
+/// and you united them together in any way whatsoever, the overall complexity would be
+/// `O(n*log(n))`.
+pub async fn union_concurrent<D: Data>(mut tree1: Treap<D>, tree2: Treap<D>) -> Treap<D>
+where
+    D::Value: Keyed,
+    <D::Value as Keyed>::Key: Sync,
+    D::Action: Send,
+    D::Summary: Send,
+    D::Value: Send,
+{
+    union_internal_concurrent(&mut tree1.tree, tree2).await;
+    tree1
+}
+
+/// Computes the union of two splay trees, ordered by keys.
+/// We order the resulting tree based on the `D::Value : Keyed` instance, assuming that
+/// the values in the existing trees are also in the correct order.
+/// This is different from concatenate, because concatenate puts first all elements of the first tree,
+/// and then all of the elements of the second tree.
+///
+/// If elements with equal keys are found, they are placed in an arbitrary order.
+///
+///```rust
+///use orchard::*;
+///use orchard::treap::*;
+///use orchard::example_data::{NoAction, Ordered};
+///
+///type T = Treap<NoAction<Ordered<i32>>>;
+///let tree1: T = (0..7).map(|x| Ordered(x)).collect();
+///let tree2: T = (4..9).map(|x| Ordered(x)).collect();
+///let tree = union(tree1, tree2);
+/// # tree.assert_correctness();
+///assert_eq!(tree.into_iter().collect::<Vec<_>>(), [0,1,2,3,4,4,5,5,6,6,7,8].iter().map(|x| Ordered(*x)).collect::<Vec<_>>());
+///```
 ///
 /// # Complexity
 /// If the sizes of the two trees are `n,k`, with `n < k`, then the complexity is

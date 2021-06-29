@@ -307,7 +307,8 @@ pub trait Keyed {
     fn get_key(&self) -> &Self::Key;
 }
 
-pub struct Ordered<T>(T);
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
+pub struct Ordered<T>(pub T);
 
 impl<T: Ord> Keyed for Ordered<T> {
     type Key = T;
