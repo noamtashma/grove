@@ -81,18 +81,6 @@ impl<D: Data> AVLTree<D> {
         }
     }
 
-    fn assert_correctness_internal(tree: &BasicTree<D, T>)
-    where
-        D::Summary: Eq,
-    {
-        tree.assert_correctness_locally();
-        if let Some(node) = tree.node() {
-            Self::assert_ranks_locally_internal(&node);
-            Self::assert_correctness_internal(&node.left);
-            Self::assert_correctness_internal(&node.right);
-        }
-    }
-
     pub fn assert_ranks_locally(&self) {
         if let Some(node) = self.tree.node() {
             Self::assert_ranks_locally_internal(&node);
@@ -106,15 +94,8 @@ impl<D: Data> AVLTree<D> {
     }
 
     pub fn assert_ranks(&self) {
-        Self::assert_ranks_internal(&self.tree);
-    }
-
-    fn assert_ranks_internal(tree: &BasicTree<D, T>) {
-        if let Some(node) = tree.node() {
-            Self::assert_ranks_locally_internal(&node);
-            Self::assert_ranks_internal(&node.left);
-            Self::assert_ranks_internal(&node.right);
-        }
+        self.tree
+            .assert_correctness_with(Self::assert_ranks_locally_internal);
     }
 }
 
@@ -192,7 +173,10 @@ impl<D: Data> SomeTree<D> for AVLTree<D> {
     where
         D::Summary: Eq,
     {
-        Self::assert_correctness_internal(&self.tree);
+        self.tree.assert_correctness_with(|node| {
+            node.assert_correctness_locally();
+            Self::assert_ranks_locally_internal(node);
+        });
     }
 }
 
@@ -260,9 +244,9 @@ impl<D: Data> SomeEntry<D> for AVLTree<D> {
     where
         D::Summary: Eq,
     {
-        self.tree.assert_correctness_locally();
         if let Some(node) = self.tree.node() {
             Self::assert_ranks_locally_internal(&node);
+            node.assert_correctness_locally();
         }
     }
 }

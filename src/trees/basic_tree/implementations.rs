@@ -219,12 +219,8 @@ impl<D: Data, T> SomeEntry<D> for BasicTree<D, T> {
     where
         D::Summary: Eq,
     {
-        if let Root(node) = self {
-            let ns = node.subtree_summary;
-            let os: D::Summary = node.left.subtree_summary()
-                + D::to_summary(&node.node_value)
-                + node.right.subtree_summary();
-            assert!(ns == os);
+        if let Some(node) = self.node() {
+            BasicNode::assert_correctness_locally(node);
         }
     }
 }

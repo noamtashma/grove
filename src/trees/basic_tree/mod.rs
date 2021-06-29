@@ -123,6 +123,20 @@ impl<D: Data, T> BasicTree<D, T> {
             BasicTree::Root(node) => format!("<{} >", node.representation(alg_print, to_reverse)),
         }
     }
+
+    /// Checks that invariants remain correct. i.e., that every node's summary
+    /// is the sum of the summaries of its children.
+    /// If it is not, panics.
+    pub fn assert_correctness_with<F>(&self, func: F)
+    where
+        F: Fn(&BasicNode<D, T>) + Copy,
+    {
+        if let Some(node) = self.node() {
+            func(node);
+            node.left.assert_correctness_with(func);
+            node.right.assert_correctness_with(func);
+        }
+    }
 }
 
 // TODO: decide if the fields should really be public
@@ -300,5 +314,16 @@ impl<D: Data, T> BasicNode<D, T> {
                 self.right.representation(alg_print, xor)
             )
         }
+    }
+
+    pub fn assert_correctness_locally(&self)
+    where
+        D::Summary: Eq,
+    {
+        let ns = self.subtree_summary;
+        let os: D::Summary = self.left.subtree_summary()
+            + D::to_summary(&self.node_value)
+            + self.right.subtree_summary();
+        assert!(ns == os, "Incorrect summaries found.");
     }
 }

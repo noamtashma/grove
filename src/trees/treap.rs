@@ -71,12 +71,15 @@ impl<D: Data> SomeTree<D> for Treap<D> {
 
     /// Checks that invariants remain correct. i.e., that every node's summary
     /// is the sum of the summaries of its children, and that the priorities are ordered.
-    /// If it finds a collision of priority values, or any other violation, it panics.
+    /// If it finds any violation, it panics.
     fn assert_correctness(&self)
     where
         D::Summary: Eq,
     {
-        Self::assert_correctness_internal(&self.tree);
+        self.tree.assert_correctness_with(|node| {
+            Self::assert_priorities_locally_internal(node);
+            node.assert_correctness_locally();
+        });
     }
 }
 
@@ -144,9 +147,9 @@ impl<D: Data> SomeEntry<D> for Treap<D> {
     where
         D::Summary: Eq,
     {
-        self.tree.assert_correctness_locally();
         if let Some(node) = self.tree.node() {
             Self::assert_priorities_locally_internal(&node);
+            node.assert_correctness_locally();
         }
     }
 }
@@ -189,18 +192,6 @@ impl<D: Data> Treap<D> {
         union_internal(&mut self.tree, tree2);
     }
 
-    fn assert_correctness_internal(tree: &BasicTree<D, T>)
-    where
-        D::Summary: Eq,
-    {
-        tree.assert_correctness_locally();
-        if let Some(node) = tree.node() {
-            Self::assert_priorities_locally_internal(&node);
-            Self::assert_correctness_internal(&node.left);
-            Self::assert_correctness_internal(&node.right);
-        }
-    }
-
     pub fn assert_priorities_locally(&self) {
         if let Some(node) = self.tree.node() {
             Self::assert_priorities_locally_internal(&node);
@@ -217,15 +208,8 @@ impl<D: Data> Treap<D> {
     }
 
     pub fn assert_priorities(&self) {
-        Self::assert_priorities_internal(&self.tree);
-    }
-
-    fn assert_priorities_internal(tree: &BasicTree<D, T>) {
-        if let Some(node) = tree.node() {
-            Self::assert_priorities_locally_internal(&node);
-            Self::assert_priorities_internal(&node.left);
-            Self::assert_priorities_internal(&node.right);
-        }
+        self.tree
+            .assert_correctness_with(Self::assert_priorities_locally_internal);
     }
 }
 

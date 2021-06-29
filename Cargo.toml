@@ -12,7 +12,7 @@ categories = ["data-structures", "algorithms"]
 derive_destructure = "1.0.0"
 void = "*"
 rand = "*"
-recursive_reference = {version = "0.1.*", path = "../recursive_reference" }
+recursive_reference = {version = "0.*", path = "../recursive_reference" }
 
 [dev-dependencies]
 itertools = "*"
