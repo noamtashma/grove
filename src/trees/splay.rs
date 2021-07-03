@@ -574,8 +574,8 @@ impl<D: Data> ConcatenableTree<D> for SplayTree<D> {
     /// use orchard::splay::*;
     /// use orchard::example_data::StdNum;
     ///
-    /// let tree1 : SplayTree<StdNum> = (17..=89).collect();
-    /// let tree2 : SplayTree<StdNum> = (13..=25).collect();
+    /// let tree1: SplayTree<StdNum> = (17..=89).collect();
+    /// let tree2: SplayTree<StdNum> = (13..=25).collect();
     /// let mut tree3 = ConcatenableTree::concatenate(tree1, tree2);
     ///
     /// assert_eq!(tree3.iter().cloned().collect::<Vec<_>>(), (17..=89).chain(13..=25).collect::<Vec<_>>());
@@ -623,7 +623,7 @@ impl<'a, D: Data> SplittableWalker<D> for SplayWalker<'a, D> {
     /// use orchard::example_data::StdNum;
     /// use orchard::methods::*;
     ///
-    /// let mut tree : SplayTree<StdNum> = (17..88).collect();
+    /// let mut tree: SplayTree<StdNum> = (17..88).collect();
     /// let mut tree2 = tree.slice(7..7).split_right().unwrap();
     ///
     /// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..24).collect::<Vec<_>>());

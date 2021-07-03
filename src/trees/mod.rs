@@ -76,7 +76,7 @@ where
     /// use orchard::basic_tree::*;
     /// use orchard::example_data::StdNum;
     ///
-    /// let mut tree : BasicTree<StdNum> = (20..80).collect();
+    /// let mut tree: BasicTree<StdNum> = (20..80).collect();
     /// let segment_iter = tree.iter_locator(3..13);
     ///
     /// assert_eq!(segment_iter.cloned().collect::<Vec<_>>(), (23..33).collect::<Vec<_>>());
@@ -93,7 +93,7 @@ where
     /// use orchard::basic_tree::*;
     /// use orchard::example_data::StdNum;
     ///
-    /// let mut tree : BasicTree<StdNum> = (17..=89).collect();
+    /// let mut tree: BasicTree<StdNum> = (17..=89).collect();
     ///
     /// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..=89).collect::<Vec<_>>());
     /// # tree.assert_correctness();
@@ -209,7 +209,7 @@ pub trait SomeEntry<D: Data> {
     /// use orchard::basic_tree::*;
     /// use orchard::example_data::StdNum;
     ///
-    /// let tree : BasicTree<StdNum> = (1..=8).collect();
+    /// let tree: BasicTree<StdNum> = (1..=8).collect();
     /// let summary = tree.subtree_summary();
     ///
     /// assert_eq!(summary.size, 8);
@@ -247,8 +247,8 @@ pub trait SomeEntry<D: Data> {
 /// This trait is a workaround for current rust type inference limitations.
 /// It allows to write generic code for a tree type that has a modifiable walker.
 /// Intuitively it should've been enough to require
-/// `T : SomeTree<D>, for<'a> &'a mut T : SomeTreeRef<D>, for<'a> <&'a mut T as SomeTreeRef<D>>::Walker : ModifiableWalker`.
-/// However, that doesn't work. Instead, use `for<'a> &'a mut T : ModifiableTreeRef<D>`.
+/// `: SomeTree<D>, for<'a> &'a mut T: SomeTreeRef<D>, for<'a> <&'a mut T as SomeTreeRef<D>>::Walker: ModifiableWalker`.
+/// However, that doesn't work. Instead, use `for<'a> &'a mut T: ModifiableTreeRef<D>`.
 pub trait ModifiableTreeRef<D: Data>: SomeTreeRef<D, Walker = Self::ModifiableWalker> {
     /// Inner type that ideally shouldn't be used - just use `Self::Walker`.
     type ModifiableWalker: ModifiableWalker<D>;
@@ -279,7 +279,7 @@ where
         left.concatenate_right(right);
         left
     }
-    
+
     /// Concatenates the other tree to the right of this tree.
     fn concatenate_right(&mut self, mut other: Self) {
         let left = std::mem::replace(self, Default::default());

@@ -264,9 +264,9 @@ impl<D: Data, T> BasicNode<D, T> {
     /// use orchard::basic_tree::*;
     /// use orchard::example_data::{StdNum, RevAffineAction};
     ///
-    /// let mut tree : BasicTree<StdNum> = (1..=8).collect();
-    /// let node : &mut BasicNode<StdNum> = tree.node_mut().unwrap();
-    /// node.act(RevAffineAction {to_reverse : false, mul : -1, add : 5});
+    /// let mut tree: BasicTree<StdNum> = (1..=8).collect();
+    /// let node: &mut BasicNode<StdNum> = tree.node_mut().unwrap();
+    /// node.act(RevAffineAction {to_reverse: false, mul: -1, add: 5});
     /// # tree.assert_correctness();
     ///
     /// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (-3..=4).rev().collect::<Vec<_>>());

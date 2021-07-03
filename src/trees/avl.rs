@@ -565,7 +565,7 @@ impl<'a, D: Data> SplittableWalker<D> for AVLWalker<'a, D> {
     /// use orchard::example_data::StdNum;
     /// use orchard::methods::*;
     ///
-    /// let mut tree : AVLTree<StdNum> = (17..88).collect();
+    /// let mut tree: AVLTree<StdNum> = (17..88).collect();
     /// let mut tree2 = tree.slice(7..7).split_right().unwrap();
     ///
     /// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..24).collect::<Vec<_>>());
@@ -615,7 +615,7 @@ impl<'a, D: Data> SplittableWalker<D> for AVLWalker<'a, D> {
     /// use orchard::example_data::StdNum;
     /// use orchard::methods::*;
     ///
-    /// let mut tree : AVLTree<StdNum> = (17..88).collect();
+    /// let mut tree: AVLTree<StdNum> = (17..88).collect();
     /// let mut tree2 = tree.slice(7..7).split_left().unwrap();
     ///
     /// assert_eq!(tree2.iter().cloned().collect::<Vec<_>>(), (17..24).collect::<Vec<_>>());
@@ -637,8 +637,8 @@ impl<D: Data> AVLTree<D> {
     /// use orchard::avl::*;
     /// use orchard::example_data::StdNum;
     ///
-    /// let mut tree : AVLTree<StdNum> = (17..=89).collect();
-    /// let tree2 : AVLTree<StdNum> = (13..=25).collect();
+    /// let mut tree: AVLTree<StdNum> = (17..=89).collect();
+    /// let tree2: AVLTree<StdNum> = (13..=25).collect();
     /// tree.concatenate_middle_right(5, tree2);
     ///
     /// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..=89).chain(5..=5).chain(13..=25).collect::<Vec<_>>());
@@ -678,8 +678,8 @@ impl<D: Data> AVLTree<D> {
     /// use orchard::avl::*;
     /// use orchard::example_data::StdNum;
     ///
-    /// let tree1 : AVLTree<StdNum> = (17..=89).collect();
-    /// let mut tree2 : AVLTree<StdNum> = (13..=25).collect();
+    /// let tree1: AVLTree<StdNum> = (17..=89).collect();
+    /// let mut tree2: AVLTree<StdNum> = (13..=25).collect();
     /// tree2.concatenate_middle_left(tree1, 5);
     ///
     /// assert_eq!(tree2.iter().cloned().collect::<Vec<_>>(), (17..=89).chain(5..=5).chain(13..=25).collect::<Vec<_>>());
@@ -721,8 +721,8 @@ impl<D: Data> ConcatenableTree<D> for AVLTree<D> {
     /// use orchard::avl::*;
     /// use orchard::example_data::StdNum;
     ///
-    /// let mut tree : AVLTree<StdNum> = (17..=89).collect();
-    /// let tree2 : AVLTree<StdNum> = (13..=25).collect();
+    /// let mut tree: AVLTree<StdNum> = (17..=89).collect();
+    /// let tree2: AVLTree<StdNum> = (13..=25).collect();
     /// tree.concatenate_right(tree2);
     ///
     /// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..=89).chain(13..=25).collect::<Vec<_>>());
@@ -746,8 +746,8 @@ impl<D: Data> ConcatenableTree<D> for AVLTree<D> {
 /// use orchard::avl::*;
 /// use orchard::example_data::StdNum;
 ///
-/// let tree1 : AVLTree<StdNum> = (17..=89).collect();
-/// let tree2 : AVLTree<StdNum> = (13..=25).collect();
+/// let tree1: AVLTree<StdNum> = (17..=89).collect();
+/// let tree2: AVLTree<StdNum> = (13..=25).collect();
 /// let mut tree3 = concatenate_with_middle(tree1, 5, tree2);
 ///
 /// assert_eq!(tree3.iter().cloned().collect::<Vec<_>>(), (17..=89).chain(5..=5).chain(13..=25).collect::<Vec<_>>());

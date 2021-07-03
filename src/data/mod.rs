@@ -142,13 +142,13 @@ pub trait Action: Copy + Default + Add<Output = Self> {
     }
 }
 
-/// Trait representation actions on a type `V`. If `A : Acts<V>` that means that given any `action : A`,
-/// we can apply it to any `val : V`. This trait is used to represent the actions on
+/// Trait representation actions on a type `V`. If `A: Acts<V>` that means that given any `action: A`,
+/// we can apply it to any `val: V`. This trait is used to represent the actions on
 /// values and summaries used by segment trees.
 pub trait Acts<V> {
     /// Act on a value in-place.
     fn act_inplace(&self, object: &mut V);
-    /// Act on a value and return the result. `V : Clone` as a lint.
+    /// Act on a value and return the result. `V: Clone` as a lint.
     fn act(&self, mut object: V) -> V
     where
         V: Clone,

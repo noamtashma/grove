@@ -172,7 +172,7 @@ impl<D: Data> Treap<D> {
     }
 
     /// Computes the union of two splay trees, ordered by keys.
-    /// We order the resulting tree based on the `D::Value : Keyed` instance, assuming that
+    /// We order the resulting tree based on the `D::Value: Keyed` instance, assuming that
     /// the values in the existing trees are also in the correct order.
     /// This is different from concatenate, because concatenate puts first all elements of the first tree,
     /// and then all of the elements of the second tree.
@@ -409,7 +409,7 @@ impl<'a, D: Data> ModifiableWalker<D> for TreapWalker<'a, D> {
 }
 
 /// Computes the union of two splay trees, ordered by keys.
-/// We order the resulting tree based on the `D::Value : Keyed` instance, assuming that
+/// We order the resulting tree based on the `D::Value: Keyed` instance, assuming that
 /// the values in the existing trees are also in the correct order.
 /// This is different from concatenate, because concatenate puts first all elements of the first tree,
 /// and then all of the elements of the second tree.
@@ -474,7 +474,7 @@ where
 }
 
 /// Computes the union of two splay trees, ordered by keys.
-/// We order the resulting tree based on the `D::Value : Keyed` instance, assuming that
+/// We order the resulting tree based on the `D::Value: Keyed` instance, assuming that
 /// the values in the existing trees are also in the correct order.
 /// This is different from concatenate, because concatenate puts first all elements of the first tree,
 /// and then all of the elements of the second tree.
@@ -502,8 +502,8 @@ impl<D: Data> ConcatenableTree<D> for Treap<D> {
     /// use orchard::treap::*;
     /// use orchard::example_data::StdNum;
     ///
-    /// let mut tree : Treap<StdNum> = (17..=89).collect();
-    /// let tree2 : Treap<StdNum> = (13..=25).collect();
+    /// let mut tree: Treap<StdNum> = (17..=89).collect();
+    /// let tree2: Treap<StdNum> = (13..=25).collect();
     /// tree.concatenate_right(tree2);
     ///
     /// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..=89).chain(13..=25).collect::<Vec<_>>());
@@ -559,7 +559,7 @@ impl<'a, D: Data> SplittableWalker<D> for TreapWalker<'a, D> {
     /// use orchard::example_data::StdNum;
     /// use orchard::methods::*;
     ///
-    /// let mut tree : Treap<StdNum> = (17..88).collect();
+    /// let mut tree: Treap<StdNum> = (17..88).collect();
     /// let mut tree2 = tree.slice(7..7).split_right().unwrap();
     ///
     /// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (17..24).collect::<Vec<_>>());
@@ -606,7 +606,7 @@ impl<'a, D: Data> SplittableWalker<D> for TreapWalker<'a, D> {
     /// use orchard::example_data::StdNum;
     /// use orchard::methods::*;
     ///
-    /// let mut tree : Treap<StdNum> = (17..88).collect();
+    /// let mut tree: Treap<StdNum> = (17..88).collect();
     /// let mut tree2 = tree.slice(7..7).split_left().unwrap();
     ///
     /// assert_eq!(tree2.iter().cloned().collect::<Vec<_>>(), (17..24).collect::<Vec<_>>());

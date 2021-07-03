@@ -1,18 +1,5 @@
 pub use orchard::*;
 
-/*
-struct Simulator<D : Data> {
-    vec : Vec<D::Value>,
-}
-
-impl<D : Data> Simulator<D> {
-    pub fn segment_summary<L : Locator<D>>(&self, loc : L) -> D::Summary {
-        todo!()
-
-    }
-}
-*/
-
 use example_data::StdNum;
 use orchard::example_data::RevAffineAction;
 use rand::{self, Rng};

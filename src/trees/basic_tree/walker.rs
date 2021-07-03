@@ -11,7 +11,7 @@ pub(super) struct Frame<D: ?Sized + Data> {
     pub right: D::Summary,
 }
 
-// the default clone implementation requires that A : Clone, which is uneccessary
+// the default clone implementation requires that A: Clone, which is uneccessary
 impl<D: ?Sized + Data> Clone for Frame<D>
 where
     D::Summary: Clone,

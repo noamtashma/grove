@@ -329,11 +329,11 @@ where
 
 /*
 /// Locator instance for a reference to [`ByKey`]`<std::ops::Range<D::Value::Key>>` representing searching by a key.
-impl<D : Data> Locator<D> for &ByKey<std::ops::Range<<D::Value as Keyed>::Key>> where
-    D::Value : Keyed,
-    <D::Value as Keyed>::Key : Copy,
+impl<D: Data> Locator<D> for &ByKey<std::ops::Range<<D::Value as Keyed>::Key>> where
+    D::Value: Keyed,
+    <D::Value as Keyed>::Key: Copy,
 {
-    fn locate(&self, _left : D::Summary, node : &D::Value, _right : D::Summary) -> LocResult {
+    fn locate(&self, _left: D::Summary, node: &D::Value, _right: D::Summary) -> LocResult {
         // find the index of the current node
         let key = node.get_key();
         if key < self.0.start {
@@ -369,11 +369,11 @@ where
 /*
 /// Locator instance fora reference to [`ByKey`]`<std::ops::RangeInclusive<D::Value::Key>>` representing searching by a key.
 /// Do not use with ranges that have been iterated on to exhaustion.
-impl<D : Data> Locator<D> for &ByKey<std::ops::RangeInclusive<<D::Value as Keyed>::Key>> where
-    D::Value : Keyed,
-    <D::Value as Keyed>::Key : Copy,
+impl<D: Data> Locator<D> for &ByKey<std::ops::RangeInclusive<<D::Value as Keyed>::Key>> where
+    D::Value: Keyed,
+    <D::Value as Keyed>::Key: Copy,
 {
-    fn locate(&self, _left : D::Summary, node : &D::Value, _right : D::Summary) -> LocResult {
+    fn locate(&self, _left: D::Summary, node: &D::Value, _right: D::Summary) -> LocResult {
         // find the index of the current node
         let key = node.get_key();
         if key < *self.0.start() {
