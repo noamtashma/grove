@@ -132,6 +132,7 @@ pub struct ImmIterator<'a, D: Data, L, T = ()> {
 }
 
 impl<'a, D: Data, L: Locator<D>, T> ImmIterator<'a, D, L, T> {
+    /// Creates a new immutable iterator for a segment of the given tree.
     pub fn new(tree: &'a mut BasicTree<D, T>, locator: L) -> Self {
         ImmIterator {
             mut_iter: MutIterator::new(tree, locator),
@@ -201,6 +202,7 @@ pub struct OwningIterator<D: Data, L, T = ()> {
 }
 
 impl<D: Data, L, T> OwningIterator<D, L, T> {
+    /// Creates a new owning iterator for a segment of the given tree.
     pub fn new(tree: BasicTree<D, T>, locator: L) -> Self {
         let mut res = OwningIterator {
             left: Default::default(),

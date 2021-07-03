@@ -1,6 +1,6 @@
 //! An implementation of a splay tree
 //!
-//! It is a balancced tree algorithm that supports reversals, splitting and concatenation,
+//! It is a balanced tree algorithm that supports reversals, splitting and concatenation,
 //! and has remarkable properties.
 //!
 //! Its operations take `O(log n)` amortized time
@@ -30,6 +30,32 @@ use super::*;
 use crate::locators;
 
 #[derive(destructure)]
+/// A Splay tree.
+///
+/// It is a balanced tree algorithm that supports reversals, splitting and concatenation,
+/// and has remarkable properties.
+///
+/// Its operations take `O(log n)` amortized time
+/// (deterministically). Therefore, individual operations may take up to linear time,
+/// but it never takes more than `O(log n)` time per operation when the operations are
+/// counted together.
+///
+/// The tree implements the [`splay`] operation, that should be used after searching for a node.
+///
+/// The Splay tree's complexity guarantees follow from splaying nodes
+/// after accessing them. This is so that when you go deep down the tree,
+/// when you come back up you make the deep part less deep.
+///
+/// Therefore, going up the tree without splaying can undermine the splay tree's complexity
+/// guarantees, and operations that should only take `O(log n)` amortized time
+/// can take linear time.
+///
+/// It is recommended that if you want to reuse a [`SplayWalker`], use the
+/// [`splay`] function.
+///
+/// When a [`SplayWalker`] is dropped, the walker automatically splays up the tree,
+/// ensuring that nodes that need to be rebuilt are rebuilt, but also that
+/// the splaytree's complexity properties remain.
 pub struct SplayTree<D: Data> {
     tree: BasicTree<D>,
 }
@@ -40,10 +66,7 @@ impl<D: Data> SplayTree<D> {
         BasicWalker::new(&mut self.tree)
     }
 
-    pub fn into_inner(self) -> BasicTree<D> {
-        self.destructure().0
-    }
-
+    /// Creates a new empty [`SplayTree`].
     pub fn new() -> SplayTree<D> {
         SplayTree {
             tree: BasicTree::Empty,
@@ -98,6 +121,11 @@ impl<D: Data> SplayTree<D> {
 
         walker
     }
+
+    /// Converts the tree into its internal representation as a [`BasicTree`].
+    pub fn into_inner(self) -> BasicTree<D> {
+        self.destructure().0
+    }
 }
 
 impl<D: Data> std::default::Default for SplayTree<D> {
@@ -114,12 +142,19 @@ impl<D: Data> Drop for SplayTree<D> {
     }
 }
 
+/// A walker for a [`SplayTree`].
 #[derive(destructure)]
 pub struct SplayWalker<'a, D: Data> {
     walker: BasicWalker<'a, D>,
 }
 
 impl<'a, D: Data> SplayWalker<'a, D> {
+    /// Creates a new walker for the given tree.
+    pub fn new(walker: BasicWalker<'a, D>) -> Self {
+        SplayWalker { walker }
+    }
+
+    /// Returns the internal [`BasicWalker`].
     pub fn inner(&self) -> &BasicTree<D> {
         self.walker.inner()
     }
@@ -132,16 +167,13 @@ impl<'a, D: Data> SplayWalker<'a, D> {
         self.walker.inner_mut()
     }
 
+    /// Converts into the internal [`BasicWalker`].
     pub fn into_inner(self) -> BasicWalker<'a, D> {
         // this is a workaround for the problem that,
         // we can't move out of a type implementing Drop
 
         let (walker,) = self.destructure();
         walker
-    }
-
-    pub fn new(walker: BasicWalker<'a, D>) -> Self {
-        SplayWalker { walker }
     }
 
     /// If at the root, do nothing.

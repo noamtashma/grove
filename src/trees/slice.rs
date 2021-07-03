@@ -1,3 +1,5 @@
+//! A convenience struct that represents a specific segment of a tree.
+
 use super::*;
 use crate::*;
 use std::marker::PhantomData;
@@ -5,6 +7,9 @@ use std::marker::PhantomData;
 /// Returns a value representing a specific subsegment of the tree. This gives a nicer
 /// Interface for tree operations: `tree.slice(3..50).act(action)` instead of
 /// `tree.act_segment(3..50, action)`.
+///
+/// It allows to query the tree for a summary or to apply an action,
+/// and other useful operations, with a nicer interface.
 ///
 /// This struct essentially just forwards calls, mostly to the methods in the traits in [`crate::trees`].
 pub struct Slice<'a, D, T, L> {
@@ -17,6 +22,7 @@ impl<'a, D: Data, T: SomeTree<D>, L: Locator<D>> Slice<'a, D, T, L>
 where
     for<'b> &'b mut T: SomeTreeRef<D>,
 {
+    /// Creates a new slice that represents the locator's segment in the tree.
     pub fn new(tree: &'a mut T, locator: L) -> Self {
         Slice {
             phantom: PhantomData,

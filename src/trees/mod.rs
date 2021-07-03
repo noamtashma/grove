@@ -21,12 +21,14 @@ use crate::locators;
 
 /// Used to specify sidedness
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[allow(missing_docs)]
 pub enum Side {
     Left,
     Right,
 }
 
 impl Side {
+    /// Flips the side
     pub fn flip(self) -> Self {
         match self {
             Side::Left => Self::Right,
@@ -115,7 +117,11 @@ where
 /// Really, the type [`Self::Walker`] should have been defined in [`SomeTree`] and
 /// should have been generic in a lifetime parameter.
 pub trait SomeTreeRef<D: Data> {
+    /// The walker type associated with this tree.
+    /// for example, if `Self = &'a AVLTreee<D>` then `Self::Walker = AVLWalker<'a>`.
+    /// The walker's lifetime comes from `Self`'s lifetime.
     type Walker: SomeWalker<D>;
+    /// Creates a walker for the given tree.
     fn walker(self) -> Self::Walker;
 }
 
@@ -306,6 +312,7 @@ pub trait SplittableTreeRef<D: Data>:
 
 /// Walkers that can split a tree into two.
 pub trait SplittableWalker<D: Data>: ModifiableWalker<D> {
+    /// Inner type that ideally shouldn't be used - just use the original tree type.
     type T;
 
     /// Split out everything to the right of the current position, if it is an empty position.

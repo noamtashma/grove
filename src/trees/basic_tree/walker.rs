@@ -69,6 +69,7 @@ pub struct BasicWalker<'a, D: Data, T = ()> {
 }
 
 impl<'a, D: Data, T> BasicWalker<'a, D, T> {
+    /// Creates a new walker that walks on the given tree.
     pub fn new(tree: &'a mut BasicTree<D, T>) -> BasicWalker<'a, D, T> {
         tree.access();
         BasicWalker {
@@ -129,6 +130,7 @@ impl<'a, D: Data, T> BasicWalker<'a, D, T> {
         self.rec_ref.rebuild();
     }
 
+    /// Gives access to the current position.
     pub fn inner(&self) -> &BasicTree<D, T> {
         &*self.rec_ref
     }
@@ -137,6 +139,7 @@ impl<'a, D: Data, T> BasicWalker<'a, D, T> {
         &mut *self.rec_ref
     }
 
+    /// Gives access to the current node, if not at an empty position.
     pub fn node(&self) -> Option<&BasicNode<D, T>> {
         self.rec_ref.node()
     }
@@ -258,6 +261,8 @@ impl<'a, D: Data, T> BasicWalker<'a, D, T> {
         Ok(b)
     }
 
+    /// Goes up all the way to the root of the tree.
+    /// This is called in the walker's [`Drop`] instacne, to rebuild all of the tree's values.
     pub fn go_to_root(&mut self) {
         while let Ok(_) = self.go_up() {}
     }
@@ -280,6 +285,7 @@ impl<'a, D: Data, T> BasicWalker<'a, D, T> {
         BasicWalker::new_with_context(self.inner_mut(), left, right)
     }
 
+    /// Inserts a node along with the balancing algorithm's custom data.
     pub fn insert_with_alg_data(&mut self, value: D::Value, alg_data: T) -> Option<()> {
         match *self.rec_ref {
             Empty => {
@@ -307,6 +313,8 @@ impl<'a, D: Data, T> BasicWalker<'a, D, T> {
         }
     }
 
+    /// deletes a node and returns the node's value along with
+    /// the algorithm's custom data.
     pub fn delete_with_alg_data(&mut self) -> Option<(D::Value, T)> {
         let mut node = self.take_subtree().into_node()?;
         if node.right.is_empty() {

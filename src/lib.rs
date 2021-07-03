@@ -36,6 +36,8 @@
 //! 
 //! The [`methods`] module provides some general methods for use on all trees.
 
+#![deny(missing_docs)]
+
 #[macro_use]
 extern crate derive_destructure;
 

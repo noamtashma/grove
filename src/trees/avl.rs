@@ -1,3 +1,7 @@
+//! Implementation of AVL trees.
+//! Balanced by keeping track of node ranks, this is a worst-case balancing
+//! Algorithm that has a small memory overhead per node.
+
 use crate::locators;
 
 use super::basic_tree::*;
@@ -9,6 +13,8 @@ type T = u8;
 /// Used for rank differences
 type TD = i8;
 
+/// An AVL tree. Balanced by keeping track of node ranks, this is a worst-case balancing
+/// Algorithm that has a small memory overhead per node.
 pub struct AVLTree<D: Data> {
     tree: BasicTree<D, T>,
 }
@@ -75,12 +81,15 @@ impl<D: Data> Rankable for BasicNode<D, T> {
 }
 
 impl<D: Data> AVLTree<D> {
+    /// Creates an empty [`AVLTree`].
     pub fn new() -> Self {
         AVLTree {
             tree: BasicTree::Empty,
         }
     }
 
+    /// Asserts that the ranks at the current node are correct.
+    /// Otherwise, panics.
     pub fn assert_ranks_locally(&self) {
         if let Some(node) = self.tree.node() {
             Self::assert_ranks_locally_internal(&node);
@@ -93,6 +102,8 @@ impl<D: Data> AVLTree<D> {
         assert!(node.right.rank() == node.rank() - 1 || node.right.rank() == node.rank() - 2);
     }
 
+    /// Asserts that the tree's ranks are correct.
+    /// Otherwise, panics.
     pub fn assert_ranks(&self) {
         self.tree
             .assert_correctness_with(Self::assert_ranks_locally_internal);
@@ -281,6 +292,7 @@ impl<D: Data> IntoIterator for AVLTree<D> {
     }
 }
 
+/// A walker struct for [`AVLTree`].
 pub struct AVLWalker<'a, D: Data> {
     walker: BasicWalker<'a, D, T>,
 }

@@ -1,3 +1,10 @@
+//! A module for examples of possible instantiations for [`Data::Value`], [`Data::Summary`],
+//! [`Data::Action`] and [`Data`] itself.
+//!
+//! Hopefully also some useful common ones.
+//!
+//! For example, [`Unit`] for instantiations without  actions or without summaries.
+
 use super::*;
 use std::marker::PhantomData;
 
@@ -25,6 +32,7 @@ impl Action for Unit {
 /// Storing the size of a subtree.
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub struct Size {
+    /// The size of a subtree
     pub size: usize,
 }
 
@@ -90,6 +98,7 @@ impl<V: Eq + Copy> Data for NoAction<V> {
 /// Actions that either reverses a segment or keeps it as it is
 #[derive(PartialEq, Eq, Clone, Copy, Hash, Debug)]
 pub struct RevAction {
+    /// Whether to reverse the segment
     pub to_reverse: bool,
 }
 
@@ -126,9 +135,13 @@ type I = i32;
 /// A standard numerical summary
 #[derive(PartialEq, Eq, Clone, Copy, Hash, Debug)]
 pub struct NumSummary {
+    /// The maximum of all values in the segment. [`None`] is the segment is empty.
     pub max: Option<I>,
+    /// The minimum of all values in the segment. [`None`] is the segment is empty.
     pub min: Option<I>,
+    /// The size of the segment.
     pub size: I,
+    /// The sum of all values in the segment.
     pub sum: I,
 }
 
@@ -172,7 +185,9 @@ impl SizedSummary for NumSummary {
 /// Actions of reversals and adding a constant
 #[derive(PartialEq, Eq, Clone, Copy, Hash, Debug)]
 pub struct RevAddAction {
+    /// whether to reverse the segment.
     pub to_reverse: bool,
+    /// A constant to add to all the values in the segment.
     pub add: I,
 }
 
@@ -222,8 +237,11 @@ impl Acts<NumSummary> for RevAddAction {
 /// Actions of reversals, adding a constant, and multiplying by a constant.
 #[derive(PartialEq, Eq, Clone, Copy, Hash, Debug)]
 pub struct RevAffineAction {
+    /// Whether to reverse the segment.
     pub to_reverse: bool,
+    /// A constant to multiply all the values in the segment with.
     pub mul: I,
+    /// A constant to add to all the values in the segment.
     pub add: I,
 }
 
@@ -301,8 +319,15 @@ impl Data for StdNum {
 }
 
 // TODO: consider retiring this and just requiring Value: Ord instead.
-/// The convention is that smaller values go on the left
+/// A trait for values that are keyed.
+/// For example, when storing integers in sorted order, use the `Ordered`
+/// struct, and now you can use binary search to find specific elements /
+/// specify the edges of the segments you want to act upon.
+///
+/// Smaller values go on the left.
 pub trait Keyed {
+    /// The key by which the values are ordered
     type Key: std::cmp::Ord + Clone;
+    /// The method by which you get the key.
     fn get_key(&self) -> <Self as Keyed>::Key;
 }

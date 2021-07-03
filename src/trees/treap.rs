@@ -1,10 +1,15 @@
 //! Implementation of treaps
 //!
-//! It is a balancced tree algorithm that supports reversals, splitting and concatenation.
+//! It is a balanced tree algorithm that supports reversals, splitting and concatenation.
 //!
 //! Its operations take `O(log n)` expected time, probabilistically.
 //! Each operation may take up to linear time, but the probability of any operation
 //! taking more than `O(log n)` time  is extremely low.
+//!
+//! The tree rebalances by assigning random priorities to nodes, and ensuring
+//! They are in the correct structure mandated byy thos priorities.
+//!
+//! The tree's structure is completely independent of the actions that were performed on it.
 
 use crate::locators;
 
@@ -16,6 +21,7 @@ use rand;
 // convention: a bigger number should go higher up the tree.
 type T = u64;
 
+/// A Treap.
 pub struct Treap<D: Data> {
     tree: BasicTree<D, T>,
 }
@@ -155,18 +161,22 @@ impl<D: Data> SomeEntry<D> for Treap<D> {
 }
 
 impl<D: Data> BasicTree<D, T> {
+    /// Returns the node's priority.
     pub fn priority(&self) -> Option<T> {
         Some(self.node()?.alg_data)
     }
 }
 
 impl<D: Data> Treap<D> {
+    /// Creates an empty treap.
     pub fn new() -> Treap<D> {
         Treap {
             tree: BasicTree::Empty,
         }
     }
 
+    /// Returns the root's priority.
+    /// Returns [`None`] if the tree is empty.
     pub fn priority(&self) -> Option<T> {
         self.tree.priority()
     }
@@ -192,6 +202,9 @@ impl<D: Data> Treap<D> {
         union_internal(&mut self.tree, tree2);
     }
 
+    /// Asserts that the priorities maintain the priority invariant
+    /// at the current node.
+    /// Panics otherwise.
     pub fn assert_priorities_locally(&self) {
         if let Some(node) = self.tree.node() {
             Self::assert_priorities_locally_internal(&node);
@@ -207,6 +220,8 @@ impl<D: Data> Treap<D> {
         }
     }
 
+    /// Asserts that the priorities maintain the priority invariant.
+    /// Panics otherwise.
     pub fn assert_priorities(&self) {
         self.tree
             .assert_correctness_with(Self::assert_priorities_locally_internal);
@@ -241,6 +256,7 @@ impl<D: Data> IntoIterator for Treap<D> {
     }
 }
 
+/// A walker for a [`Treap`].
 pub struct TreapWalker<'a, D: Data> {
     walker: BasicWalker<'a, D, T>,
 }

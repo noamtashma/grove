@@ -10,10 +10,15 @@
 
 use crate::*;
 
-#[derive(PartialEq, Eq, Debug)]
+/// This is the result type that a `locator` returns when queried about a specific node.
+/// See [`Locator`].
+#[derive(PartialEq, Eq, Debug, Hash)]
 pub enum LocResult {
+    /// The element is in the segment
     Accept,
+    /// The element is to the left of the segment, so we should go right
     GoRight,
+    /// The element is to the right of the segment, so we should go left
     GoLeft,
 }
 use LocResult::*;
@@ -38,6 +43,8 @@ use LocResult::*;
 /// Locators must be [`Clone`], in order for usage to be comfortable. This can always be achieved
 /// by taking a reference.
 pub trait Locator<D: Data>: Clone {
+    /// Looks at a specific node's value, and its context (the summaries to the right and left),
+    /// and decides whether to go left, right, or accept the node.
     fn locate(&self, left: D::Summary, node: &D::Value, right: D::Summary) -> LocResult;
 }
 
@@ -284,6 +291,11 @@ where
     }
 }
 
+/// This struct says you want your locator to be based on your values' keys, through the
+/// [`data::Keyed`] trait.
+/// For example, a `ByKey(3..9)` locator will accept
+/// elements with keys in the range `3..9`. Of course, this is a legal locator only if
+/// the elements are sorted by their keys.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, PartialOrd, Ord)]
 pub struct ByKey<T>(pub T);
 

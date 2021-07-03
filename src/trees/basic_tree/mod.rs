@@ -9,6 +9,7 @@ pub use walker::*;
 mod implementations;
 pub use implementations::*;
 
+/// Iterators for [`BasicTree`]
 pub mod iterators;
 mod nonrecursive_deallocator;
 pub use nonrecursive_deallocator::deallocate_nonrecursive;
@@ -19,12 +20,15 @@ use crate::*;
 /// The `T` parameter is for algorithm-specific bookeeping data.
 /// For example, red-block trees store a color in each node.
 pub enum BasicTree<D: ?Sized + Data, T = ()> {
+    /// An empty tree
     Empty,
+    /// A non empty tree, with a root node
     Root(Box<BasicNode<D, T>>), // TODO: rename Root
 }
 use BasicTree::*;
 
 impl<D: Data, T> BasicTree<D, T> {
+    /// Creates an empty tree
     pub fn new() -> Self {
         Empty
     }
@@ -316,6 +320,8 @@ impl<D: Data, T> BasicNode<D, T> {
         }
     }
 
+    /// Asserts that the summaries were calculated correctly at the current node.
+    /// Otherwise, panics.
     pub fn assert_correctness_locally(&self)
     where
         D::Summary: Eq,
