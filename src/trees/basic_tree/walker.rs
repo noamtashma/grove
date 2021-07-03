@@ -46,7 +46,7 @@ impl<D: Data> Frame<D> {
 /// as tree types can be built by wrapping around the [`BasicTree`] type.
 ///
 /// The walker will automatically go back up the tree to the root when dropped,
-/// in order to [`BasicNode::rebuild`] all the nodes.
+/// in order to rebuild all the nodes.
 ///
 /// Internally, [`recursive_reference::RecRef`] is used, in order to be able to dynamically
 /// go up and down the tree without upsetting the borrow checker.
@@ -63,7 +63,7 @@ pub struct BasicWalker<'a, D: Data, T = ()> {
 
     /// This array holds for every node, whether the next subtree in the walker
     /// is its left son or the right son. (true corresponds to the left son).
-    /// This array is always one shorter than [`BasicWalker::tel`] and [`BasicWalker::vals`],
+    /// This array is always one shorter than [`BasicWalker::rec_ref`] and [`BasicWalker::vals`],
     /// because the last node has no son in the walker.
     pub(super) is_left: Vec<Side>,
 }

@@ -47,9 +47,9 @@ use std::ops::Add;
 ///
 /// * Apply an action on a single value, and apply an action on a summary of a segment
 ///  > Applying actions on values and on summaries is required by the bounds
-///  > [`Self::Action`]` : `[`Acts`]`<`[`Self::Value`]`> + `[`Acts`]`<`[`Self::Summary`]`>`.
-///  > This means that in order to update a segment summary `summary : `[`Self::Summary`] after
-///  > action `action : `[`Self::Action`] has been applied to it,
+///  > [`Self::Action`]`: `[`Acts`]`<`[`Self::Value`]`> + `[`Acts`]`<`[`Self::Summary`]`>`.
+///  > This means that in order to update a segment summary `summary: `[`Self::Summary`] after
+///  > action `action: `[`Self::Action`] has been applied to it,
 ///  > you could execute `summary = action.act(summary);` or `action.act_inplace(&mut summary);`,
 ///  > and similarly as well for [`Self::Value`].
 ///
@@ -57,8 +57,8 @@ use std::ops::Add;
 /// * Decide whether to reverse the subsegment it is acted upon. This is done by implementing the
 /// [`Action::to_reverse()`] function. If you do not want to reverse segments, you can use the default implementation,
 /// which always returns false.
-/// * Have an identity action and empty summary: These are represented by the bounds [`Self::Action`]` : `[`Default`],
-/// [`Self::Summary`]` : `[`Default`].
+/// * Have an identity action and empty summary: These are represented by the bounds [`Self::Action`]`: `[`Default`],
+/// [`Self::Summary`]`: `[`Default`].
 /// * Test actions for being the identity. This is represented by [`Action::is_identity()`].
 ///
 /// # Rules

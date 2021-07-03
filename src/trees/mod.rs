@@ -44,6 +44,7 @@ pub trait SomeTree<D: Data>:
 where
     for<'a> &'a mut Self: SomeTreeRef<D>,
 {
+    // TODO: make immutable
     /// Compute the summary of a subsegment.
     fn segment_summary<L>(&mut self, locator: L) -> D::Summary
     where

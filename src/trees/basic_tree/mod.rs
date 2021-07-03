@@ -204,7 +204,7 @@ impl<D: Data, T> BasicNode<D, T> {
     }
 
     /// Returns a reference to the value stored in this node specifically.
-    /// Requires mutable access because it calls [`BasicNode::access`], to ensure
+    /// Requires mutable access because it calls `BasicNode::access`, to ensure
     /// that the action applies.
     pub fn node_value(&mut self) -> &D::Value {
         self.access();

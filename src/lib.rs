@@ -1,42 +1,39 @@
-//! The Orchard library is a library that implements "segment trees" in a generic way.
-//!
+//! # Orchard
+//! A segment tree library enabling generic user-defined queries and actions on segments of your data,
+//! paired with different kinds of balanced binary trees (splay trees, avl trees, and so on).
+//! 
 //! In Orchard, a segment tree is a data structure containing a sequence of values,
-//! that can answer queries about contiguous subsegments of values,
-//! and/or apply actions to contiguous subsegments of values, in logarithmic time, in addition
-//! to other operations.
-//!
+//! that can answer queries about contiguous segments of values,
+//! and/or apply actions to all values in a contiguous segment, in efficient logarithmic time.
+//! 
 //! For example, a standard segment tree of integers might be able to compute
-//! the sum of values in a subsegment, the maximum value of a subsegment,
-//! and be able to add a constant to all values in a subsegment, all in logarithmic time.
-//!
-//! In order to specify what queries and action can be made, the user needs to specify
-//! a type that implements the [`Data`] trait, defined in the [`data`] module.
-//!
-//! Overall, the operations you can do with a segment tree are (every one in logarithmic time):
+//! the sum of values in a segment, the maximum value of a segment,
+//! and add a constant to all values in a segment, all in logarithmic time.
+//! 
+//! In order to specify what queries and actions can be made, the user needs to specify
+//! a marker type that implements the [`Data`] trait, defined in the [`data`] module. The
+//! [`Data`] trait has three associated types:
+//! * [`Data`]`::Value` is the type of values represented in the tree
+//! * [`Data`]`::Summary` is the result when querying the tree about a specific segment
+//! * [`Data`]`::Action` is the type of actions you can perform on segments of the tree
+//! these types have to implement the trait and conform its restrictions, in order
+//! for the tree to behave correctly. See its documentation.
+//! 
+//! Overall, you can perform these operations on a segment tree in logarithmic time:
 //! * Insert, delete and modify specific values
-//! * Compute a summary value of a subsegment
-//!     * Complexity is always logarithmic,
-//!     * However, the summary type must satisfy the [`Data`] trait and be compatible
-//!       with the [`Data::Value`] and [`Data::Action`] types.
-//! * Apply an action on every element of a subsegment
-//!     * Complexity is always logarithmic,
-//!     * However, the action type must satisfy the [`Data`] trait and be compatible
-//!       with the [`Data::Summary`] and [`Data::Value`] types.
-//! * Reverse subsegments
-//!     * Must be part of the action type.
-//!     * Possible only with some balanced tree algorithms.
-//! * Search for specific elements. See [`methods`] module.
-//! * Split and concatenate segment trees
-//!     * Possible only with some balanced tree algorithms.
-//!
+//! * Compute a summary value of type `Data::Summary` of a segment
+//! * Apply an action of type `Data::Action` on every element of a segment
+//! * Choose what segment to query/apply action on, or search for a specific element, using binary search. See [`locators`] module.
+//! * Reverse segments of trees, split and concatenate segment trees
+//! 
 //! In order to use a certain kind of tree, i.e., red-black, AVL, splay tree, treaps,
 //! scapegoat trees, regular unbalanced trees, or any other, the user has to specify
-//! a tree type that implements the trait in the [`trees`] module. (currently only
-//! splay trees are implemented, in [`trees::splay`])
-//!
-//! Indeed, the library is generic in both the tree type and the action type: you can use any
-//! action type with any tree type.
-//!
+//! a tree type that implements the trait in the [`trees`] module. (currently
+//! splay/AVL/treaps/unbalanced trees are implemented)
+//! 
+//! Indeed, the library is generic in both the tree type and the [`Data`] instance: you can use any
+//! setting with any tree type.
+//! 
 //! The [`methods`] module provides some general methods for use on all trees.
 
 #[macro_use]
