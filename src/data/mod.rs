@@ -148,10 +148,10 @@ pub trait Action: Copy + Default + Add<Output = Self> {
 pub trait Acts<V> {
     /// Act on a value in-place.
     fn act_inplace(&self, object: &mut V);
-    /// Act on a value and return the result. `V : Copy` as a lint.
+    /// Act on a value and return the result. `V : Clone` as a lint.
     fn act(&self, mut object: V) -> V
     where
-        V: Copy,
+        V: Clone,
     {
         self.act_inplace(&mut object);
         object
