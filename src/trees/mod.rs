@@ -278,7 +278,7 @@ where
         left.concatenate_right(right);
         left
     }
-
+    
     /// Concatenates the other tree to the right of this tree.
     fn concatenate_right(&mut self, mut other: Self) {
         let left = std::mem::replace(self, Default::default());

@@ -5,18 +5,20 @@ authors = ["Noam Ta Shma noam.tashma@gmail.com"]
 edition = "2018"
 keywords = ["interval", "segment", "tree", "BST"]
 categories = ["data-structures", "algorithms"]
+repository = "https://github.com/noamtashma/orchard"
+description = "A segment tree library allowing user-defined segment queries and segment updates, paired with different kinds of balanced binary trees."
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 derive_destructure = "1.0.0"
-void = "*"
-rand = "*"
+void = "1.0"
+rand = "0.8"
 recursive_reference = {version = "0.*", path = "../recursive_reference" }
 
 [dev-dependencies]
-itertools = "*"
-text_io = "*"
+itertools = ">= 0.7, < 0.11"
+text_io = "0.1"
 
 [lib]
 name = "orchard"
