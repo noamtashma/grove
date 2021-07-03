@@ -7,6 +7,7 @@ keywords = ["interval", "segment", "tree", "BST"]
 categories = ["data-structures", "algorithms"]
 repository = "https://github.com/noamtashma/orchard"
 description = "A segment tree library enabling generic user-defined queries and actions on segments of your data."
+license = "MIT OR Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -17,7 +18,7 @@ rand = "0.8"
 recursive_reference = {version = "0.*", path = "../recursive_reference" }
 
 [dev-dependencies]
-itertools = ">= 0.7, < 0.11"
+itertools = ">= 0.8"
 text_io = "0.1"
 
 [lib]
