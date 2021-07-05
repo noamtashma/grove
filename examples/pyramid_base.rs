@@ -1,6 +1,6 @@
 //! This is an example solution to the pyramid base question from IOI 2008.
 //!
-//! In order to run pyramid_base, you will need to download the pyramid 
+//! In order to run pyramid_base, you will need to download the pyramid
 //! base test files from [here], and save
 //! them in a new folder named "pyramid_base_test_files", in the package's directory.
 //! 
@@ -10,11 +10,10 @@
 //!   Tests with `p > 30_000` will be skipped by immediately returning 0 (they're a bit too slow).
 //! * It will look for the correct answer in the file with the same name (input `file.in` corresponds to output
 //!   in `file.out`), and compare it to the one computed by the algorithm.
-//! * For every test case, it will print a line containing the file name, `p`, 
+//! * For every test case, it will print a line containing the file name, `p`,
 //!   how long was the computation, and the answer.
 //!
 //! [here]: https://ioinformatics.org/page/ioi-2008/34
-
 
 use itertools::Itertools;
 use orchard::*;

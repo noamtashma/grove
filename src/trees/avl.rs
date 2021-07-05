@@ -437,6 +437,8 @@ impl<'a, D: Data> AVLWalker<'a, D> {
         self.walker.rot_up_with_custom_rebuilder(rebuilder)
     }
 
+    // For completeness this function is still here. It might be used in future versions.
+    #[allow(dead_code)]
     fn rot_side(&mut self, side: Side) -> Option<()> {
         let rebuilder = |node: &mut BasicNode<D, T>| {
             node.rebuild_ranks();

@@ -10,7 +10,6 @@
 //! [yarra gnisrever]: https://projecteuler.net/problem=680
 //! [project euler]: https://projecteuler.net/
 
-
 #[cfg(not(miri))] // miri can't access system resources
 use std::time::Instant;
 

@@ -1,5 +1,13 @@
-//! The basic tree module
+//! The basic tree module.
 //! This module implements basic unbalanced trees.
+//!
+//! This module is meant to provide an inner tree type that other tree implementations
+//! can wrap around. Therefore, it exposes more of its inner workings than the other trees,
+//! and the walker can't rebalance the tree when modified.
+//!
+//! Also,  The type parameter `T` is supposed to be used to store the balancing algorithm's
+//! bookeeping data (ranks, sizes and so on). Therefore, most of the functionality is
+//! implemented for general `T`, even though by default `T = ()`.
 
 // these two should not be public as they are merely separate files
 // for some of the functions of this module
@@ -11,8 +19,9 @@ pub use implementations::*;
 
 /// Iterators for [`BasicTree`]
 pub mod iterators;
-mod nonrecursive_deallocator;
-pub use nonrecursive_deallocator::deallocate_nonrecursive;
+
+mod iterative_deallocator;
+pub use iterative_deallocator::deallocate_iteratively;
 
 use crate::*;
 

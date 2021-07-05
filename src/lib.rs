@@ -64,4 +64,3 @@ pub mod trees;
 pub use data::*;
 pub use locators::Locator;
 pub use trees::*;
-// pub use trees::methods::*;

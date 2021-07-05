@@ -135,10 +135,10 @@ impl<D: Data> std::default::Default for SplayTree<D> {
 }
 
 /// Deallocating a large splay tree can cause a stack overflow, since the tree might be unbalanced.
-/// Therefore we have a non-recursive deallocator.
+/// Therefore we have an iterative deallocator.
 impl<D: Data> Drop for SplayTree<D> {
     fn drop(&mut self) {
-        basic_tree::deallocate_nonrecursive(&mut self.tree);
+        basic_tree::deallocate_iteratively(&mut self.tree);
     }
 }
 
