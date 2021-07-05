@@ -1,3 +1,16 @@
+//! This is an example solution to question #680 in [project euler], [yarra gnisrever].
+//! 
+//! This file also contain some unit tests that test that the algorithm's
+//! results are correct on small inputs.
+//!
+//! If you have understood the question and its solution, here's another challenge for you:
+//! How will you answer the question, if you had to compute `R(10^8, k)` for
+//! every `k <= 10^6`, instead of just `R(10^8, 10^6)`?
+//!
+//! [yarra gnisrever]: https://projecteuler.net/problem=680
+//! [project euler]: https://projecteuler.net/
+
+
 #[cfg(not(miri))] // miri can't access system resources
 use std::time::Instant;
 

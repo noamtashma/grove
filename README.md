@@ -36,8 +36,22 @@ setting with any tree type.
 
 The [`methods`] module provides some general methods for use on all trees.
 
+# Advanced examples
+
+In the examples folder in the library (which is automatically stripped from crates.io), there are two
+examples showing usage of the library in two data structure/algorithmic questions. One is [yarra gnisrever], question #680 in [project euler]. The other is [pyramid base], a question from IOI 2008.
+
+Both questions show how it's possible to define your own instance of [`Data`] for your specific usecase.
+They also show how you can write code that's generic with regards to the tree type:
+Both use the same code to run with treaps, splay trees and avl trees.
+
+Notes: In order to run pyramid_base, you will need to download the pyramid base test files from [here], and save them in a new folder named "pyramid_base_test_files". See also in the example code.
 
 [`Data`]: https://docs.rs/orchard/*/orchard/data/trait.Data.html
 [`data`]: https://docs.rs/orchard/*/orchard/data/index.html
 [`locators`]: https://docs.rs/orchard/*/orchard/locators/index.html
 [`methods`]: https://docs.rs/orchard/*/orchard/trees/methods/index.html
+[yarra gnisrever]: https://projecteuler.net/problem=680
+[project euler]: https://projecteuler.net/
+[pyramid base]: https://dmoj.ca/problem/ioi08p6
+[here]: https://ioinformatics.org/page/ioi-2008/34

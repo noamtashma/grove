@@ -11,7 +11,7 @@ enum Fragment<'a, D: Data, T = ()> {
 /// iterator, the tree will probably not be in a legal state if the values are modified.
 /// please use walkers instead.
 ///
-/// We wopuld've likes to rebuild the nodes as we change them. However, because rust's iterators
+/// We would've likes to rebuild the nodes as we change them. However, because rust's iterators
 /// are not streaming iterators, we can only rebuild the tree after the iterator finished. This is
 /// inherently inefficient and unidiomatic, since most uses would only need a streaming iterator,
 /// and could rebuild the nodes while iterating.
@@ -34,7 +34,7 @@ enum Fragment<'a, D: Data, T = ()> {
 ///     this could be trivially implemented in the standard library.
 ///
 /// Therefore, this type isn't exposed - it can't be used productively.
-/// Instead, this type is wrapped inside the `ImmIterator` type, which is exported.
+/// Instead, this type is wrapped inside the `IterLocator` type, which is exported.
 struct IterLocatorMut<'a, D: Data, L, T = ()> {
     left: D::Summary,
     // a stack of the fragments, and for every fragment,

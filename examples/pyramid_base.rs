@@ -1,3 +1,21 @@
+//! This is an example solution to the pyramid base question from IOI 2008.
+//!
+//! In order to run pyramid_base, you will need to download the pyramid 
+//! base test files from [here], and save
+//! them in a new folder named "pyramid_base_test_files", in the package's directory.
+//! 
+//! For each tree type (currently treap, splay, and avl) the code will so this:
+//! * It will look for the test files in "package/pyramid_base_test_files/".
+//! * It will sort them by difficulty based on their name. run the solution on them (with the specific tree type).
+//!   Tests with `p > 30_000` will be skipped by immediately returning 0 (they're a bit too slow).
+//! * It will look for the correct answer in the file with the same name (input `file.in` corresponds to output
+//!   in `file.out`), and compare it to the one computed by the algorithm.
+//! * For every test case, it will print a line containing the file name, `p`, 
+//!   how long was the computation, and the answer.
+//!
+//! [here]: https://ioinformatics.org/page/ioi-2008/34
+
+
 use itertools::Itertools;
 use orchard::*;
 
@@ -441,10 +459,13 @@ where
 }
 
 fn main() -> Result<(), Error> {
+    println!("starting treap\n");
     check_all_tests::<Treap<_>>()?;
     println!("done treap\n");
+    println!("starting splay\n");
     check_all_tests::<SplayTree<_>>()?;
     println!("done splay\n");
+    println!("starting avl\n");
     check_all_tests::<AVLTree<_>>()?;
     println!("done avl\n");
     Ok(())
