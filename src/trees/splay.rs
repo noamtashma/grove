@@ -376,9 +376,9 @@ impl<D: Data> SomeTree<D> for SplayTree<D> {
     fn iter_locator<'a, L: locators::Locator<D>>(
         &'a mut self,
         locator: L,
-    ) -> basic_tree::iterators::ImmIterator<'a, D, L> {
+    ) -> basic_tree::iterators::IterLocator<'a, D, L> {
         self.isolate_segment(locator.clone());
-        iterators::ImmIterator::new(&mut self.tree, locator)
+        iterators::IterLocator::new(&mut self.tree, locator)
     }
 
     fn assert_correctness(&self)

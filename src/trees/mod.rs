@@ -87,7 +87,7 @@ where
     fn iter_locator<'a, L: locators::Locator<D>>(
         &'a mut self,
         locator: L,
-    ) -> basic_tree::iterators::ImmIterator<'a, D, L, Self::TreeData>;
+    ) -> basic_tree::iterators::IterLocator<'a, D, L, Self::TreeData>;
 
     /// Iterates over the whole tree.
     ///```
@@ -102,7 +102,7 @@ where
     ///```
     fn iter(
         &mut self,
-    ) -> basic_tree::iterators::ImmIterator<'_, D, std::ops::RangeFull, Self::TreeData> {
+    ) -> basic_tree::iterators::IterLocator<'_, D, std::ops::RangeFull, Self::TreeData> {
         self.iter_locator(..)
     }
 

@@ -71,8 +71,8 @@ impl<D: Data> SomeTree<D> for Treap<D> {
     fn iter_locator<'a, L: locators::Locator<D>>(
         &'a mut self,
         locator: L,
-    ) -> basic_tree::iterators::ImmIterator<'a, D, L, T> {
-        iterators::ImmIterator::new(&mut self.tree, locator)
+    ) -> basic_tree::iterators::IterLocator<'a, D, L, T> {
+        iterators::IterLocator::new(&mut self.tree, locator)
     }
 
     /// Checks that invariants remain correct. i.e., that every node's summary
@@ -249,10 +249,10 @@ impl<D: Data> std::iter::FromIterator<D::Value> for Treap<D> {
 
 impl<D: Data> IntoIterator for Treap<D> {
     type Item = D::Value;
-    type IntoIter = iterators::OwningIterator<D, std::ops::RangeFull, T>;
+    type IntoIter = iterators::IntoIter<D, std::ops::RangeFull, T>;
 
     fn into_iter(self) -> Self::IntoIter {
-        iterators::OwningIterator::new(self.tree, ..)
+        iterators::IntoIter::new(self.tree, ..)
     }
 }
 

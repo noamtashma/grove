@@ -59,7 +59,7 @@ where
     /// On the other hand, mutable iterators can't be written because the values of the nodes must be rebuilt,
     /// but they can only be rebuilt after the iterator exits. (This is because rust iterators can't be streaming iterators).
     /// If you want a mutable iterator, use a walker instead.
-    pub fn iter(self) -> basic_tree::iterators::ImmIterator<'a, D, L, T::TreeData> {
+    pub fn iter(self) -> basic_tree::iterators::IterLocator<'a, D, L, T::TreeData> {
         self.tree.iter_locator(self.locator)
     }
 }

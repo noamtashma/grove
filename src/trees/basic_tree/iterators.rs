@@ -2,7 +2,6 @@ use crate::*;
 use basic_tree::*;
 use locators::LocResult;
 
-// TODO : Owning iterator
 enum Fragment<'a, D: Data, T = ()> {
     Value(&'a mut D::Value),
     Node(&'a mut BasicNode<D, T>),
@@ -36,7 +35,7 @@ enum Fragment<'a, D: Data, T = ()> {
 ///
 /// Therefore, this type isn't exposed - it can't be used productively.
 /// Instead, this type is wrapped inside the `ImmIterator` type, which is exported.
-struct MutIterator<'a, D: Data, L, T = ()> {
+struct IterLocatorMut<'a, D: Data, L, T = ()> {
     left: D::Summary,
     // a stack of the fragments, and for every fragment,
     // the summary of everything to its right
@@ -44,9 +43,9 @@ struct MutIterator<'a, D: Data, L, T = ()> {
     locator: L,
 }
 
-impl<'a, D: Data, L, T> MutIterator<'a, D, L, T> {
+impl<'a, D: Data, L, T> IterLocatorMut<'a, D, L, T> {
     pub fn new(tree: &'a mut BasicTree<D, T>, locator: L) -> Self {
-        let mut res = MutIterator {
+        let mut res = IterLocatorMut {
             left: Default::default(),
             stack: vec![],
             locator,
@@ -64,7 +63,7 @@ impl<'a, D: Data, L, T> MutIterator<'a, D, L, T> {
     }
 }
 
-impl<'a, D: Data, L: Locator<D>, T> Iterator for MutIterator<'a, D, L, T> {
+impl<'a, D: Data, L: Locator<D>, T> Iterator for IterLocatorMut<'a, D, L, T> {
     type Item = &'a mut D::Value;
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -127,22 +126,23 @@ impl<'a, D: Data, L: Locator<D>, T> Iterator for MutIterator<'a, D, L, T> {
 ///
 /// If you use interior mutability to update the values inside the tree, and these changes affect the summaries,
 /// the tree may behave incorrectly.
-pub struct ImmIterator<'a, D: Data, L, T = ()> {
-    mut_iter: MutIterator<'a, D, L, T>,
+pub struct IterLocator<'a, D: Data, L, T = ()> {
+    mut_iter: IterLocatorMut<'a, D, L, T>,
 }
 
-impl<'a, D: Data, L: Locator<D>, T> ImmIterator<'a, D, L, T> {
+impl<'a, D: Data, L: Locator<D>, T> IterLocator<'a, D, L, T> {
     /// Creates a new immutable iterator for a segment of the given tree.
     pub fn new(tree: &'a mut BasicTree<D, T>, locator: L) -> Self {
-        ImmIterator {
-            mut_iter: MutIterator::new(tree, locator),
+        IterLocator {
+            mut_iter: IterLocatorMut::new(tree, locator),
         }
     }
 }
 
-impl<'a, D: Data, L: Locator<D>, T> Iterator for ImmIterator<'a, D, L, T> {
+impl<'a, D: Data, L: Locator<D>, T> Iterator for IterLocator<'a, D, L, T> {
     type Item = &'a D::Value;
 
+    /// Creates a new immutable iterator for a segment of the given tree.
     fn next(&mut self) -> Option<Self::Item> {
         Some(&*self.mut_iter.next()?)
     }
@@ -193,7 +193,7 @@ enum OFragment<D: Data, T = ()> {
     Node(Box<BasicNode<D, T>>),
 }
 /// Owning iterator iterating over a segment of the tree.
-pub struct OwningIterator<D: Data, L, T = ()> {
+pub struct IntoIter<D: Data, L, T = ()> {
     left: D::Summary,
     // a stack of the fragments, and for every fragment,
     // the summary of everything to its right
@@ -201,10 +201,10 @@ pub struct OwningIterator<D: Data, L, T = ()> {
     locator: L,
 }
 
-impl<D: Data, L, T> OwningIterator<D, L, T> {
+impl<D: Data, L, T> IntoIter<D, L, T> {
     /// Creates a new owning iterator for a segment of the given tree.
     pub fn new(tree: BasicTree<D, T>, locator: L) -> Self {
-        let mut res = OwningIterator {
+        let mut res = IntoIter {
             left: Default::default(),
             stack: vec![],
             locator,
@@ -222,7 +222,7 @@ impl<D: Data, L, T> OwningIterator<D, L, T> {
     }
 }
 
-impl<D: Data, L: Locator<D>, T> Iterator for OwningIterator<D, L, T> {
+impl<D: Data, L: Locator<D>, T> Iterator for IntoIter<D, L, T> {
     type Item = D::Value;
     fn next(&mut self) -> Option<Self::Item> {
         loop {
