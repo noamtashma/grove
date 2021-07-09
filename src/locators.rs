@@ -301,15 +301,15 @@ pub struct ByKey<T>(pub T);
 
 /// Can't be an instance for `ByKey<D::Value::Key>` directly, because the `Key` might itself
 /// be a range type, and so it would conflict with the other implementations.
-impl<D: Data> Locator<D> for ByKey<(<D::Value as Keyed>::Key,)>
+impl<'a, D: Data> Locator<D> for ByKey<(&<D::Value as Keyed>::Key,)>
 where
     D::Value: Keyed,
 {
     fn locate(&self, _left: D::Summary, node: &D::Value, _right: D::Summary) -> LocResult {
         match node.get_key().cmp(&self.0 .0) {
-            std::cmp::Ordering::Less => GoLeft,
+            std::cmp::Ordering::Less => GoRight,
             std::cmp::Ordering::Equal => Accept,
-            std::cmp::Ordering::Greater => GoRight,
+            std::cmp::Ordering::Greater => GoLeft,
         }
     }
 }
@@ -322,7 +322,7 @@ impl<D: Data> Locator<D> for ByKey<std::ops::RangeFull> {
 }
 
 /// Locator instance for [`ByKey`]`<std::ops::Range<D::Value::Key>>` representing searching by a key.
-impl<D: Data> Locator<D> for ByKey<std::ops::Range<<D::Value as Keyed>::Key>>
+impl<'a, D: Data> Locator<D> for ByKey<std::ops::Range<&'a <D::Value as Keyed>::Key>>
 where
     D::Value: Keyed,
 {
@@ -330,9 +330,9 @@ where
         // find the index of the current node
         let key = node.get_key();
         if key < self.0.start {
-            GoLeft
-        } else if self.0.end <= key {
             GoRight
+        } else if self.0.end <= key {
+            GoLeft
         } else {
             Accept
         }
@@ -361,7 +361,7 @@ impl<D: Data> Locator<D> for &ByKey<std::ops::Range<<D::Value as Keyed>::Key>> w
 
 /// Locator instance for [`ByKey`]`<std::ops::RangeInclusive<D::Value::Key>>` representing searching by a key.
 /// Do not use with ranges that have been iterated on to exhaustion.
-impl<D: Data> Locator<D> for ByKey<std::ops::RangeInclusive<<D::Value as Keyed>::Key>>
+impl<'a, D: Data> Locator<D> for ByKey<std::ops::RangeInclusive<&'a <D::Value as Keyed>::Key>>
 where
     D::Value: Keyed,
 {
@@ -369,9 +369,9 @@ where
         // find the index of the current node
         let key = &node.get_key();
         if key < self.0.start() {
-            GoLeft
-        } else if self.0.end() < key {
             GoRight
+        } else if self.0.end() < key {
+            GoLeft
         } else {
             Accept
         }
@@ -400,7 +400,7 @@ impl<D: Data> Locator<D> for &ByKey<std::ops::RangeInclusive<<D::Value as Keyed>
 */
 
 /// Locator instance for [`ByKey`]`<`[`std::ops::RangeFrom`]`<D::Value::Key>>` representing an index range.
-impl<D: Data> Locator<D> for ByKey<std::ops::RangeFrom<<D::Value as Keyed>::Key>>
+impl<'a, D: Data> Locator<D> for ByKey<std::ops::RangeFrom<&'a <D::Value as Keyed>::Key>>
 where
     D::Value: Keyed,
 {
@@ -408,7 +408,7 @@ where
         // find the index of the current node
         let key = node.get_key();
         if key < self.0.start {
-            GoLeft
+            GoRight
         } else {
             Accept
         }
@@ -416,7 +416,7 @@ where
 }
 
 /// Locator instance for [`ByKey`]`<std::ops::RangeTo<D::Value::Key>>` representing searching by a key.
-impl<D: Data> Locator<D> for ByKey<std::ops::RangeTo<<D::Value as Keyed>::Key>>
+impl<'a, D: Data> Locator<D> for ByKey<std::ops::RangeTo<&'a <D::Value as Keyed>::Key>>
 where
     D::Value: Keyed,
 {
@@ -424,7 +424,7 @@ where
         // find the index of the current node
         let key = node.get_key();
         if self.0.end <= key {
-            GoRight
+            GoLeft
         } else {
             Accept
         }
@@ -432,7 +432,7 @@ where
 }
 
 /// Locator instance for [`ByKey`]`<std::ops::RangeToInclusive<D::Value::Key>>` representing searching by a key.
-impl<D: Data> Locator<D> for ByKey<std::ops::RangeToInclusive<<D::Value as Keyed>::Key>>
+impl<'a, D: Data> Locator<D> for ByKey<std::ops::RangeToInclusive<&'a <D::Value as Keyed>::Key>>
 where
     D::Value: Keyed,
 {
@@ -440,7 +440,7 @@ where
         // find the index of the current node
         let key = node.get_key();
         if self.0.end < key {
-            GoRight
+            GoLeft
         } else {
             Accept
         }

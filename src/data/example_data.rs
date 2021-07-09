@@ -319,6 +319,7 @@ impl Data for StdNum {
 }
 
 // TODO: consider retiring this and just requiring Value: Ord instead.
+
 /// A trait for values that are keyed.
 /// For example, when storing integers in sorted order, use the `Ordered`
 /// struct, and now you can use binary search to find specific elements /
@@ -326,8 +327,21 @@ impl Data for StdNum {
 ///
 /// Smaller values go on the left.
 pub trait Keyed {
-    /// The key by which the values are ordered
-    type Key: std::cmp::Ord + Clone;
-    /// The method by which you get the key.
-    fn get_key(&self) -> <Self as Keyed>::Key;
+    /// The key type that elements are ordered by.
+    type Key: std::cmp::Ord;
+
+    /// Gets the key associated with a value
+    fn get_key(&self) -> &Self::Key;
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
+/// A wrapper that wraps around values that should be stored in sorted order.
+/// Implements `Keyed` with the key being the value itself.
+pub struct Ordered<T>(pub T);
+
+impl<T: Ord> Keyed for Ordered<T> {
+    type Key = T;
+    fn get_key(&self) -> &Self::Key {
+        &self.0
+    }
 }
