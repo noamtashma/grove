@@ -149,8 +149,7 @@ pub trait Acts<V> {
     /// Act on a value in-place.
     fn act_inplace(&self, object: &mut V);
     /// Act on a value and return the result.
-    fn act(&self, mut object: V) -> V
-    {
+    fn act(&self, mut object: V) -> V {
         self.act_inplace(&mut object);
         object
     }

@@ -15,8 +15,8 @@
 //!
 //! [here]: https://ioinformatics.org/page/ioi-2008/34
 
-use itertools::Itertools;
 use grove::*;
+use itertools::Itertools;
 
 use std::fs::{self, File};
 use std::io::{BufRead, BufReader, Error, ErrorKind, Read};

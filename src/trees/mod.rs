@@ -6,8 +6,6 @@
 //! The [`SomeWalker`] trait implements traversing a tree. This includes dealing with the borrow
 //! checking problems of recursive structures (using [`recursive_reference`]), and rebalancing the tree.
 //! Therefore, walkers can't guarantee that the tree won't change as you walk through them.
-//!
-//! Currently this module is limited to trees which are based on the [`basic_tree::BasicTree`] type.
 
 pub mod avl;
 pub mod basic_tree;
