@@ -240,7 +240,6 @@ impl<'a, D: Data> SplayWalker<'a, D> {
         if self.depth() <= depth {
             // zig case
             self.walker.rot_side(b1.flip()).unwrap();
-            return;
         } else {
             let b2 = match self.walker.is_left_son() {
                 None => panic!(), // we couldn't have gone into this branch
@@ -289,7 +288,7 @@ impl<'a, D: Data> SplayWalker<'a, D> {
                 if !node.left.is_empty() {
                     // the previous node is in this node's left subtree case
                     self.go_left().unwrap();
-                    while let Ok(_) = self.go_right() {}
+                    while self.go_right().is_ok() {}
                     let r = self.go_up();
                     assert_eq!(r, Ok(Side::Right));
                     return Ok(());
@@ -311,7 +310,7 @@ impl<'a, D: Data> SplayWalker<'a, D> {
         self.splay_to_depth(depth - count + 1);
         let r = self.go_up();
         assert_eq!(r, Ok(Side::Right));
-        return Ok(());
+        Ok(())
     }
 
     /// Finds the next filled node.
@@ -323,7 +322,7 @@ impl<'a, D: Data> SplayWalker<'a, D> {
                 if !node.right.is_empty() {
                     // the previous node is in this node's right subtree case
                     self.go_right().unwrap();
-                    while let Ok(_) = self.go_left() {}
+                    while self.go_left().is_ok() {}
                     let r = self.go_up();
                     assert_eq!(r, Ok(Side::Left));
                     return Ok(());
@@ -345,7 +344,7 @@ impl<'a, D: Data> SplayWalker<'a, D> {
         self.splay_to_depth(depth - count + 1);
         let r = self.go_up();
         assert_eq!(r, Ok(Side::Left));
-        return Ok(());
+        Ok(())
     }
 }
 
@@ -577,14 +576,14 @@ impl<'a, D: Data> ModifiableWalker<D> for SplayWalker<'a, D> {
         } else {
             // find the next node and move it to the current position
             let mut walker = node.right.walker();
-            while let Ok(_) = walker.go_left() {}
+            while walker.go_left().is_ok() {}
             let res = walker.go_up();
             assert_eq!(res, Ok(Side::Left));
 
             let mut boxed_replacement_node = walker.take_subtree().into_node_boxed().unwrap();
             assert!(boxed_replacement_node.left.is_empty());
             walker.put_subtree(boxed_replacement_node.right).unwrap();
-            drop(SplayWalker { walker: walker }); // splay to preserve the tree's complexity
+            drop(SplayWalker { walker }); // splay to preserve the tree's complexity
 
             boxed_replacement_node.left = node.left;
             boxed_replacement_node.right = node.right;
@@ -615,7 +614,7 @@ impl<D: Data> ConcatenableTree<D> for SplayTree<D> {
     ///```
     fn concatenate_right(&mut self, other: Self) {
         let mut walker = self.walker();
-        while let Ok(_) = walker.go_right() {}
+        while walker.go_right().is_ok() {}
         match walker.go_up() {
             Err(()) => {
                 // the tree is empty; just substitute the other tree.
@@ -628,7 +627,7 @@ impl<D: Data> ConcatenableTree<D> for SplayTree<D> {
         };
         walker.splay();
         let node = walker.inner_mut().node_mut().unwrap();
-        assert!(node.right.is_empty() == true);
+        assert!(node.right.is_empty());
         node.right = other.into_inner();
         node.rebuild();
     }
@@ -682,12 +681,12 @@ impl<'a, D: Data> SplittableWalker<D> for SplayWalker<'a, D> {
                 let mut tree = std::mem::replace(&mut node.left, BasicTree::Empty);
                 node.rebuild();
                 std::mem::swap(self.inner_mut(), &mut tree);
-                return Some(SplayTree { tree });
+                Some(SplayTree { tree })
             }
             Side::Right => {
                 let tree = std::mem::replace(&mut node.right, BasicTree::Empty);
                 node.rebuild();
-                return Some(SplayTree { tree });
+                Some(SplayTree { tree })
             }
         }
     }

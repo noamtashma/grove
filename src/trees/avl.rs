@@ -92,7 +92,7 @@ impl<D: Data> AVLTree<D> {
     /// Otherwise, panics.
     pub fn assert_ranks_locally(&self) {
         if let Some(node) = self.tree.node() {
-            Self::assert_ranks_locally_internal(&node);
+            Self::assert_ranks_locally_internal(node);
         }
     }
 
@@ -143,7 +143,7 @@ impl<D: Data> SomeTree<D> for AVLTree<D> {
     where
         L: crate::Locator<D>,
     {
-        if action.to_reverse() == false {
+        if !action.to_reverse() {
             methods::act_segment(self, action, locator)
         } else {
             // split out the middle
@@ -256,7 +256,7 @@ impl<D: Data> SomeEntry<D> for AVLTree<D> {
         D::Summary: Eq,
     {
         if let Some(node) = self.tree.node() {
-            Self::assert_ranks_locally_internal(&node);
+            Self::assert_ranks_locally_internal(node);
             node.assert_correctness_locally();
         }
     }
@@ -275,7 +275,7 @@ impl<D: Data> std::iter::FromIterator<D::Value> for AVLTree<D> {
             // note: this relies on the assumption, that after we insert a node, the new position of the locator
             // will be an ancestor of the location where the value was inserted.
             // TODO: check.
-            while let Ok(_) = walker.go_right() {}
+            while walker.go_right().is_ok() {}
             walker.insert(val);
         }
         drop(walker);
@@ -315,7 +315,7 @@ impl<'a, D: Data> SomeWalker<D> for AVLWalker<'a, D> {
     fn go_up(&mut self) -> Result<Side, ()> {
         let res = self.walker.go_up()?;
         let changed = self.inner_mut().rebuild_ranks();
-        assert_eq!(changed, false); // it shouldn't have changed without being rebalanced already
+        assert!(!changed); // it shouldn't have changed without being rebalanced already
         Ok(res)
     }
 
@@ -382,7 +382,7 @@ impl<'a, D: Data> SomeEntry<D> for AVLWalker<'a, D> {
     {
         self.walker.assert_correctness_locally();
         if let Some(node) = self.walker.node() {
-            AVLTree::assert_ranks_locally_internal(&node);
+            AVLTree::assert_ranks_locally_internal(node);
         }
     }
 }
@@ -523,14 +523,14 @@ impl<'a, D: Data> AVLWalker<'a, D> {
         } else {
             // find the next node and move it to the current position
             let mut walker = node.right.walker();
-            while let Ok(_) = walker.go_left() {}
+            while walker.go_left().is_ok() {}
             let res = walker.go_up();
             assert_eq!(res, Ok(Side::Left));
 
             let mut boxed_replacement_node = walker.take_subtree().into_node_boxed().unwrap();
             assert!(boxed_replacement_node.left.is_empty());
             walker.put_subtree(boxed_replacement_node.right).unwrap();
-            AVLWalker { walker: walker }.rebalance(); // rebalance here
+            AVLWalker { walker }.rebalance(); // rebalance here
 
             boxed_replacement_node.left = node.left;
             node.left = BasicTree::Empty;

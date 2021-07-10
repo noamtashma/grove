@@ -58,9 +58,8 @@ impl<D: Data, T> BasicTree<D, T> {
     /// must be rebuilt, in order for the segment values accumulated over the whole
     /// subtree to be accurate.
     pub(crate) fn rebuild(&mut self) {
-        match self {
-            Root(node) => node.rebuild(),
-            _ => (),
+        if let Root(node) = self {
+             node.rebuild()
         }
     }
 
@@ -69,9 +68,8 @@ impl<D: Data, T> BasicTree<D, T> {
     /// whole subtree. Therefore, in order to access a node cleanly, without
     /// the still-unapplied-function complicating things, you must `access()` the node.
     pub(crate) fn access(&mut self) {
-        match self {
-            Root(node) => node.access(),
-            _ => (),
+        if let Root(node) = self {
+            node.access()
         }
     }
 
@@ -206,7 +204,7 @@ impl<D: Data, T> BasicNode<D, T> {
     /// Returns the summary of all values in this node's subtree.
     /// Same as [`BasicTree::subtree_summary`].
     pub fn subtree_summary(&self) -> D::Summary {
-        return self.action.act(self.subtree_summary);
+        self.action.act(self.subtree_summary)
     }
 
     /// Returns a summary for the value in this node specifically,

@@ -32,5 +32,5 @@ pub fn deallocate_iteratively<D: Data, T>(tree: &mut BasicTree<D, T>) {
     let my_tree = std::mem::replace(tree, BasicTree::new());
     let mut deallocator = IterativeDeallocator { stack: vec![] };
     deallocator.push(my_tree);
-    while let Some(_) = deallocator.step() {}
+    while deallocator.step().is_some() {}
 }

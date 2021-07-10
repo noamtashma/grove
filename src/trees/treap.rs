@@ -38,7 +38,7 @@ impl<D: Data> SomeTree<D> for Treap<D> {
     where
         L: crate::Locator<D>,
     {
-        if action.to_reverse() == false {
+        if !action.to_reverse() {
             methods::act_segment(self, action, locator)
         } else {
             // split out the middle
@@ -154,7 +154,7 @@ impl<D: Data> SomeEntry<D> for Treap<D> {
         D::Summary: Eq,
     {
         if let Some(node) = self.tree.node() {
-            Self::assert_priorities_locally_internal(&node);
+            Self::assert_priorities_locally_internal(node);
             node.assert_correctness_locally();
         }
     }
@@ -207,7 +207,7 @@ impl<D: Data> Treap<D> {
     /// Panics otherwise.
     pub fn assert_priorities_locally(&self) {
         if let Some(node) = self.tree.node() {
-            Self::assert_priorities_locally_internal(&node);
+            Self::assert_priorities_locally_internal(node);
         }
     }
 
@@ -337,7 +337,7 @@ impl<'a, D: Data> SomeEntry<D> for TreapWalker<'a, D> {
     {
         self.walker.assert_correctness_locally();
         if let Some(node) = self.walker.node() {
-            Treap::assert_priorities_locally_internal(&node);
+            Treap::assert_priorities_locally_internal(node);
         }
     }
 }
@@ -475,7 +475,7 @@ where
     // TODO: replace by a locator that does the handling of the equality case by itself
     let mut split_walker = methods::search(&mut tree2, locators::ByKey((key,)));
     // if an element with the same key was found, arbitrarily decide to put it more to the right
-    if split_walker.is_empty() == false {
+    if !split_walker.is_empty() {
         methods::previous_empty(&mut split_walker).unwrap();
     }
     // split
@@ -549,7 +549,7 @@ where
     // TODO: replace by a locator that does the handling of the equality case by itself
     let mut split_walker = methods::search(&mut tree2, locators::ByKey((key,)));
     // if an element with the same key was found, arbitrarily decide to put it more to the right
-    if split_walker.is_empty() == false {
+    if !split_walker.is_empty() {
         methods::previous_empty(&mut split_walker).unwrap();
     }
     // split

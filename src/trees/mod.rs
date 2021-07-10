@@ -149,7 +149,7 @@ pub trait SomeWalker<D: Data>: SomeEntry<D> {
     /// May restructure the tree while doing so. For example, in splay trees,
     /// this splays the current node.
     fn go_to_root(&mut self) {
-        while let Ok(_) = self.go_up() {}
+        while self.go_up().is_ok() {}
     }
 
     /// Returns the current depth in the tree.
@@ -288,14 +288,14 @@ where
 
     /// Concatenates the other tree to the right of this tree.
     fn concatenate_right(&mut self, mut other: Self) {
-        let left = std::mem::replace(self, Default::default());
+        let left = std::mem::take(self);
         other.concatenate_left(left);
         *self = other;
     }
 
     /// Concatenates the other tree to the left of this tree.
     fn concatenate_left(&mut self, other: Self) {
-        let right = std::mem::replace(self, Default::default());
+        let right = std::mem::take(self);
         *self = Self::concatenate(other, right);
     }
 }

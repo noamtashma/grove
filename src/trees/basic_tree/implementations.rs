@@ -92,7 +92,7 @@ impl<'a, D: Data, T> SomeWalker<D> for BasicWalker<'a, D, T> {
             self.is_left.push(Side::Left); // went left
             self.vals.push(frame);
         }
-        return res;
+        res
     }
 
     fn go_right(&mut self) -> Result<(), ()> {
@@ -113,7 +113,7 @@ impl<'a, D: Data, T> SomeWalker<D> for BasicWalker<'a, D, T> {
             self.is_left.push(Side::Right); // went right
             self.vals.push(frame);
         }
-        return res;
+        res
     }
 
     fn go_up(&mut self) -> Result<Side, ()> {

@@ -96,7 +96,7 @@ impl<'a, D: Data, L: Locator<D>, T> Iterator for IterLocatorMut<'a, D, L, T> {
                 .locate(near_left_summary, value, near_right_summary);
             match dir {
                 LocResult::GoLeft => {
-                    if self.stack.len() > 0 {
+                    if !self.stack.is_empty() {
                         panic!("GoLeft received in the middle of a segment");
                     }
                     self.push(left_node, value_summary + near_right_summary);
@@ -149,7 +149,7 @@ impl<'a, D: Data, L: Locator<D>, T> Iterator for IterLocator<'a, D, L, T> {
 }
 
 /// Builds a well balanced [`BasicTree`] from an iterator of values.
-pub fn build<D: Data, I>(mut iter: I) -> BasicTree<D>
+pub fn build<D: Data, I>(iter: I) -> BasicTree<D>
 where
     I: Iterator<Item = D::Value>,
 {
@@ -159,8 +159,7 @@ where
     // a perfect binary tree. the trees correspond to the binary digits of `count`:
     // the i'th digit of `count` is `1` iff there is a tree in the stack of size `2^i`.
     let mut stack: Vec<BasicNode<D>> = vec![];
-    let mut count = 0;
-    while let Some(val) = iter.next() {
+    for (count, val) in iter.enumerate() {
         let mut tree = BasicTree::Empty;
         for i in 0.. {
             if (count >> i) & 1 == 1 {
@@ -175,7 +174,6 @@ where
                 break;
             }
         }
-        count += 1;
     }
 
     let mut tree = BasicTree::Empty;
@@ -255,7 +253,7 @@ impl<D: Data, L: Locator<D>, T> Iterator for IntoIter<D, L, T> {
                 .locate(near_left_summary, &value, near_right_summary);
             match dir {
                 LocResult::GoLeft => {
-                    if self.stack.len() > 0 {
+                    if !self.stack.is_empty() {
                         panic!("GoLeft received in the middle of a segment");
                     }
                     self.push(left_node, value_summary + near_right_summary);

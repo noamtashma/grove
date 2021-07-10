@@ -306,7 +306,7 @@ where
     D::Value: Keyed,
 {
     fn locate(&self, _left: D::Summary, node: &D::Value, _right: D::Summary) -> LocResult {
-        match node.get_key().cmp(&self.0 .0) {
+        match node.get_key().cmp(self.0 .0) {
             std::cmp::Ordering::Less => GoRight,
             std::cmp::Ordering::Equal => Accept,
             std::cmp::Ordering::Greater => GoLeft,

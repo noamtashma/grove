@@ -264,7 +264,7 @@ impl<'a, D: Data, T> BasicWalker<'a, D, T> {
     /// Goes up all the way to the root of the tree.
     /// This is called in the walker's [`Drop`] instacne, to rebuild all of the tree's values.
     pub fn go_to_root(&mut self) {
-        while let Ok(_) = self.go_up() {}
+        while self.go_up().is_ok() {}
     }
 
     /// This takes the walker and turns it into a reference to the root
@@ -322,7 +322,7 @@ impl<'a, D: Data, T> BasicWalker<'a, D, T> {
         } else {
             // find the next node and move it to the current position
             let mut walker = node.right.walker();
-            while let Ok(_) = walker.go_left() {}
+            while walker.go_left().is_ok() {}
             let res = walker.go_up();
             assert_eq!(res, Ok(Side::Left));
 
@@ -353,7 +353,7 @@ impl<'a, D: Data, T> BasicWalker<'a, D, T> {
                 return Some(res);
             }
         }
-        return None;
+        None
     }
 }
 

@@ -46,7 +46,7 @@ pub fn next_filled<W: SomeWalker<A>, A: Data>(walker: &mut W) -> Result<(), ()> 
             Err(_) => return Err(()), // there was no next node
         }
     }
-    return Ok(());
+    Ok(())
 }
 
 /// Finds the previous filled node.
@@ -62,7 +62,7 @@ pub fn previous_filled<W: SomeWalker<A>, A: Data>(walker: &mut W) -> Result<(), 
             Err(_) => return Err(()), // there was no next node
         }
     }
-    return Ok(());
+    Ok(())
 }
 
 // TODO: finger searching.
@@ -105,7 +105,7 @@ where
 {
     let mut walker = tree.walker();
     search_walker(&mut walker, locator);
-    return walker;
+    walker
 }
 
 /// Returns the accumulated values on the locator's segment
@@ -204,7 +204,7 @@ where
     TR: SomeTreeRef<D>,
     L: Locator<D>,
 {
-    assert!(action.to_reverse() == false);
+    assert!(!action.to_reverse());
     use LocResult::*;
 
     let mut walker = tree.walker();
