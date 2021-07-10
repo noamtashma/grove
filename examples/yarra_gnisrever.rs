@@ -13,7 +13,7 @@
 #[cfg(not(miri))] // miri can't access system resources
 use std::time::Instant;
 
-use orchard::*;
+use grove::*;
 
 use example_data::RevAction;
 use example_data::Size;

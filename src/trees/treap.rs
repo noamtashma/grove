@@ -574,9 +574,9 @@ where
 /// If elements with equal keys are found, they are placed in an arbitrary order.
 ///
 ///```rust
-///use orchard::*;
-///use orchard::treap::*;
-///use orchard::example_data::{NoAction, Ordered};
+///use grove::*;
+///use grove::treap::*;
+///use grove::example_data::{NoAction, Ordered};
 ///
 ///type T = Treap<NoAction<Ordered<i32>>>;
 ///let tree1: T = (0..7).map(|x| Ordered(x)).collect();
@@ -616,9 +616,9 @@ where
 /// If elements with equal keys are found, they are placed in an arbitrary order.
 ///
 ///```rust
-///use orchard::*;
-///use orchard::treap::*;
-///use orchard::example_data::{NoAction, Ordered};
+///use grove::*;
+///use grove::treap::*;
+///use grove::example_data::{NoAction, Ordered};
 ///
 ///type T = Treap<NoAction<Ordered<i32>>>;
 ///let tree1: T = (0..7).map(|x| Ordered(x)).collect();
@@ -645,9 +645,9 @@ where
 impl<D: Data> ConcatenableTree<D> for Treap<D> {
     /// Concatenates the trees together, in place.
     ///```
-    /// use orchard::trees::*;
-    /// use orchard::treap::*;
-    /// use orchard::example_data::StdNum;
+    /// use grove::trees::*;
+    /// use grove::treap::*;
+    /// use grove::example_data::StdNum;
     ///
     /// let mut tree: Treap<StdNum> = (17..=89).collect();
     /// let tree2: Treap<StdNum> = (13..=25).collect();
@@ -701,10 +701,10 @@ impl<'a, D: Data> SplittableWalker<D> for TreapWalker<'a, D> {
     /// The walker will be at the root after this operation, if it succeeds.
     ///
     ///```
-    /// use orchard::trees::*;
-    /// use orchard::treap::*;
-    /// use orchard::example_data::StdNum;
-    /// use orchard::methods::*;
+    /// use grove::trees::*;
+    /// use grove::treap::*;
+    /// use grove::example_data::StdNum;
+    /// use grove::methods::*;
     ///
     /// let mut tree: Treap<StdNum> = (17..88).collect();
     /// let mut tree2 = tree.slice(7..7).split_right().unwrap();
@@ -748,10 +748,10 @@ impl<'a, D: Data> SplittableWalker<D> for TreapWalker<'a, D> {
     /// The walker will be at the root after this operation, if it succeeds.
     ///
     ///```
-    /// use orchard::trees::*;
-    /// use orchard::treap::*;
-    /// use orchard::example_data::StdNum;
-    /// use orchard::methods::*;
+    /// use grove::trees::*;
+    /// use grove::treap::*;
+    /// use grove::example_data::StdNum;
+    /// use grove::methods::*;
     ///
     /// let mut tree: Treap<StdNum> = (17..88).collect();
     /// let mut tree2 = tree.slice(7..7).split_left().unwrap();

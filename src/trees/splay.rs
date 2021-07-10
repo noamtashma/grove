@@ -601,9 +601,9 @@ impl<D: Data> ConcatenableTree<D> for SplayTree<D> {
     // `tree1.concatenate(tree2)`.
     /// Concatenates the other tree into this tree.
     ///```
-    /// use orchard::trees::*;
-    /// use orchard::splay::*;
-    /// use orchard::example_data::StdNum;
+    /// use grove::trees::*;
+    /// use grove::splay::*;
+    /// use grove::example_data::StdNum;
     ///
     /// let tree1: SplayTree<StdNum> = (17..=89).collect();
     /// let tree2: SplayTree<StdNum> = (13..=25).collect();
@@ -649,10 +649,10 @@ impl<'a, D: Data> SplittableWalker<D> for SplayWalker<'a, D> {
     /// The walker will be at the root after this operation, if it succeeds.
     ///
     ///```
-    /// use orchard::trees::*;
-    /// use orchard::splay::*;
-    /// use orchard::example_data::StdNum;
-    /// use orchard::methods::*;
+    /// use grove::trees::*;
+    /// use grove::splay::*;
+    /// use grove::example_data::StdNum;
+    /// use grove::methods::*;
     ///
     /// let mut tree: SplayTree<StdNum> = (17..88).collect();
     /// let mut tree2 = tree.slice(7..7).split_right().unwrap();

@@ -1,7 +1,7 @@
-pub use orchard::*;
+pub use grove::*;
 
 use example_data::StdNum;
-use orchard::example_data::RevAffineAction;
+use grove::example_data::RevAffineAction;
 use rand::{self, Rng};
 
 fn random_range(len: usize) -> std::ops::Range<usize> {

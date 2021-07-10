@@ -1,11 +1,11 @@
 [package]
-name = "generic_segment_trees"
+name = "grove"
 version = "0.1.0"
 authors = ["Noam Ta Shma noam.tashma@gmail.com"]
 edition = "2018"
 keywords = ["interval", "segment", "tree", "BST"]
 categories = ["data-structures", "algorithms"]
-repository = "https://github.com/noamtashma/orchard"
+repository = "https://github.com/noamtashma/grove"
 description = "A segment tree library enabling generic user-defined queries and actions on segments of your data."
 license = "MIT OR Apache-2.0"
 
@@ -27,7 +27,7 @@ tokio-test = "0.4"
 
 
 [lib]
-name = "orchard"
+name = "grove"
 path = "src/lib.rs"
 
 [features]

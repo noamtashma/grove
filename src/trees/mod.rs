@@ -74,9 +74,9 @@ where
     /// See documentation in [`basic_tree::iterators`] as to why this function receives a `&mut self`
     /// instead of `&Self` input, and why there isn't a mutable iterator.
     ///```
-    /// use orchard::*;
-    /// use orchard::basic_tree::*;
-    /// use orchard::example_data::StdNum;
+    /// use grove::*;
+    /// use grove::basic_tree::*;
+    /// use grove::example_data::StdNum;
     ///
     /// let mut tree: BasicTree<StdNum> = (20..80).collect();
     /// let segment_iter = tree.iter_locator(3..13);
@@ -91,9 +91,9 @@ where
 
     /// Iterates over the whole tree.
     ///```
-    /// use orchard::*;
-    /// use orchard::basic_tree::*;
-    /// use orchard::example_data::StdNum;
+    /// use grove::*;
+    /// use grove::basic_tree::*;
+    /// use grove::example_data::StdNum;
     ///
     /// let mut tree: BasicTree<StdNum> = (17..=89).collect();
     ///
@@ -211,9 +211,9 @@ pub trait SomeEntry<D: Data> {
 
     /// Returns the summary of all values in this node's subtree.
     ///```
-    /// use orchard::*;
-    /// use orchard::basic_tree::*;
-    /// use orchard::example_data::StdNum;
+    /// use grove::*;
+    /// use grove::basic_tree::*;
+    /// use grove::example_data::StdNum;
     ///
     /// let tree: BasicTree<StdNum> = (1..=8).collect();
     /// let summary = tree.subtree_summary();

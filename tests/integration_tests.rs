@@ -1,7 +1,7 @@
 mod common;
 use common::*;
 
-use orchard::trees::{avl::AVLTree, splay::SplayTree, treap::Treap};
+use grove::trees::{avl::AVLTree, splay::SplayTree, treap::Treap};
 
 #[test]
 fn splay_and_treap_consistency() {

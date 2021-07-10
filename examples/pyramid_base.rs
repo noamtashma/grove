@@ -16,7 +16,7 @@
 //! [here]: https://ioinformatics.org/page/ioi-2008/34
 
 use itertools::Itertools;
-use orchard::*;
+use grove::*;
 
 use std::fs::{self, File};
 use std::io::{BufRead, BufReader, Error, ErrorKind, Read};
@@ -389,7 +389,7 @@ fn run_on_file<T: SomeTree<MyData>>(name: &str) -> Result<(), Error>
 where
     for<'b> &'b mut T: ModifiableTreeRef<MyData>,
 {
-    let current_dir = std::path::PathBuf::from_str("../orchard/pyramid_base_test_files").unwrap();
+    let current_dir = std::path::PathBuf::from_str("../grove/pyramid_base_test_files").unwrap();
     print!("testing {: >8}.in:", name);
     let mut file_path = current_dir.clone();
     file_path.push(format!("{}.in", name));
@@ -422,7 +422,7 @@ fn check_all_tests<T: SomeTree<MyData>>() -> Result<(), Error>
 where
     for<'b> &'b mut T: ModifiableTreeRef<MyData>,
 {
-    let current_dir = std::path::PathBuf::from_str("../orchard/pyramid_base_test_files").unwrap();
+    let current_dir = std::path::PathBuf::from_str("../grove/pyramid_base_test_files").unwrap();
     println!("Testing files from {:?}:", current_dir);
 
     // sort the filenames in order, by difficulty. specifically, ordering by the number first
