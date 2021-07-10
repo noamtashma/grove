@@ -1,6 +1,7 @@
 //! # Orchard
 //! A segment tree library enabling generic user-defined queries and actions on segments of your data,
 //! paired with different kinds of balanced binary trees (splay trees, avl trees, and so on).
+//! (The package name is `generic_segment_trees`, however, the library's name is `orchard`).
 //! 
 //! In Orchard, a segment tree is a data structure containing a sequence of values,
 //! that can answer queries about contiguous segments of values,

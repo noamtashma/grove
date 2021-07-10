@@ -1,5 +1,5 @@
 [package]
-name = "orchard"
+name = "generic_segment_trees"
 version = "0.1.0"
 authors = ["Noam Ta Shma noam.tashma@gmail.com"]
 edition = "2018"

@@ -1,6 +1,7 @@
 # Orchard
 A segment tree library enabling generic user-defined queries and actions on segments of your data,
 paired with different kinds of balanced binary trees (splay trees, avl trees, and so on).
+(The package name is `generic_segment_trees`, however, the library's name is `orchard`).
 
 In Orchard, a segment tree is a data structure containing a sequence of values,
 that can answer queries about contiguous segments of values,
@@ -47,10 +48,10 @@ Both use the same code to run with treaps, splay trees and avl trees.
 
 Notes: In order to run pyramid_base, you will need to download the pyramid base test files from [here], and save them in a new folder named "pyramid_base_test_files". See also in the example code.
 
-[`Data`]: https://docs.rs/orchard/*/orchard/data/trait.Data.html
-[`data`]: https://docs.rs/orchard/*/orchard/data/index.html
-[`locators`]: https://docs.rs/orchard/*/orchard/locators/index.html
-[`methods`]: https://docs.rs/orchard/*/orchard/trees/methods/index.html
+[`Data`]: https://docs.rs/generic_segment_trees/*/orchard/data/trait.Data.html
+[`data`]: https://docs.rs/generic_segment_trees/*/orchard/data/index.html
+[`locators`]: https://docs.rs/generic_segment_trees/*/orchard/locators/index.html
+[`methods`]: https://docs.rs/generic_segment_trees/*/orchard/trees/methods/index.html
 [yarra gnisrever]: https://projecteuler.net/problem=680
 [project euler]: https://projecteuler.net/
 [pyramid base]: https://dmoj.ca/problem/ioi08p6
