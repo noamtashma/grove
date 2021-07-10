@@ -388,51 +388,14 @@ impl<D: Data> SomeTree<D> for SplayTree<D> {
     }
 }
 
-impl<D: Data> SomeEntry<D> for SplayTree<D> {
-    fn node_summary(&self) -> D::Summary {
-        self.tree.node_summary()
-    }
-
-    fn subtree_summary(&self) -> D::Summary {
-        self.tree.subtree_summary()
-    }
-
-    fn left_subtree_summary(&self) -> Option<D::Summary> {
-        self.tree.left_subtree_summary()
-    }
-
-    fn right_subtree_summary(&self) -> Option<D::Summary> {
-        self.tree.right_subtree_summary()
-    }
-
-    fn with_value<F, R>(&mut self, f: F) -> Option<R>
-    where
-        F: FnOnce(&mut D::Value) -> R,
-    {
-        self.tree.with_value(f)
-    }
-
-    fn act_subtree(&mut self, action: D::Action) {
-        self.tree.act_subtree(action);
-    }
-
-    fn act_node(&mut self, action: D::Action) -> Option<()> {
-        self.tree.act_node(action)
-    }
-
-    fn act_left_subtree(&mut self, action: D::Action) -> Option<()> {
-        self.tree.act_left_subtree(action)
-    }
-
-    fn act_right_subtree(&mut self, action: D::Action) -> Option<()> {
-        self.tree.act_right_subtree(action)
-    }
-
-    fn assert_correctness_locally(&self)
-    where
-        D::Summary: Eq,
-    {
-        self.tree.assert_correctness_locally();
+derive_SomeEntry! {tree,
+    impl<D: Data> SomeEntry<D> for SplayTree<D> {
+        fn assert_correctness_locally(&self)
+        where
+            D::Summary: Eq,
+        {
+            self.tree.assert_correctness_locally();
+        }
     }
 }
 
@@ -465,92 +428,26 @@ impl<D: Data> IntoIterator for SplayTree<D> {
     }
 }
 
-impl<'a, D: Data> SomeWalker<D> for SplayWalker<'a, D> {
-    fn go_left(&mut self) -> Result<(), ()> {
-        self.walker.go_left()
-    }
-
-    fn go_right(&mut self) -> Result<(), ()> {
-        self.walker.go_right()
-    }
-
-    /// If successful, returns whether or not the previous current value was the left son.
-    /// If already at the root of the tree, returns `Err(())`.
-    /// You shouldn't use this method too much, or you might lose the
-    /// SplayTree's complexity properties - see documentation aboud splay tree.
-    fn go_up(&mut self) -> Result<Side, ()> {
-        self.walker.go_up()
-    }
-
-    fn go_to_root(&mut self) {
-        self.splay();
-    }
-
-    fn depth(&self) -> usize {
-        self.walker.depth()
-    }
-
-    fn far_left_summary(&self) -> D::Summary {
-        self.walker.far_left_summary()
-    }
-    fn far_right_summary(&self) -> D::Summary {
-        self.walker.far_right_summary()
-    }
-
-    // fn inner(&self) -> &BasicTree<A> {
-    //     self.walker.inner()
-    // }
-
-    fn value(&self) -> Option<&D::Value> {
-        self.walker.value()
+derive_SomeWalker!{walker,
+    impl<'a, D: Data> SomeWalker<D> for SplayWalker<'a, D> {
+        /// If successful, returns whether or not the previous current value was the left son.
+        /// If already at the root of the tree, returns `Err(())`.
+        /// You shouldn't use this method too much, or you might lose the
+        /// SplayTree's complexity properties - see documentation aboud splay tree.
+        fn go_up(&mut self) -> Result<Side, ()> {
+            self.walker.go_up()
+        }
     }
 }
 
-impl<'a, D: Data> SomeEntry<D> for SplayWalker<'a, D> {
-    fn node_summary(&self) -> D::Summary {
-        self.walker.node_summary()
-    }
-
-    fn subtree_summary(&self) -> D::Summary {
-        self.walker.subtree_summary()
-    }
-
-    fn left_subtree_summary(&self) -> Option<D::Summary> {
-        self.walker.left_subtree_summary()
-    }
-
-    fn right_subtree_summary(&self) -> Option<D::Summary> {
-        self.walker.right_subtree_summary()
-    }
-
-    fn with_value<F, R>(&mut self, f: F) -> Option<R>
-    where
-        F: FnOnce(&mut D::Value) -> R,
-    {
-        self.walker.with_value(f)
-    }
-
-    fn act_subtree(&mut self, action: D::Action) {
-        self.walker.act_subtree(action);
-    }
-
-    fn act_node(&mut self, action: D::Action) -> Option<()> {
-        self.walker.act_node(action)
-    }
-
-    fn act_left_subtree(&mut self, action: D::Action) -> Option<()> {
-        self.walker.act_left_subtree(action)
-    }
-
-    fn act_right_subtree(&mut self, action: D::Action) -> Option<()> {
-        self.walker.act_right_subtree(action)
-    }
-
-    fn assert_correctness_locally(&self)
-    where
-        D::Summary: Eq,
-    {
-        self.walker.assert_correctness_locally();
+derive_SomeEntry! {walker,
+    impl<'a, D: Data> SomeEntry<D> for SplayWalker<'a, D> {
+        fn assert_correctness_locally(&self)
+        where
+            D::Summary: Eq,
+        {
+            self.walker.assert_correctness_locally();
+        }
     }
 }
 

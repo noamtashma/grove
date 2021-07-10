@@ -211,53 +211,16 @@ impl<'a, D: Data> SplittableTreeRef<D> for &'a mut AVLTree<D> {
     type SplittableWalker = AVLWalker<'a, D>;
 }
 
-impl<D: Data> SomeEntry<D> for AVLTree<D> {
-    fn with_value<F, R>(&mut self, f: F) -> Option<R>
-    where
-        F: FnOnce(&mut D::Value) -> R,
-    {
-        self.tree.with_value(f)
-    }
-
-    fn node_summary(&self) -> D::Summary {
-        self.tree.node_summary()
-    }
-
-    fn subtree_summary(&self) -> D::Summary {
-        self.tree.subtree_summary()
-    }
-
-    fn left_subtree_summary(&self) -> Option<D::Summary> {
-        self.tree.left_subtree_summary()
-    }
-
-    fn right_subtree_summary(&self) -> Option<D::Summary> {
-        self.tree.right_subtree_summary()
-    }
-
-    fn act_subtree(&mut self, action: D::Action) {
-        self.tree.act_subtree(action);
-    }
-
-    fn act_node(&mut self, action: D::Action) -> Option<()> {
-        self.tree.act_node(action)
-    }
-
-    fn act_left_subtree(&mut self, action: D::Action) -> Option<()> {
-        self.tree.act_left_subtree(action)
-    }
-
-    fn act_right_subtree(&mut self, action: D::Action) -> Option<()> {
-        self.tree.act_right_subtree(action)
-    }
-
-    fn assert_correctness_locally(&self)
-    where
-        D::Summary: Eq,
-    {
-        if let Some(node) = self.tree.node() {
-            Self::assert_ranks_locally_internal(node);
-            node.assert_correctness_locally();
+derive_SomeEntry! {tree, 
+    impl<D: Data> SomeEntry<D> for AVLTree<D> {
+        fn assert_correctness_locally(&self)
+        where
+            D::Summary: Eq,
+        {
+            if let Some(node) = self.tree.node() {
+                Self::assert_ranks_locally_internal(node);
+                node.assert_correctness_locally();
+            }
         }
     }
 }
@@ -303,86 +266,27 @@ impl<'a, D: Data> std::ops::Drop for AVLWalker<'a, D> {
     }
 }
 
-impl<'a, D: Data> SomeWalker<D> for AVLWalker<'a, D> {
-    fn go_left(&mut self) -> Result<(), ()> {
-        self.walker.go_left()
-    }
-
-    fn go_right(&mut self) -> Result<(), ()> {
-        self.walker.go_right()
-    }
-
-    fn go_up(&mut self) -> Result<Side, ()> {
-        let res = self.walker.go_up()?;
-        let changed = self.inner_mut().rebuild_ranks();
-        assert!(!changed); // it shouldn't have changed without being rebalanced already
-        Ok(res)
-    }
-
-    fn depth(&self) -> usize {
-        self.walker.depth()
-    }
-
-    fn far_left_summary(&self) -> D::Summary {
-        self.walker.far_left_summary()
-    }
-
-    fn far_right_summary(&self) -> D::Summary {
-        self.walker.far_left_summary()
-    }
-
-    fn value(&self) -> Option<&D::Value> {
-        self.walker.value()
+derive_SomeWalker!{walker,
+    impl<'a, D: Data> SomeWalker<D> for AVLWalker<'a, D> {
+        fn go_up(&mut self) -> Result<Side, ()> {
+            let res = self.walker.go_up()?;
+            let changed = self.inner_mut().rebuild_ranks();
+            assert!(!changed); // it shouldn't have changed without being rebalanced already
+            Ok(res)
+        }
     }
 }
 
-impl<'a, D: Data> SomeEntry<D> for AVLWalker<'a, D> {
-    fn with_value<F, R>(&mut self, f: F) -> Option<R>
-    where
-        F: FnOnce(&mut D::Value) -> R,
-    {
-        self.walker.with_value(f)
-    }
-
-    fn node_summary(&self) -> D::Summary {
-        self.walker.node_summary()
-    }
-
-    fn subtree_summary(&self) -> D::Summary {
-        self.walker.subtree_summary()
-    }
-
-    fn left_subtree_summary(&self) -> Option<D::Summary> {
-        self.walker.left_subtree_summary()
-    }
-
-    fn right_subtree_summary(&self) -> Option<D::Summary> {
-        self.walker.right_subtree_summary()
-    }
-
-    fn act_subtree(&mut self, action: D::Action) {
-        self.walker.act_subtree(action);
-    }
-
-    fn act_node(&mut self, action: D::Action) -> Option<()> {
-        self.walker.act_node(action)
-    }
-
-    fn act_left_subtree(&mut self, action: D::Action) -> Option<()> {
-        self.walker.act_left_subtree(action)
-    }
-
-    fn act_right_subtree(&mut self, action: D::Action) -> Option<()> {
-        self.walker.act_right_subtree(action)
-    }
-
-    fn assert_correctness_locally(&self)
-    where
-        D::Summary: Eq,
-    {
-        self.walker.assert_correctness_locally();
-        if let Some(node) = self.walker.node() {
-            AVLTree::assert_ranks_locally_internal(node);
+derive_SomeEntry!{walker,
+    impl<'a, D: Data> SomeEntry<D> for AVLWalker<'a, D> {
+        fn assert_correctness_locally(&self)
+        where
+            D::Summary: Eq,
+        {
+            self.walker.assert_correctness_locally();
+            if let Some(node) = self.walker.node() {
+                AVLTree::assert_ranks_locally_internal(node);
+            }
         }
     }
 }

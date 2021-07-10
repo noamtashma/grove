@@ -7,12 +7,15 @@
 //! checking problems of recursive structures (using [`recursive_reference`]), and rebalancing the tree.
 //! Therefore, walkers can't guarantee that the tree won't change as you walk through them.
 
+#[macro_use] mod macros;
+
 pub mod avl;
 pub mod basic_tree;
 pub mod methods;
 pub mod slice;
 pub mod splay;
 pub mod treap;
+
 
 use crate::data::*;
 use crate::locators;
@@ -189,9 +192,6 @@ pub trait SomeWalker<D: Data>: SomeEntry<D> {
 /// Methods that ask to read the contents of the current tree/subtree.
 /// These methods are common to the trees themselves and to the walkers.
 pub trait SomeEntry<D: Data> {
-    // TODO: reconsider
-    // fn value_with_mut(&mut self) -> Option<&D::Value>;
-
     /// Lets you modify the value, and after you modified it, rebuilds the node.
     /// If the current position is empty, returns [`None`].
     fn with_value<F, R>(&mut self, f: F) -> Option<R>
