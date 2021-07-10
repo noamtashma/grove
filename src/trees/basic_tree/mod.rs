@@ -59,7 +59,7 @@ impl<D: Data, T> BasicTree<D, T> {
     /// subtree to be accurate.
     pub(crate) fn rebuild(&mut self) {
         if let Root(node) = self {
-             node.rebuild()
+            node.rebuild()
         }
     }
 
