@@ -1,7 +1,7 @@
 mod common;
 use common::*;
 
-use grove::trees::{avl::AVLTree, splay::SplayTree, treap::Treap};
+use grove::trees::{avl::AVLTree, splay::SplayTree, treap::Treap, basic_tree::BasicTree};
 
 #[test]
 fn splay_and_treap_consistency() {
@@ -27,10 +27,10 @@ fn treap_insert() {
     check_insert::<Treap<_>>(true);
 }
 
-// #[test]
-// fn basic_insert() {
-//     check_insert::<BasicTree<_>>(true);
-// }
+#[test]
+fn basic_insert() {
+    check_insert::<BasicTree<_>>(true);
+}
 
 #[test]
 fn splay_delete() {
@@ -47,7 +47,7 @@ fn treap_delete() {
     check_delete::<Treap<_>>();
 }
 
-// #[test]
-// fn basic_delete() {
-//     check_delete::<BasicTree<_>>();
-// }
+#[test]
+fn basic_delete() {
+    check_delete::<BasicTree<_>>();
+}

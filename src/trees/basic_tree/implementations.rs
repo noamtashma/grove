@@ -315,6 +315,10 @@ impl<'a, D: Data, T> SomeEntry<D> for BasicWalker<'a, D, T> {
     }
 }
 
+impl<'a, D: Data> ModifiableTreeRef<D> for &'a mut BasicTree<D> {
+    type ModifiableWalker = BasicWalker<'a, D>;
+}
+
 impl<'a, D: Data> ModifiableWalker<D> for BasicWalker<'a, D> {
     /// Inserts the value into the tree at the current empty position.
     /// If the current position is not empty, return [`None`].
@@ -331,48 +335,5 @@ impl<'a, D: Data> ModifiableWalker<D> for BasicWalker<'a, D> {
     fn delete(&mut self) -> Option<D::Value> {
         let res = self.delete_with_alg_data()?;
         Some(res.0)
-    }
-}
-
-#[test]
-fn basic_tree_delete() {
-    for i in 0..9 {
-        let arr = vec![3, 5, 1, 4, 7, 8, 9, 20, 11];
-        let mut tree: BasicTree<example_data::StdNum> = arr.iter().cloned().collect();
-        let mut walker = methods::search(&mut tree, i);
-        assert_eq!(walker.value().cloned(), Some(arr[i]));
-        let res = walker.delete();
-        assert_eq!(res, Some(arr[i]));
-        drop(walker);
-        assert_eq!(
-            tree.into_iter().collect::<Vec<_>>(),
-            arr[..i]
-                .iter()
-                .chain(arr[i + 1..].iter())
-                .cloned()
-                .collect::<Vec<_>>()
-        );
-    }
-}
-
-#[test]
-fn basic_tree_insert() {
-    for i in 0..10 {
-        let arr = vec![3, 5, 1, 4, 7, 8, 9, 20, 11];
-        let new_val = 13;
-        let mut tree: BasicTree<example_data::StdNum> = arr.iter().cloned().collect();
-        let mut walker = methods::search(&mut tree, i..i);
-        walker.insert(new_val);
-        assert_eq!(walker.value().cloned(), Some(new_val));
-        drop(walker);
-        assert_eq!(
-            tree.into_iter().collect::<Vec<_>>(),
-            arr[..i]
-                .iter()
-                .chain([new_val].iter())
-                .chain(arr[i..].iter())
-                .cloned()
-                .collect::<Vec<_>>()
-        );
     }
 }
