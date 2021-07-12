@@ -7,6 +7,7 @@ use grove::{avl::AVLTree, splay::SplayTree, treap::Treap, basic_tree::BasicTree}
 fn splay_and_treap_consistency() {
     check_consistency::<SplayTree<_>, Treap<_>>();
 }
+
 #[test]
 fn splay_and_avl_consistency() {
     check_consistency::<SplayTree<_>, AVLTree<_>>();

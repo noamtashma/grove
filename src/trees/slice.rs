@@ -32,7 +32,9 @@ where
     }
 
     /// Compute the summary of this subsegment.
-    pub fn summary(&mut self) -> D::Summary {
+    pub fn summary(&mut self) -> D::Summary where
+        D::Value: Clone,
+    {
         self.tree.segment_summary(self.locator.clone())
     }
 

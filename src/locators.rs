@@ -73,6 +73,26 @@ where
     }
 }
 
+/// Returns the result of the locator at the walker
+/// Returns None if the walker is at an empty position
+pub fn clone_locate<D: Data, L>(
+    current_action: D::Action, 
+    left: D::Summary, 
+    value: &D::Value, 
+    right: D::Summary, 
+    locator: &L
+) -> LocResult
+where
+    L: Locator<D>,
+    D::Value: Clone,
+{
+    if !current_action.to_reverse() {
+        locator.locate(left, &current_action.act(value.clone()), right)
+    } else {
+        locator.locate(right, &current_action.act(value.clone()), left)
+    }
+}
+
 // TODO: Splitter. locators that can't `Accept`. used for splitting trees
 // and for insertions.
 

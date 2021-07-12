@@ -288,7 +288,35 @@ impl<'a, D: Data> Drop for SplayWalker<'a, D> {
 }
 
 impl<D: Data> SomeTree<D> for SplayTree<D> {
+    /// Note: calling this is inefficient
+    /// and panicks if debug assertions are on.
+    ///
+    /// This is because splay trees rely on changing the tree's structure to ensure
+    /// its complexity properties.
+    /// Using this might take `O(n)` time per operation in the worst case.
+    fn segment_summary_imm<L>(&self, locator: L) -> D::Summary
+    where
+        L: locators::Locator<D>,
+        D::Value: Clone,
+    {
+        if cfg!(debug_assertions) {
+            panic!(".segment_summary_imm() method is inefficient for splay trees")
+        } else {
+            self.tree.segment_summary_imm(locator)
+        }
+    }
+
+    /// This is the same as `self.segment_summary_unclonable(locator)`
+    /// because splay trees rely on changing the tree's structure to ensure
+    /// its complexity properties.
     fn segment_summary<L>(&mut self, locator: L) -> D::Summary
+    where
+        L: locators::Locator<D>,
+    {
+        self.segment_summary_unclonable(locator)
+    }
+
+    fn segment_summary_unclonable<L>(&mut self, locator: L) -> D::Summary
     where
         L: locators::Locator<D>,
     {

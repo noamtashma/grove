@@ -49,7 +49,30 @@ where
 {
     // TODO: make immutable
     /// Compute the summary of a subsegment.
+    /// Requires `D::Value: Clone`.
+    ///
+    /// Note: calling this on splay trees is inefficient
+    /// and panicks in debug builds.
+    /// (see documentation on splay tree's version of this function)
+    fn segment_summary_imm<L>(&self, locator: L) -> D::Summary
+    where
+        L: locators::Locator<D>,
+        D::Value: Clone;
+
+    /// Compute the summary of a subsegment.
+    /// Requires `D::Value: Clone` and mutable access.
     fn segment_summary<L>(&mut self, locator: L) -> D::Summary
+    where
+        L: locators::Locator<D>,
+        D::Value: Clone
+    {
+        self.segment_summary_imm(locator)
+    }
+
+    /// Compute the summary of a subsegment.
+    /// Doesn't require `D::Value: Clone`, and works well in splay trees,
+    /// but requires mutable access to `self`.
+    fn segment_summary_unclonable<L>(&mut self, locator: L) -> D::Summary
     where
         L: locators::Locator<D>;
 

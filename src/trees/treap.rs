@@ -27,11 +27,19 @@ pub struct Treap<D: Data> {
 }
 
 impl<D: Data> SomeTree<D> for Treap<D> {
-    fn segment_summary<L>(&mut self, locator: L) -> D::Summary
+    fn segment_summary_imm<L>(&self, locator: L) -> D::Summary
+    where
+        L: locators::Locator<D>,
+        D::Value: Clone
+    {
+        methods::segment_summary(&self.tree, locator)
+    }
+
+    fn segment_summary_unclonable<L>(&mut self, locator: L) -> D::Summary
     where
         L: crate::Locator<D>,
     {
-        methods::segment_summary(self, locator)
+        methods::segment_summary_unclonable(self, locator)
     }
 
     fn act_segment<L>(&mut self, action: D::Action, locator: L)
