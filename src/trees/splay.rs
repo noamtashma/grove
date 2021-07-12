@@ -110,7 +110,8 @@ impl<D: Data> SplayTree<D> {
         };
 
         let right_edge = locators::RightEdgeOf(locator);
-        methods::search_walker(&mut walker2, right_edge);
+        walker2.go_to_root();
+        walker2.search_subtree(right_edge);
         let b2 = walker2.next_filled().is_ok();
         walker2.splay();
         drop(walker2);
@@ -278,74 +279,6 @@ impl<'a, D: Data> SplayWalker<'a, D> {
             self.splay_step_depth(depth);
         }
     }
-
-    /// Finds the previous filled node.
-    /// If there isn't any, moves to root and return Err(()).
-    pub fn previous_filled(&mut self) -> Result<(), ()> {
-        match self.walker.node() {
-            None => {}
-            Some(node) => {
-                if !node.left.is_empty() {
-                    // the previous node is in this node's left subtree case
-                    self.go_left().unwrap();
-                    while self.go_right().is_ok() {}
-                    let r = self.go_up();
-                    assert_eq!(r, Ok(Side::Right));
-                    return Ok(());
-                }
-            }
-        }
-
-        // the next filled node is this node's first left ancestor
-        let count = match self.walker.steps_until_sided_ancestor(Side::Right) {
-            None => {
-                self.splay();
-                return Err(());
-            }
-            Some(count) => count,
-        };
-
-        let depth = self.depth();
-        // splay to just below the previous filled value
-        self.splay_to_depth(depth - count + 1);
-        let r = self.go_up();
-        assert_eq!(r, Ok(Side::Right));
-        Ok(())
-    }
-
-    /// Finds the next filled node.
-    /// If there isn't any, moves to root and return Err(()).
-    pub fn next_filled(&mut self) -> Result<(), ()> {
-        match self.walker.node() {
-            None => {}
-            Some(node) => {
-                if !node.right.is_empty() {
-                    // the previous node is in this node's right subtree case
-                    self.go_right().unwrap();
-                    while self.go_left().is_ok() {}
-                    let r = self.go_up();
-                    assert_eq!(r, Ok(Side::Left));
-                    return Ok(());
-                }
-            }
-        }
-        // return methods::next_filled(self);
-        // the next filled node is this node's first right ancestor
-        let count = match self.walker.steps_until_sided_ancestor(Side::Left) {
-            None => {
-                self.splay();
-                return Err(());
-            }
-            Some(count) => count,
-        };
-
-        let depth = self.depth();
-        // splay to just below the previous filled value
-        self.splay_to_depth(depth - count + 1);
-        let r = self.go_up();
-        assert_eq!(r, Ok(Side::Left));
-        Ok(())
-    }
 }
 
 impl<'a, D: Data> Drop for SplayWalker<'a, D> {
@@ -436,6 +369,82 @@ derive_SomeWalker!{walker,
         /// SplayTree's complexity properties - see documentation aboud splay tree.
         fn go_up(&mut self) -> Result<Side, ()> {
             self.walker.go_up()
+        }
+        
+        // overrides the default implementations for these methods:
+
+        /// Finds the previous filled node.
+        /// If there isn't any, moves to root and return Err(()).
+        ///
+        /// Restructures the tree in order to satisfy the splay tree's complexity properties.
+        /// Complexity: amortized `O(log n)` time.
+        fn previous_filled(&mut self) -> Result<(), ()> {
+            match self.walker.node() {
+                None => {}
+                Some(node) => {
+                    if !node.left.is_empty() {
+                        // the previous node is in this node's left subtree case
+                        self.go_left().unwrap();
+                        while self.go_right().is_ok() {}
+                        let r = self.go_up();
+                        assert_eq!(r, Ok(Side::Right));
+                        return Ok(());
+                    }
+                }
+            }
+
+            // the next filled node is this node's first left ancestor
+            let count = match self.walker.steps_until_sided_ancestor(Side::Right) {
+                None => {
+                    self.splay();
+                    return Err(());
+                }
+                Some(count) => count,
+            };
+
+            let depth = self.depth();
+            // splay to just below the previous filled value
+            self.splay_to_depth(depth - count + 1);
+            let r = self.go_up();
+            assert_eq!(r, Ok(Side::Right));
+            Ok(())
+        }
+
+        /// Finds the next filled node.
+        /// If there isn't any, moves to root and return Err(()).
+        ///
+        /// Restructures the tree in order to satisfy the splay tree's complexity properties.
+        /// Complexity: amortized `O(log n)` time.
+        fn next_filled(&mut self) -> Result<(), ()> {
+            match self.walker.node() {
+                None => {}
+                Some(node) => {
+                    if !node.right.is_empty() {
+                        // the previous node is in this node's right subtree case
+                        self.go_right().unwrap();
+                        while self.go_left().is_ok() {}
+                        let r = self.go_up();
+                        assert_eq!(r, Ok(Side::Left));
+                        return Ok(());
+                    }
+                }
+            }
+            // return methods::next_filled(self);
+            // the next filled node is this node's first right ancestor
+            let count = match self.walker.steps_until_sided_ancestor(Side::Left) {
+                None => {
+                    self.splay();
+                    return Err(());
+                }
+                Some(count) => count,
+            };
+
+            let depth = self.depth();
+            // splay to just below the previous filled value
+            self.splay_to_depth(depth - count + 1);
+            let r = self.go_up();
+            assert_eq!(r, Ok(Side::Left));
+            Ok(())
         }
     }
 }

@@ -229,7 +229,7 @@ fn search_split<TR: ModifiableTreeRef<MyData>>(tree: TR, index: usize) {
     let mut walker = tree.walker();
     // using an empty range so that we'll only end up at a node
     // if we actually need to split that node
-    methods::search_subtree(&mut walker, index..index);
+    walker.search_subtree(index..index);
 
     let left = walker.left_summary().size;
     let v2option = walker.with_value(|val| {
@@ -239,7 +239,7 @@ fn search_split<TR: ModifiableTreeRef<MyData>>(tree: TR, index: usize) {
     });
 
     if let Some(v2) = v2option {
-        methods::next_empty(&mut walker).unwrap(); // not at an empty position
+        walker.next_empty().unwrap(); // not at an empty position
         walker.insert(v2).unwrap();
     }
 }

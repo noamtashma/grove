@@ -122,6 +122,19 @@ pub trait SomeTreeRef<D: Data> {
     type Walker: SomeWalker<D>;
     /// Creates a walker for the given tree.
     fn walker(self) -> Self::Walker;
+
+    /// Finds any node that the locator `Accept`s.
+    /// If there isn't any, it finds the empty location where that node would be instead.
+    /// Returns a walker at the wanted position.
+    fn search<L>(self, locator: L) -> Self::Walker
+    where
+        L: locators::Locator<D>,
+        Self: Sized,
+    {
+        let mut walker = self.walker();
+        walker.search_subtree(locator);
+        walker
+    }
 }
 
 /// The Walker trait implements walking through a tree.
@@ -135,15 +148,21 @@ pub trait SomeTreeRef<D: Data> {
 /// The method [`SomeEntry::is_empty()`] can tell whether you are at an empty position. Trying to move downward from an
 /// empty position produces an error value.
 pub trait SomeWalker<D: Data>: SomeEntry<D> {
+    /// Returns the current depth in the tree.
+    /// The convention is, the root is at depth zero
+    fn depth(&self) -> usize;
+    
+    /// This function is here since only walkers can guarantee that the current value
+    /// is clean.
+    fn value(&self) -> Option<&D::Value>;
+
     /// return `Err(())` if it is in an empty spot.
     fn go_left(&mut self) -> Result<(), ()>;
     /// returns `Err(())` if it is in an empty spot.
     fn go_right(&mut self) -> Result<(), ()>;
-
     /// If successful, returns whether or not the previous current value was the left son.
     /// If already at the root of the tree, returns `Err(())`.
     fn go_up(&mut self) -> Result<Side, ()>;
-
     /// Goes to the root.
     /// May restructure the tree while doing so. For example, in splay trees,
     /// this splays the current node.
@@ -151,9 +170,87 @@ pub trait SomeWalker<D: Data>: SomeEntry<D> {
         while self.go_up().is_ok() {}
     }
 
-    /// Returns the current depth in the tree.
-    /// The convention is, the root is at depth zero
-    fn depth(&self) -> usize;
+    /// If the walker is at an empty position, return an error.
+    /// Goes to the next empty position.
+    ///
+    /// May restructure the tree while doing so.
+    fn next_empty(&mut self) -> Result<(), ()> {
+        if self.is_empty() {
+            self.next_filled()?; // if already at the last empty node, returns error here.
+        }
+        // can't panic - already checked that position is nonempty
+        self.go_right().expect("Expected nonempty position");
+        while !self.is_empty() {
+            self.go_left().unwrap();
+        }
+        Ok(())
+    }
+
+    /// If the walker is at an empty position, return an error.
+    /// Goes to the previous empty position.
+    ///
+    /// May restructure the tree while doing so.
+    fn previous_empty(&mut self) -> Result<(), ()> {
+        if self.is_empty() {
+            self.previous_filled()?; // if already at the first empty node, returns error here.
+        }
+        // can't panic - already checked that position is nonempty
+        self.go_left().expect("Expected nonempty position");
+        while !self.is_empty() {
+            self.go_right().unwrap();
+        }
+        Ok(())
+    }
+
+    /// Finds the next filled node.
+    /// If there isn't any, moves to root and return Err(()).
+    ///
+    /// May restructure the tree while doing so.
+    fn next_filled(&mut self) -> Result<(), ()> {
+        if !self.is_empty() {
+            self.next_empty().unwrap();
+        }
+        loop {
+            match self.go_up() {
+                Ok(Side::Left) => break,
+                Ok(Side::Right) => (),
+                Err(_) => return Err(()), // there was no next node
+            }
+        }
+        Ok(())
+    }
+
+    /// Finds the previous filled node.
+    /// If there isn't any, moves to root and return Err(()).
+    ///
+    /// May restructure the tree while doing so.
+    fn previous_filled(&mut self) -> Result<(), ()> {
+        if !self.is_empty() {
+            self.previous_empty().unwrap();
+        }
+        loop {
+            match self.go_up() {
+                Ok(Side::Right) => break,
+                Ok(Side::Left) => (),
+                Err(_) => return Err(()), // there was no next node
+            }
+        }
+        Ok(())
+    }
+
+    /// Finds any node that the locator `Accept`s. Looks only inside the current subtree.
+    /// If there isn't any, it finds the empty location where that node would be instead.
+    /// Returns a walker at the wanted position.
+    fn search_subtree<L: crate::Locator<D>>(&mut self, locator: L) {
+        use locators::LocResult;
+        while let Some(res) = locators::walker_locate(self, &locator) {
+            match res {
+                LocResult::Accept => break,
+                LocResult::GoRight => self.go_right().unwrap(),
+                LocResult::GoLeft => self.go_left().unwrap(),
+            };
+        }
+    }
 
     /// Returns a summary of all the values to the left of this point,
     /// That are not children of this point.
@@ -181,10 +278,6 @@ pub trait SomeWalker<D: Data>: SomeEntry<D> {
             None => right,
         }
     }
-
-    /// This function is here since only walkers can guarantee that the current value
-    /// is clean.
-    fn value(&self) -> Option<&D::Value>;
 }
 
 /// Methods that ask to read the contents of the current tree/subtree.
@@ -245,10 +338,11 @@ pub trait SomeEntry<D: Data> {
 }
 
 /// Trait for trees that can be modified, i.e., values can be inserted and deleted.
+///
 /// This trait is a workaround for current rust type inference limitations.
 /// It allows to write generic code for a tree type that has a modifiable walker.
 /// Intuitively it should've been enough to require
-/// `: SomeTree<D>, for<'a> &'a mut T: SomeTreeRef<D>, for<'a> <&'a mut T as SomeTreeRef<D>>::Walker: ModifiableWalker`.
+/// `T: SomeTree<D>, for<'a> &'a mut T: SomeTreeRef<D>, for<'a> <&'a mut T as SomeTreeRef<D>>::Walker: ModifiableWalker`.
 /// However, that doesn't work. Instead, use `for<'a> &'a mut T: ModifiableTreeRef<D>`.
 pub trait ModifiableTreeRef<D: Data>: SomeTreeRef<D, Walker = Self::ModifiableWalker> {
     /// Inner type that ideally shouldn't be used - just use `Self::Walker`.

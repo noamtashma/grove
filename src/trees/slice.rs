@@ -45,7 +45,7 @@ where
     /// If there isn't any, it finds the empty location where that node would be instead.
     /// Returns a walker at the wanted position.
     pub fn search(self) -> <&'a mut T as SomeTreeRef<D>>::Walker {
-        methods::search(self.tree, self.locator)
+        self.tree.search(self.locator)
     }
 
     /// Iterating on values.
@@ -72,14 +72,14 @@ where
     /// Inserts the value into the tree into the position of this empty subsegment.
     /// If the current subsegment is not empty, returns [`None`].
     pub fn insert(&mut self, value: D::Value) -> Option<()> {
-        let mut walker = methods::search(&mut *self.tree, self.locator.clone());
+        let mut walker = self.tree.search(self.locator.clone());
         walker.insert(value)
     }
 
     /// Removes any value from this subsegment from tree, and returns it.
     /// If this subsegment is empty, returns [`None`].
     pub fn delete(&mut self) -> Option<D::Value> {
-        let mut walker = methods::search(&mut *self.tree, self.locator.clone());
+        let mut walker = self.tree.search(self.locator.clone());
         walker.delete()
     }
 }
@@ -95,7 +95,7 @@ where
         &mut self,
     ) -> Option<<<&mut T as SplittableTreeRef<D>>::SplittableWalker as SplittableWalker<D>>::T>
     {
-        let mut walker = methods::search(&mut *self.tree, self.locator.clone());
+        let mut walker = self.tree.search(self.locator.clone());
         walker.split_right()
     }
 
@@ -106,7 +106,7 @@ where
         &mut self,
     ) -> Option<<<&mut T as SplittableTreeRef<D>>::SplittableWalker as SplittableWalker<D>>::T>
     {
-        let mut walker = methods::search(&mut *self.tree, self.locator.clone());
+        let mut walker =self.tree.search(self.locator.clone());
         walker.split_left()
     }
 }

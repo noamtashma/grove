@@ -1,4 +1,5 @@
 //! Methods module
+//! [TODO: outdated]
 //! This module provides generic methods for use on general trees. for example,
 //! search functions, querying on a segment of the tree, applying an
 //! action on a segment of the tree, and so on.
@@ -11,102 +12,7 @@
 use crate::*;
 use locators::*;
 
-// TODO - make this work for both filled and empty starting positions
-// TODO - figure out how to make this callable like walker.next_empty()
-/// If the walker is at an empty position, return an error.
-/// Goes to the next empty position
-pub fn next_empty<W: SomeWalker<A>, A: Data>(walker: &mut W) -> Result<(), ()> {
-    walker.go_right()?; // if we're at an empty node, return error
-    while !walker.is_empty() {
-        walker.go_left().unwrap();
-    }
-    Ok(())
-}
-
-/// If the walker is at an empty position, return an error.
-/// Goes to the previous empty position
-pub fn previous_empty<W: SomeWalker<A>, A: Data>(walker: &mut W) -> Result<(), ()> {
-    walker.go_left()?; // if we're at an empty node, return error
-    while !walker.is_empty() {
-        walker.go_right().unwrap();
-    }
-    Ok(())
-}
-
-/// Finds the next filled node.
-/// If there isn't any, moves to root and return Err(()).
-pub fn next_filled<W: SomeWalker<A>, A: Data>(walker: &mut W) -> Result<(), ()> {
-    if !walker.is_empty() {
-        next_empty(walker).unwrap();
-    }
-    loop {
-        match walker.go_up() {
-            Ok(Side::Left) => break,
-            Ok(Side::Right) => (),
-            Err(_) => return Err(()), // there was no next node
-        }
-    }
-    Ok(())
-}
-
-/// Finds the previous filled node.
-/// If there isn't any, moves to root and return Err(()).
-pub fn previous_filled<W: SomeWalker<A>, A: Data>(walker: &mut W) -> Result<(), ()> {
-    if !walker.is_empty() {
-        previous_empty(walker).unwrap();
-    }
-    loop {
-        match walker.go_up() {
-            Ok(Side::Right) => break,
-            Ok(Side::Left) => (),
-            Err(_) => return Err(()), // there was no next node
-        }
-    }
-    Ok(())
-}
-
 // TODO: finger searching.
-/// Finds any node that the locator `Accept`s. Looks inside the whole tree.
-/// If there isn't any, it finds the empty location where that node would be instead.
-/// Moves the walker to the wanted position.
-pub fn search_walker<W, D: Data, L>(walker: &mut W, locator: L)
-where
-    W: crate::trees::SomeWalker<D>,
-    L: Locator<D>,
-{
-    walker.go_to_root();
-    search_subtree(walker, locator);
-}
-
-/// Finds any node that the locator `Accept`s. Looks only inside the current subtree.
-/// If there isn't any, it finds the empty location where that node would be instead.
-/// Returns a walker at the wanted position.
-pub fn search_subtree<W, D: Data, L>(walker: &mut W, locator: L)
-where
-    W: crate::trees::SomeWalker<D>,
-    L: Locator<D>,
-{
-    while let Some(res) = walker_locate(walker, &locator) {
-        match res {
-            LocResult::Accept => break,
-            LocResult::GoRight => walker.go_right().unwrap(),
-            LocResult::GoLeft => walker.go_left().unwrap(),
-        };
-    }
-}
-
-/// Finds any node that the locator `Accept`s.
-/// If there isn't any, it finds the empty location where that node would be instead.
-/// Returns a walker at the wanted position.
-pub fn search<TR, D: Data, L>(tree: TR, locator: L) -> TR::Walker
-where
-    TR: crate::trees::SomeTreeRef<D>,
-    L: Locator<D>,
-{
-    let mut walker = tree.walker();
-    search_walker(&mut walker, locator);
-    walker
-}
 
 /// Returns the accumulated values on the locator's segment
 /// Do not use with splay trees - it might mess up the complexity,

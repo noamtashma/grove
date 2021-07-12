@@ -54,7 +54,7 @@ impl<D: Data> SomeTree<D> for Treap<D> {
                     Default::default(),
                 ),
             };
-            methods::search_subtree(&mut walker2, locators::RightEdgeOf(locator));
+            walker2.search_subtree(locators::RightEdgeOf(locator));
             let right = walker2.split_right().unwrap();
             drop(walker2);
 
@@ -377,10 +377,10 @@ where
     let key = node.node_value().get_key(); // this performs access()
 
     // TODO: replace by a locator that does the handling of the equality case by itself
-    let mut split_walker = methods::search(&mut tree2, locators::ByKey((key,)));
+    let mut split_walker = tree2.search(locators::ByKey((key,)));
     // if an element with the same key was found, arbitrarily decide to put it more to the right
     if !split_walker.is_empty() {
-        methods::previous_empty(&mut split_walker).unwrap();
+        split_walker.previous_empty().unwrap();
     }
     // split
     let right = split_walker.split_right().unwrap();
@@ -451,10 +451,10 @@ where
     let key = node.node_value().get_key(); // this performs access()
 
     // TODO: replace by a locator that does the handling of the equality case by itself
-    let mut split_walker = methods::search(&mut tree2, locators::ByKey((key,)));
+    let mut split_walker = tree2.search(locators::ByKey((key,)));
     // if an element with the same key was found, arbitrarily decide to put it more to the right
     if !split_walker.is_empty() {
-        methods::previous_empty(&mut split_walker).unwrap();
+        split_walker.previous_empty().unwrap();
     }
     // split
     let right = split_walker.split_right().unwrap();

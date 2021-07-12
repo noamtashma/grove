@@ -159,7 +159,7 @@ impl<D: Data> SomeTree<D> for AVLTree<D> {
                     Default::default(),
                 ),
             };
-            methods::search_subtree(&mut walker2, locators::RightEdgeOf(locator));
+            walker2.search_subtree(locators::RightEdgeOf(locator));
             let right = walker2.split_right().unwrap();
             drop(walker2);
 
@@ -641,7 +641,7 @@ impl<D: Data> ConcatenableTree<D> for AVLTree<D> {
     ///```
     fn concatenate_right(&mut self, mut right: Self) {
         if !right.is_empty() {
-            let mut walker = methods::search(&mut right, locators::LeftEdgeOf(..));
+            let mut walker = right.search(locators::LeftEdgeOf(..));
             walker.go_up().unwrap();
             let mid = walker.delete_boxed().unwrap(); // TODO: deallocated node only to reallocate it later. fix.
             drop(walker);

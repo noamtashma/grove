@@ -97,7 +97,7 @@ where
     let arr: Vec<_> = (0..500).collect();
     for i in 0..arr.len() {
         let mut tree: T = arr.iter().cloned().collect();
-        let mut walker = methods::search(&mut tree, i);
+        let mut walker = tree.search(i);
         assert_eq!(walker.value().cloned(), Some(arr[i]));
         let res = walker.delete();
         assert_eq!(res, Some(arr[i]));
@@ -123,13 +123,13 @@ where
     for i in 0..=arr.len() {
         let new_val = 13;
         let mut tree: T = arr.iter().cloned().collect();
-        let mut walker = methods::search(&mut tree, i..i);
+        let mut walker = tree.search(i..i);
         walker.insert(new_val);
         if !should_walker_stay_at_inserted_value {
             // after inserting, the walker can move, because of rebalancing.
             // for example, in avl trees, the walker should be in an ancestor of the inserted value.
             // therefore, we check with `search_subtree`.
-            methods::search_subtree(&mut walker, i);
+            walker.search_subtree(i);
         }
         assert_eq!(walker.value().cloned(), Some(new_val));
         drop(walker);

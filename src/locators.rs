@@ -61,7 +61,7 @@ where
 /// Returns None if the walker is at an empty position
 pub fn walker_locate<W, D: Data, L>(walker: &mut W, locator: &L) -> Option<LocResult>
 where
-    W: crate::trees::SomeWalker<D>,
+    W: crate::trees::SomeWalker<D> + ?Sized,
     L: Locator<D>,
 {
     if let Some(value) = walker.value() {
