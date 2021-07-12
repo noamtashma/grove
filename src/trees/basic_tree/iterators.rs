@@ -65,6 +65,20 @@ impl<'a, D: Data, L, T> IterLocatorMut<'a, D, L, T> {
 
 impl<'a, D: Data, L: Locator<D>, T> Iterator for IterLocatorMut<'a, D, L, T> {
     type Item = &'a mut D::Value;
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        // Iterator is empty
+        if self.stack.is_empty() {
+            (0, Some(0))
+        } else {
+            // We know that every stack fragment contains at least one element.
+            // We don't know any upper bound.
+            // If we could specialize for `D: SizedData`, we could know the exact size,
+            // but we can't.
+            (self.stack.len(), None)
+        }
+    }
+
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             let (frag, summary) = match self.stack.pop() {
@@ -141,6 +155,10 @@ impl<'a, D: Data, L: Locator<D>, T> IterLocator<'a, D, L, T> {
 
 impl<'a, D: Data, L: Locator<D>, T> Iterator for IterLocator<'a, D, L, T> {
     type Item = &'a D::Value;
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.mut_iter.size_hint()
+    }
 
     /// Creates a new immutable iterator for a segment of the given tree.
     fn next(&mut self) -> Option<Self::Item> {
@@ -222,6 +240,20 @@ impl<D: Data, L, T> IntoIter<D, L, T> {
 
 impl<D: Data, L: Locator<D>, T> Iterator for IntoIter<D, L, T> {
     type Item = D::Value;
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        // Iterator is empty
+        if self.stack.is_empty() {
+            (0, Some(0))
+        } else {
+            // We know that every stack fragment contains at least one element.
+            // We don't know any upper bound.
+            // If we could specialize for `D: SizedData`, we could know the exact size,
+            // but we can't.
+            (self.stack.len(), None)
+        }
+    }
+
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             let (frag, summary) = match self.stack.pop() {
