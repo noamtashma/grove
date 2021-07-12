@@ -53,6 +53,7 @@
 //! [here]: https://ioinformatics.org/page/ioi-2008/34
 
 #![deny(missing_docs)]
+#![forbid(unsafe_code)]
 
 #[macro_use]
 extern crate derive_destructure;
