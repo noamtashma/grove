@@ -478,10 +478,8 @@ impl<'a, D: Data> SplittableWalker<D> for AVLWalker<'a, D> {
     /// The walker will be at the root after this operation, if it succeeds.
     ///
     ///```
-    /// use grove::trees::*;
-    /// use grove::avl::*;
+    /// use grove::{SomeTree, avl::AVLTree};
     /// use grove::example_data::StdNum;
-    /// use grove::methods::*;
     ///
     /// let mut tree: AVLTree<StdNum> = (17..88).collect();
     /// let mut tree2 = tree.slice(7..7).split_right().unwrap();
@@ -528,10 +526,8 @@ impl<'a, D: Data> SplittableWalker<D> for AVLWalker<'a, D> {
     /// The walker will be at the root after this operation, if it succeeds.
     ///
     ///```
-    /// use grove::trees::*;
-    /// use grove::avl::*;
+    /// use grove::{SomeTree, avl::AVLTree};
     /// use grove::example_data::StdNum;
-    /// use grove::methods::*;
     ///
     /// let mut tree: AVLTree<StdNum> = (17..88).collect();
     /// let mut tree2 = tree.slice(7..7).split_left().unwrap();
@@ -551,8 +547,7 @@ impl<D: Data> AVLTree<D> {
     /// Concatenates the trees together, in place, with a given value for the middle.
     /// Complexity: `O(log n)`. More precisely, `O(dr)` where `dr` is the difference of ranks between the two trees.
     ///```
-    /// use grove::trees::*;
-    /// use grove::avl::*;
+    /// use grove::{SomeTree, avl::AVLTree};
     /// use grove::example_data::StdNum;
     ///
     /// let mut tree: AVLTree<StdNum> = (17..=89).collect();
@@ -592,8 +587,7 @@ impl<D: Data> AVLTree<D> {
     /// Concatenates the trees together, in place, with a given value for the middle.
     /// Complexity: `O(log n)`. More precisely, `O(dr)` where `dr` is the difference of ranks between the two trees.
     ///```
-    /// use grove::trees::*;
-    /// use grove::avl::*;
+    /// use grove::{SomeTree, avl::AVLTree};
     /// use grove::example_data::StdNum;
     ///
     /// let tree1: AVLTree<StdNum> = (17..=89).collect();
@@ -635,8 +629,7 @@ impl<D: Data> ConcatenableTree<D> for AVLTree<D> {
     /// Concatenates the trees together, in place.
     /// Complexity: `O(log n)`.
     ///```
-    /// use grove::trees::*;
-    /// use grove::avl::*;
+    /// use grove::{SomeTree, ConcatenableTree, avl::AVLTree};
     /// use grove::example_data::StdNum;
     ///
     /// let mut tree: AVLTree<StdNum> = (17..=89).collect();
@@ -660,9 +653,8 @@ impl<D: Data> ConcatenableTree<D> for AVLTree<D> {
 /// Concatenates the trees together, in place, with a given value for the middle.
 /// Complexity: `O(log n)`. More precisely, `O(dr)` where `dr` is the difference of ranks between the two trees.
 ///```
-/// use grove::trees::*;
-/// use grove::avl::*;
-/// use grove::example_data::StdNum;
+    /// use grove::{SomeTree, avl::AVLTree, avl::concatenate_with_middle};
+    /// use grove::example_data::StdNum;
 ///
 /// let tree1: AVLTree<StdNum> = (17..=89).collect();
 /// let tree2: AVLTree<StdNum> = (13..=25).collect();

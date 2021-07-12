@@ -75,8 +75,7 @@ where
     /// See documentation in [`basic_tree::iterators`] as to why this function receives a `&mut self`
     /// instead of `&Self` input, and why there isn't a mutable iterator.
     ///```
-    /// use grove::*;
-    /// use grove::basic_tree::*;
+    /// use grove::{SomeTree, basic_tree::BasicTree};
     /// use grove::example_data::StdNum;
     ///
     /// let mut tree: BasicTree<StdNum> = (20..80).collect();
@@ -92,8 +91,7 @@ where
 
     /// Iterates over the whole tree.
     ///```
-    /// use grove::*;
-    /// use grove::basic_tree::*;
+    /// use grove::{SomeTree, basic_tree::BasicTree};
     /// use grove::example_data::StdNum;
     ///
     /// let mut tree: BasicTree<StdNum> = (17..=89).collect();
@@ -209,8 +207,7 @@ pub trait SomeEntry<D: Data> {
 
     /// Returns the summary of all values in this node's subtree.
     ///```
-    /// use grove::*;
-    /// use grove::basic_tree::*;
+    /// use grove::{SomeTree, SomeEntry, basic_tree::BasicTree};
     /// use grove::example_data::StdNum;
     ///
     /// let tree: BasicTree<StdNum> = (1..=8).collect();

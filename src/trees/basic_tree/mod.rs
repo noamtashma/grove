@@ -271,8 +271,7 @@ impl<D: Data, T> BasicNode<D, T> {
     /// This function leaves the [`self.action`] field "dirty" - after calling
     /// this you might need to call access, to push the action to this node's sons.
     ///```
-    /// use grove::*;
-    /// use grove::basic_tree::*;
+    /// use grove::{*, basic_tree::*};
     /// use grove::example_data::{StdNum, RevAffineAction};
     ///
     /// let mut tree: BasicTree<StdNum> = (1..=8).collect();

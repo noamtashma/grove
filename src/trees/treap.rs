@@ -478,14 +478,13 @@ where
 /// If elements with equal keys are found, they are placed in an arbitrary order.
 ///
 ///```rust
-///use grove::*;
-///use grove::treap::*;
+/// use grove::{SomeTree, treap, treap::Treap};
 ///use grove::example_data::{NoAction, Ordered};
 ///
 ///type T = Treap<NoAction<Ordered<i32>>>;
 ///let tree1: T = (0..7).map(|x| Ordered(x)).collect();
 ///let tree2: T = (4..9).map(|x| Ordered(x)).collect();
-///let tree = tokio_test::block_on(union_concurrent(tree1, tree2));
+///let tree = tokio_test::block_on(treap::union_concurrent(tree1, tree2));
 /// # tree.assert_correctness();
 ///assert_eq!(
 ///    tree.into_iter().collect::<Vec<_>>(),
@@ -520,14 +519,13 @@ where
 /// If elements with equal keys are found, they are placed in an arbitrary order.
 ///
 ///```rust
-///use grove::*;
-///use grove::treap::*;
+///use grove::{SomeTree, treap, treap::Treap};
 ///use grove::example_data::{NoAction, Ordered};
 ///
 ///type T = Treap<NoAction<Ordered<i32>>>;
 ///let tree1: T = (0..7).map(|x| Ordered(x)).collect();
 ///let tree2: T = (4..9).map(|x| Ordered(x)).collect();
-///let tree = union(tree1, tree2);
+///let tree = treap::union(tree1, tree2);
 /// # tree.assert_correctness();
 ///assert_eq!(tree.into_iter().collect::<Vec<_>>(), [0,1,2,3,4,4,5,5,6,6,7,8].iter().map(|x| Ordered(*x)).collect::<Vec<_>>());
 ///```
@@ -549,8 +547,7 @@ where
 impl<D: Data> ConcatenableTree<D> for Treap<D> {
     /// Concatenates the trees together, in place.
     ///```
-    /// use grove::trees::*;
-    /// use grove::treap::*;
+    /// use grove::{SomeTree, ConcatenableTree, treap::Treap};
     /// use grove::example_data::StdNum;
     ///
     /// let mut tree: Treap<StdNum> = (17..=89).collect();
@@ -605,10 +602,8 @@ impl<'a, D: Data> SplittableWalker<D> for TreapWalker<'a, D> {
     /// The walker will be at the root after this operation, if it succeeds.
     ///
     ///```
-    /// use grove::trees::*;
-    /// use grove::treap::*;
+    /// use grove::{SomeTree, treap::Treap};
     /// use grove::example_data::StdNum;
-    /// use grove::methods::*;
     ///
     /// let mut tree: Treap<StdNum> = (17..88).collect();
     /// let mut tree2 = tree.slice(7..7).split_right().unwrap();
@@ -652,10 +647,8 @@ impl<'a, D: Data> SplittableWalker<D> for TreapWalker<'a, D> {
     /// The walker will be at the root after this operation, if it succeeds.
     ///
     ///```
-    /// use grove::trees::*;
-    /// use grove::treap::*;
+    /// use grove::{SomeTree, treap::Treap};
     /// use grove::example_data::StdNum;
-    /// use grove::methods::*;
     ///
     /// let mut tree: Treap<StdNum> = (17..88).collect();
     /// let mut tree2 = tree.slice(7..7).split_left().unwrap();

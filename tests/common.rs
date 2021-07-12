@@ -1,7 +1,6 @@
-pub use grove::*;
 
-use example_data::StdNum;
-use grove::example_data::RevAffineAction;
+use grove::*;
+use example_data::{StdNum, RevAffineAction};
 use rand::{self, Rng};
 
 fn random_range(len: usize) -> std::ops::Range<usize> {
