@@ -53,8 +53,40 @@ impl<D: Data> Default for BasicTree<D> {
 }
 
 impl<D: Data> std::iter::FromIterator<D::Value> for BasicTree<D> {
-    fn from_iter<T: IntoIterator<Item = D::Value>>(iter: T) -> Self {
-        iterators::build(iter.into_iter())
+    /// Builds a balanced [`BasicTree`] from an iterator of values,
+    /// in the sense that is has logarithmic depth. However,
+    /// it doesn't fit other balancing invariants.
+    /// We can't do better because we don't know the size of the tree in advance.
+    fn from_iter<T: IntoIterator<Item = D::Value>>(into_iter: T) -> Self {
+        // TODO: rewrite using boxed nodes.
+        // The stack holds nodes, each of which has no right son, and a left son which is
+        // a perfect binary tree. The trees correspond to the binary digits of `count`:
+        // the i'th digit of `count` is `1` iff there is a tree in the stack of size `2^i`.
+        let mut stack: Vec<BasicNode<D>> = vec![];
+        for (count, val) in into_iter.into_iter().enumerate() {
+            let mut tree = BasicTree::Empty;
+            for i in 0.. {
+                if (count >> i) & 1 == 1 {
+                    let mut prev_node = stack.pop().unwrap();
+                    prev_node.right = tree;
+                    prev_node.rebuild();
+                    tree = BasicTree::from_node(prev_node);
+                } else {
+                    let mut node = BasicNode::new(val);
+                    node.left = tree;
+                    stack.push(node);
+                    break;
+                }
+            }
+        }
+    
+        let mut tree = BasicTree::Empty;
+        for mut prev_node in stack.into_iter().rev() {
+            prev_node.right = tree;
+            prev_node.rebuild();
+            tree = BasicTree::from_node(prev_node);
+        }
+        tree
     }
 }
 

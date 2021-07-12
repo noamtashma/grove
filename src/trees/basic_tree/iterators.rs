@@ -166,43 +166,6 @@ impl<'a, D: Data, L: Locator<D>, T> Iterator for IterLocator<'a, D, L, T> {
     }
 }
 
-/// Builds a well balanced [`BasicTree`] from an iterator of values.
-pub fn build<D: Data, I>(iter: I) -> BasicTree<D>
-where
-    I: Iterator<Item = D::Value>,
-{
-    // TODO: rewrite using boxed nodes.
-    // the code is a bit messy because we don't know in advance the size of the tree.
-    // the stack holds nodes, each of which has no right son, and a left son which is
-    // a perfect binary tree. the trees correspond to the binary digits of `count`:
-    // the i'th digit of `count` is `1` iff there is a tree in the stack of size `2^i`.
-    let mut stack: Vec<BasicNode<D>> = vec![];
-    for (count, val) in iter.enumerate() {
-        let mut tree = BasicTree::Empty;
-        for i in 0.. {
-            if (count >> i) & 1 == 1 {
-                let mut prev_node = stack.pop().unwrap();
-                prev_node.right = tree;
-                prev_node.rebuild();
-                tree = BasicTree::from_node(prev_node);
-            } else {
-                let mut node = BasicNode::new(val);
-                node.left = tree;
-                stack.push(node);
-                break;
-            }
-        }
-    }
-
-    let mut tree = BasicTree::Empty;
-    for mut prev_node in stack.into_iter().rev() {
-        prev_node.right = tree;
-        prev_node.rebuild();
-        tree = BasicTree::from_node(prev_node);
-    }
-    tree
-}
-
 /// Owning fragment
 enum OFragment<D: Data, T = ()> {
     Value(D::Value),
