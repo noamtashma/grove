@@ -14,21 +14,21 @@ impl<D: Data> SomeTree<D> for BasicTree<D> {
         L: Locator<D>,
         D::Value: Clone,
     {
-        methods::segment_summary_imm(self, locator)
+        segment_algorithms::segment_summary_imm(self, locator)
     }
 
     fn segment_summary_unclonable<L>(&mut self, locator: L) -> D::Summary
     where
         L: Locator<D>,
     {
-        methods::segment_summary_unclonable(self, locator)
+        segment_algorithms::segment_summary_unclonable(self, locator)
     }
 
     fn act_segment<L>(&mut self, action: D::Action, locator: L)
     where
         L: Locator<D>,
     {
-        methods::act_segment(self, action, locator);
+        segment_algorithms::act_segment(self, action, locator);
     }
 
     type TreeData = ();

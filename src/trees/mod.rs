@@ -9,7 +9,7 @@
 
 #[macro_use]
 mod macros;
-mod methods;
+mod segment_algorithms;
 
 pub mod avl;
 pub mod basic_tree;

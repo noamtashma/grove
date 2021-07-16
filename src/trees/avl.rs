@@ -137,14 +137,14 @@ impl<D: Data> SomeTree<D> for AVLTree<D> {
         L: crate::Locator<D>,
         D::Value: Clone,
     {
-        methods::segment_summary_imm(&self.tree, locator)
+        segment_algorithms::segment_summary_imm(&self.tree, locator)
     }
 
     fn segment_summary_unclonable<L>(&mut self, locator: L) -> D::Summary
     where
         L: crate::Locator<D>,
     {
-        methods::segment_summary_unclonable(self, locator)
+        segment_algorithms::segment_summary_unclonable(self, locator)
     }
 
     fn act_segment<L>(&mut self, action: D::Action, locator: L)
@@ -152,7 +152,7 @@ impl<D: Data> SomeTree<D> for AVLTree<D> {
         L: crate::Locator<D>,
     {
         if !action.to_reverse() {
-            methods::act_segment(self, action, locator)
+            segment_algorithms::act_segment(self, action, locator)
         } else {
             // split out the middle
             let mut mid: AVLTree<D> = self
