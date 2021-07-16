@@ -330,6 +330,7 @@ pub trait Keyed {
     /// The key type that elements are ordered by.
     type Key: std::cmp::Ord;
 
+    // TODO: is it possible to switch to `impl Borrow<Self::Key> + '_` or something similar?
     /// Gets the key associated with a value
     fn get_key(&self) -> &Self::Key;
 }

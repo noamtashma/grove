@@ -11,6 +11,10 @@
 
 // these two should not be public as they are merely separate files
 // for some of the functions of this module
+
+mod imm_down_walker;
+pub use imm_down_walker::segment_summary;
+
 mod walker;
 pub use walker::*;
 
@@ -40,6 +44,16 @@ impl<D: Data, T> BasicTree<D, T> {
     /// Creates an empty tree
     pub fn new() -> Self {
         Empty
+    }
+
+    /// Returns the action that is (locally) going to be applied to all of
+    /// this tree's nodes.
+    /// Returns `default()` if the tree is empty, and `self.node().action` otherwise
+    pub fn action(&self) -> D::Action {
+        match self.node() {
+            Some(node) => node.action,
+            None => Default::default(),
+        }
     }
 
     /// Constructs a new non-empty tree from a node.

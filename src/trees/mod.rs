@@ -266,7 +266,7 @@ pub trait SomeWalker<D: Data>: SomeEntry<D> {
     /// Returns a walker at the wanted position.
     fn search_subtree<L: crate::Locator<D>>(&mut self, locator: L) {
         use locators::LocResult;
-        while let Some(res) = locators::walker_locate(self, &locator) {
+        while let Some(res) = locators::query_locator(self, &locator) {
             match res {
                 LocResult::Accept => break,
                 LocResult::GoRight => self.go_right().unwrap(),
