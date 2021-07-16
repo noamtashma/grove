@@ -76,11 +76,11 @@ where
 /// Returns the result of the locator at the walker
 /// Returns None if the walker is at an empty position
 pub fn clone_locate<D: Data, L>(
-    current_action: D::Action, 
-    left: D::Summary, 
-    value: &D::Value, 
-    right: D::Summary, 
-    locator: &L
+    current_action: D::Action,
+    left: D::Summary,
+    value: &D::Value,
+    right: D::Summary,
+    locator: &L,
 ) -> LocResult
 where
     L: Locator<D>,

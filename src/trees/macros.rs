@@ -20,23 +20,23 @@ macro_rules! derive_SomeWalker {
             fn go_left(&mut self) -> Result<(), ()> {
                 self.$accessor.go_left()
             }
-        
+
             fn go_right(&mut self) -> Result<(), ()> {
                 self.$accessor.go_right()
             }
-        
+
             fn depth(&self) -> usize {
                 self.$accessor.depth()
             }
-        
+
             fn far_left_summary(&self) -> $data::Summary {
                 self.$accessor.far_left_summary()
             }
-        
+
             fn far_right_summary(&self) -> $data::Summary {
                 self.$accessor.far_left_summary()
             }
-        
+
             fn value(&self) -> Option<& $data::Value> {
                 self.$accessor.value()
             }

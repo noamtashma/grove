@@ -14,7 +14,7 @@ impl<D: Data> SomeTree<D> for BasicTree<D> {
         L: Locator<D>,
         D::Value: Clone,
     {
-        methods::segment_summary(self, locator)
+        crate::trees::basic_tree::segment_summary_imm(self, locator)
     }
 
     fn segment_summary_unclonable<L>(&mut self, locator: L) -> D::Summary
@@ -87,7 +87,7 @@ impl<D: Data> std::iter::FromIterator<D::Value> for BasicTree<D> {
                 }
             }
         }
-    
+
         let mut tree = BasicTree::Empty;
         for mut prev_node in stack.into_iter().rev() {
             prev_node.right = tree;

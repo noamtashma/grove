@@ -13,7 +13,7 @@
 // for some of the functions of this module
 
 mod imm_down_walker;
-pub use imm_down_walker::segment_summary;
+pub use imm_down_walker::segment_summary_imm;
 
 mod walker;
 pub use walker::*;

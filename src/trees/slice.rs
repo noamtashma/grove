@@ -32,7 +32,8 @@ where
     }
 
     /// Compute the summary of this subsegment.
-    pub fn summary(&mut self) -> D::Summary where
+    pub fn summary(&mut self) -> D::Summary
+    where
         D::Value: Clone,
     {
         self.tree.segment_summary(self.locator.clone())
@@ -108,7 +109,7 @@ where
         &mut self,
     ) -> Option<<<&mut T as SplittableTreeRef<D>>::SplittableWalker as SplittableWalker<D>>::T>
     {
-        let mut walker =self.tree.search(self.locator.clone());
+        let mut walker = self.tree.search(self.locator.clone());
         walker.split_left()
     }
 }

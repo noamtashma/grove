@@ -30,9 +30,9 @@ impl<D: Data> SomeTree<D> for Treap<D> {
     fn segment_summary_imm<L>(&self, locator: L) -> D::Summary
     where
         L: locators::Locator<D>,
-        D::Value: Clone
+        D::Value: Clone,
     {
-        methods::segment_summary(&self.tree, locator)
+        crate::trees::basic_tree::segment_summary_imm(&self.tree, locator)
     }
 
     fn segment_summary_unclonable<L>(&mut self, locator: L) -> D::Summary
@@ -232,7 +232,7 @@ pub struct TreapWalker<'a, D: Data> {
     walker: BasicWalker<'a, D, T>,
 }
 
-derive_SomeWalker!{walker,
+derive_SomeWalker! {walker,
     impl<'a, D: Data> SomeWalker<D> for TreapWalker<'a, D> {
         fn go_up(&mut self) -> Result<Side, ()> {
             self.walker.go_up()
@@ -240,7 +240,7 @@ derive_SomeWalker!{walker,
     }
 }
 
-derive_SomeEntry!{walker,
+derive_SomeEntry! {walker,
     impl<'a, D: Data> SomeEntry<D> for TreapWalker<'a, D> {
         fn assert_correctness_locally(&self)
         where

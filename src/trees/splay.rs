@@ -389,7 +389,7 @@ impl<D: Data> IntoIterator for SplayTree<D> {
     }
 }
 
-derive_SomeWalker!{walker,
+derive_SomeWalker! {walker,
     impl<'a, D: Data> SomeWalker<D> for SplayWalker<'a, D> {
         /// If successful, returns whether or not the previous current value was the left son.
         /// If already at the root of the tree, returns `Err(())`.
@@ -398,7 +398,7 @@ derive_SomeWalker!{walker,
         fn go_up(&mut self) -> Result<Side, ()> {
             self.walker.go_up()
         }
-        
+
         // overrides the default implementations for these methods:
 
         /// Finds the previous filled node.

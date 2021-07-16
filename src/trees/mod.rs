@@ -7,7 +7,8 @@
 //! checking problems of recursive structures (using [`recursive_reference`]), and rebalancing the tree.
 //! Therefore, walkers can't guarantee that the tree won't change as you walk through them.
 
-#[macro_use] mod macros;
+#[macro_use]
+mod macros;
 
 pub mod avl;
 pub mod basic_tree;
@@ -15,7 +16,6 @@ pub mod methods;
 pub mod slice;
 pub mod splay;
 pub mod treap;
-
 
 use crate::data::*;
 use crate::locators;
@@ -64,7 +64,7 @@ where
     fn segment_summary<L>(&mut self, locator: L) -> D::Summary
     where
         L: locators::Locator<D>,
-        D::Value: Clone
+        D::Value: Clone,
     {
         self.segment_summary_imm(locator)
     }
@@ -174,7 +174,7 @@ pub trait SomeWalker<D: Data>: SomeEntry<D> {
     /// Returns the current depth in the tree.
     /// The convention is, the root is at depth zero
     fn depth(&self) -> usize;
-    
+
     /// This function is here since only walkers can guarantee that the current value
     /// is clean.
     fn value(&self) -> Option<&D::Value>;

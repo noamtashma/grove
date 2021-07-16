@@ -178,12 +178,3 @@ where
         }
     }
 }
-
-/// Unimplemented
-pub fn segment_summary<D: Data, T, L>(mut tree: &basic_tree::BasicTree<D, T>, locator: L) -> D::Summary
-where
-    L: Locator<D>,
-    D::Value: Clone,
-    {
-        basic_tree::segment_summary(tree, locator)
-    }

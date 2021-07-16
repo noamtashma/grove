@@ -137,7 +137,7 @@ impl<D: Data> SomeTree<D> for AVLTree<D> {
         L: crate::Locator<D>,
         D::Value: Clone,
     {
-        methods::segment_summary(&self.tree, locator)
+        crate::trees::basic_tree::segment_summary_imm(&self.tree, locator)
     }
 
     fn segment_summary_unclonable<L>(&mut self, locator: L) -> D::Summary
@@ -219,7 +219,7 @@ impl<'a, D: Data> SplittableTreeRef<D> for &'a mut AVLTree<D> {
     type SplittableWalker = AVLWalker<'a, D>;
 }
 
-derive_SomeEntry! {tree, 
+derive_SomeEntry! {tree,
     impl<D: Data> SomeEntry<D> for AVLTree<D> {
         fn assert_correctness_locally(&self)
         where
@@ -274,7 +274,7 @@ impl<'a, D: Data> std::ops::Drop for AVLWalker<'a, D> {
     }
 }
 
-derive_SomeWalker!{walker,
+derive_SomeWalker! {walker,
     impl<'a, D: Data> SomeWalker<D> for AVLWalker<'a, D> {
         fn go_up(&mut self) -> Result<Side, ()> {
             let res = self.walker.go_up()?;
@@ -285,7 +285,7 @@ derive_SomeWalker!{walker,
     }
 }
 
-derive_SomeEntry!{walker,
+derive_SomeEntry! {walker,
     impl<'a, D: Data> SomeEntry<D> for AVLWalker<'a, D> {
         fn assert_correctness_locally(&self)
         where
@@ -661,8 +661,8 @@ impl<D: Data> ConcatenableTree<D> for AVLTree<D> {
 /// Concatenates the trees together, in place, with a given value for the middle.
 /// Complexity: `O(log n)`. More precisely, `O(dr)` where `dr` is the difference of ranks between the two trees.
 ///```
-    /// use grove::{SomeTree, avl::AVLTree, avl::concatenate_with_middle};
-    /// use grove::example_data::StdNum;
+/// use grove::{SomeTree, avl::AVLTree, avl::concatenate_with_middle};
+/// use grove::example_data::StdNum;
 ///
 /// let tree1: AVLTree<StdNum> = (17..=89).collect();
 /// let tree2: AVLTree<StdNum> = (13..=25).collect();
