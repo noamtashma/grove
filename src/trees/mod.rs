@@ -9,10 +9,10 @@
 
 #[macro_use]
 mod macros;
+mod methods;
 
 pub mod avl;
 pub mod basic_tree;
-pub mod methods;
 pub mod slice;
 pub mod splay;
 pub mod treap;

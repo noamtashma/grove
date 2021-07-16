@@ -32,7 +32,7 @@ impl<D: Data> SomeTree<D> for Treap<D> {
         L: locators::Locator<D>,
         D::Value: Clone,
     {
-        crate::trees::basic_tree::segment_summary_imm(&self.tree, locator)
+        methods::segment_summary_imm(&self.tree, locator)
     }
 
     fn segment_summary_unclonable<L>(&mut self, locator: L) -> D::Summary

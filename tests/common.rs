@@ -21,7 +21,7 @@ fn random_action(rng: &mut rand::prelude::ThreadRng) -> RevAffineAction {
     }
 }
 
-const INITIAL_SIZE: usize = 1;
+const INITIAL_SIZE: usize = 200;
 const NUM_ROUNDS: usize = if cfg!(not(miri)) { 10_000 } else { 100 }; // miri is too slow
 pub fn check_consistency<T1, T2>()
 where

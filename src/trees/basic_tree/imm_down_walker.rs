@@ -1,17 +1,14 @@
 use crate::*;
 use trees::basic_tree::BasicTree;
 
-const SUDDENLY_EMPTY_ERROR: &'static str = "The locator unexpectedly became empty";
-const INCONSISTENT_LOCATOR_ERROR: &'static str = "inconsistent locator";
-
 /// A BasicWalker version that is immutable, and can only go down.
 #[derive(Copy)]
-struct ImmDownBasicWalker<'a, D: Data, T = ()> {
+pub(crate) struct ImmDownBasicWalker<'a, D: Data, T = ()> {
     tree: &'a BasicTree<D, T>,
 
     // to be applied to everything in `tree`.
     // already contains this node's actions.
-    current_action: D::Action,
+    pub(crate) current_action: D::Action,
 
     // note: these should always have `current_action` already applied to them,
     // and in the already reversed order if `current_action.to_reverse() == true`.
@@ -100,6 +97,9 @@ impl<'a, D: Data, T> ImmDownBasicWalker<'a, D, T> {
     }
 
     /// Returns the value at the current node.
+    // This method is kept for potential future in which ImmDownBasicWalker
+    // is public.
+    #[allow(dead_code)]
     pub fn value(&self) -> Option<D::Value>
     where
         D::Value: Clone,
@@ -110,6 +110,17 @@ impl<'a, D: Data, T> ImmDownBasicWalker<'a, D, T> {
         )
     }
 
+    /// Returns the summary of just this node.
+    pub fn node_summary(&self) -> Option<D::Summary> {
+        Some(
+            self.current_action
+                .act(D::to_summary(&self.tree.node()?.node_value))
+        )
+    }
+
+    // This method is kept for potential future in which ImmDownBasicWalker
+    // is public.
+    #[allow(dead_code)]
     pub fn left_summary(&self) -> D::Summary {
         if let Some(node) = self.tree.node() {
             let left = if self.current_action.to_reverse() {
@@ -123,6 +134,9 @@ impl<'a, D: Data, T> ImmDownBasicWalker<'a, D, T> {
         }
     }
 
+    // This method is kept for potential future in which ImmDownBasicWalker
+    // is public.
+    #[allow(dead_code)]
     pub fn right_summary(&self) -> D::Summary {
         if let Some(node) = self.tree.node() {
             let right = if self.current_action.to_reverse() {
@@ -157,100 +171,4 @@ impl<'a, D: Data, T> ImmDownBasicWalker<'a, D, T> {
 
         Some(direction)
     }
-}
-
-/// Returns the accumulated values on the locator's segment
-/// Do not use with splay trees - it might mess up the complexity,
-/// because it uses go_up().
-///
-/// Instead, use the specific [`SomeTree::segment_summary`]
-pub fn segment_summary_imm<D: Data, T, L>(tree: &BasicTree<D, T>, locator: L) -> D::Summary
-where
-    L: Locator<D>,
-    D::Value: Clone,
-{
-    use locators::LocResult::*;
-    use trees::*;
-
-    let mut walker = ImmDownBasicWalker::new(tree);
-    while let Some(direction) = walker.query_locator(&locator) {
-        match direction {
-            GoLeft => {
-                walker.go_left();
-            }
-            GoRight => {
-                walker.go_right();
-            }
-            Accept => {
-                // TODO: ugly
-                let current_node_summary = walker.current_action.act(D::to_summary(
-                    &walker.tree.node().expect(SUDDENLY_EMPTY_ERROR).node_value,
-                ));
-                let mut left_walker = walker.clone();
-                let mut right_walker = walker;
-                left_walker.go_left().expect(SUDDENLY_EMPTY_ERROR);
-                right_walker.go_right().expect(SUDDENLY_EMPTY_ERROR);
-
-                let left_half = segment_summary_on_suffix(left_walker, locator.clone());
-                let right_half = segment_summary_on_prefix(right_walker, locator);
-                return left_half + current_node_summary + right_half;
-            }
-        }
-    }
-    // Empty segment case
-    Default::default()
-}
-
-/// Returns the summary of the segment in the current tree,
-/// provided the segment is a suffix.
-fn segment_summary_on_suffix<D: Data, T, L>(
-    mut walker: ImmDownBasicWalker<D, T>,
-    locator: L,
-) -> D::Summary
-where
-    L: Locator<D>,
-    D::Value: Clone,
-{
-    use locators::LocResult::*;
-    use trees::*;
-    let mut result: D::Summary = Default::default();
-
-    while let Some(direction) = walker.query_locator(&locator) {
-        match direction {
-            GoLeft => panic!("{}", INCONSISTENT_LOCATOR_ERROR),
-            GoRight => walker.go_right().expect(SUDDENLY_EMPTY_ERROR),
-            Accept => {
-                let extra = walker.go_left_extra().expect(SUDDENLY_EMPTY_ERROR);
-                result = extra + result;
-            }
-        }
-    }
-    result
-}
-
-/// Returns the summary of the segment in the current tree,
-/// provided the segment is a suffix.
-fn segment_summary_on_prefix<D: Data, T, L>(
-    mut walker: ImmDownBasicWalker<D, T>,
-    locator: L,
-) -> D::Summary
-where
-    L: Locator<D>,
-    D::Value: Clone,
-{
-    use locators::LocResult::*;
-    use trees::*;
-    let mut result: D::Summary = Default::default();
-
-    while let Some(direction) = walker.query_locator(&locator) {
-        match direction {
-            GoLeft => walker.go_left().expect(SUDDENLY_EMPTY_ERROR),
-            GoRight => panic!("{}", INCONSISTENT_LOCATOR_ERROR),
-            Accept => {
-                let extra = walker.go_right_extra().expect(SUDDENLY_EMPTY_ERROR);
-                result = result + extra;
-            }
-        }
-    }
-    result
 }

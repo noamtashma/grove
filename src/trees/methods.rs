@@ -12,6 +12,8 @@
 use crate::*;
 use locators::*;
 
+use trees::basic_tree::{*, ImmDownBasicWalker};
+
 // TODO: finger searching.
 
 /// Returns the accumulated values on the locator's segment
@@ -110,7 +112,7 @@ where
     TR: SomeTreeRef<D>,
     L: Locator<D>,
 {
-    assert!(!action.to_reverse());
+    assert!(!action.to_reverse(), "This tree type might not support reversals");
     use LocResult::*;
 
     let mut walker = tree.walker();
@@ -177,4 +179,100 @@ where
             GoLeft => walker.go_left().unwrap(),
         }
     }
+}
+
+const SUDDENLY_EMPTY_ERROR: &'static str = "The locator unexpectedly became empty";
+const INCONSISTENT_LOCATOR_ERROR: &'static str = "inconsistent locator";
+
+/// Returns the accumulated values on the locator's segment
+/// Do not use with splay trees - it might mess up the complexity,
+/// because it uses go_up().
+///
+/// Instead, use the specific [`SomeTree::segment_summary`]
+pub fn segment_summary_imm<D: Data, T, L>(tree: &BasicTree<D, T>, locator: L) -> D::Summary
+where
+    L: Locator<D>,
+    D::Value: Clone,
+{
+    use locators::LocResult::*;
+    use trees::*;
+
+    let mut walker = ImmDownBasicWalker::new(tree);
+    while let Some(direction) = walker.query_locator(&locator) {
+        match direction {
+            GoLeft => {
+                walker.go_left();
+            }
+            GoRight => {
+                walker.go_right();
+            }
+            Accept => {
+                let current_node_summary = walker.node_summary().expect(SUDDENLY_EMPTY_ERROR);
+                let mut left_walker = walker.clone();
+                let mut right_walker = walker;
+                left_walker.go_left().expect(SUDDENLY_EMPTY_ERROR);
+                right_walker.go_right().expect(SUDDENLY_EMPTY_ERROR);
+
+                let left_half = segment_summary_on_suffix(left_walker, locator.clone());
+                let right_half = segment_summary_on_prefix(right_walker, locator);
+                return left_half + current_node_summary + right_half;
+            }
+        }
+    }
+    // Empty segment case
+    Default::default()
+}
+
+/// Returns the summary of the segment in the current tree,
+/// provided the segment is a suffix.
+fn segment_summary_on_suffix<D: Data, T, L>(
+    mut walker: ImmDownBasicWalker<D, T>,
+    locator: L,
+) -> D::Summary
+where
+    L: Locator<D>,
+    D::Value: Clone,
+{
+    use locators::LocResult::*;
+    use trees::*;
+    let mut result: D::Summary = Default::default();
+
+    while let Some(direction) = walker.query_locator(&locator) {
+        match direction {
+            GoLeft => panic!("{}", INCONSISTENT_LOCATOR_ERROR),
+            GoRight => walker.go_right().expect(SUDDENLY_EMPTY_ERROR),
+            Accept => {
+                let extra = walker.go_left_extra().expect(SUDDENLY_EMPTY_ERROR);
+                result = extra + result;
+            }
+        }
+    }
+    result
+}
+
+/// Returns the summary of the segment in the current tree,
+/// provided the segment is a suffix.
+fn segment_summary_on_prefix<D: Data, T, L>(
+    mut walker: ImmDownBasicWalker<D, T>,
+    locator: L,
+) -> D::Summary
+where
+    L: Locator<D>,
+    D::Value: Clone,
+{
+    use locators::LocResult::*;
+    use trees::*;
+    let mut result: D::Summary = Default::default();
+
+    while let Some(direction) = walker.query_locator(&locator) {
+        match direction {
+            GoLeft => walker.go_left().expect(SUDDENLY_EMPTY_ERROR),
+            GoRight => panic!("{}", INCONSISTENT_LOCATOR_ERROR),
+            Accept => {
+                let extra = walker.go_right_extra().expect(SUDDENLY_EMPTY_ERROR);
+                result = result + extra;
+            }
+        }
+    }
+    result
 }
