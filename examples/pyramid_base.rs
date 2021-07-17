@@ -165,6 +165,15 @@ impl SizedSummary for SizeMinSummary {
     }
 }
 
+impl FromSingletonValue<Segment> for SizeMinSummary {
+    fn to_summary(val: &Segment) -> Self {
+        SizeMinSummary {
+            size: val.size,
+            min: if val.size == 0 { None } else { Some(val.val) },
+        }
+    }
+}
+
 #[derive(PartialEq, Eq, Clone, Copy, Hash, Debug)]
 pub struct AddAction {
     pub add: I,
@@ -212,13 +221,6 @@ impl Data for MyData {
     type Summary = SizeMinSummary;
 
     type Action = AddAction;
-
-    fn to_summary(val: &Self::Value) -> Self::Summary {
-        SizeMinSummary {
-            size: val.size,
-            min: if val.size == 0 { None } else { Some(val.val) },
-        }
-    }
 }
 
 //////////////////////////////////////////// algorithm //////////////////////////////////////////

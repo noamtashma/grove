@@ -29,6 +29,12 @@ impl Action for Unit {
     }
 }
 
+impl<V> FromSingletonValue<V> for Unit {
+    fn to_summary(_value: &V) -> Self {
+        Unit {}
+    }
+}
+
 /// Storing the size of a subtree.
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub struct Size {
@@ -57,6 +63,12 @@ impl SizedSummary for Size {
     }
 }
 
+impl<V> FromSingletonValue<V> for Size {
+    fn to_summary(_value: &V) -> Self {
+        Size { size: 1 }
+    }
+}
+
 /// [`Data`] instance for plain values with segment size information, so that they can be accessed.
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
 struct SizeData<V> {
@@ -67,10 +79,6 @@ impl<V> Data for SizeData<V> {
     type Action = Unit;
     type Summary = Size;
     type Value = V;
-
-    fn to_summary(_val: &Self::Value) -> Self::Summary {
-        Size { size: 1 }
-    }
 }
 
 /// A trait for summary instances which keep track of the size of segments.
@@ -179,6 +187,17 @@ impl Default for NumSummary {
 impl SizedSummary for NumSummary {
     fn size(self) -> usize {
         self.size as usize
+    }
+}
+
+impl FromSingletonValue<I> for NumSummary {
+    fn to_summary(val: &I) -> Self {
+        NumSummary {
+            max: Some(*val),
+            min: Some(*val),
+            size: 1,
+            sum: *val,
+        }
     }
 }
 
@@ -307,13 +326,109 @@ impl Data for StdNum {
     type Value = I;
     type Summary = NumSummary;
     type Action = RevAffineAction;
+}
 
-    fn to_summary(val: &I) -> Self::Summary {
-        NumSummary {
-            max: Some(*val),
-            min: Some(*val),
+
+/// A summary type that can sum up applications of polynomials.
+/// That is, for a segment that has value a_i, is can compute
+/// (for example) \sum_i a_i*P(i) for any polynomial P of degree at most D-1.
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
+pub struct PolyNum<const D: usize> {
+    // Contains the amount of elements in this segment
+    size: usize,
+    // Contains the moments of the segment.
+    // The k'th moment is the sum of i^k*a_i for i in 0..size.
+    // In other words, it's the same as `self.apply_poly(x^k)`.
+    moments: [I; D],
+}
+
+/// Shifts a polynomial by some shift.
+/// That is, we have `ResultPoly(x) = InputPoly(x+shift)` for all x.
+fn shift_poly<const D: usize>(shift: I, poly: &[I; D]) -> [I; D] {
+    // Represents powers of (x+shift)
+    let mut powers = [0; D];
+    powers[0] = 1;
+
+    let mut result = [0; D];
+
+    for deg in 0..D {
+        // add poly[deg] * (x+shift)^deg to the result
+        for i in 0..D {
+            result[i] += poly[deg] * powers[i];
+        }
+
+        if deg >= D-1 {
+            break // skip multiplying the polynomial by (x+shift) one too many times
+        }
+
+        // multiply `powers` by (x+shift)
+        for i in (0..=deg).rev() {
+            powers[i+1] += powers[i];
+            powers[i] *= shift;
+        }
+    }
+
+    result
+}
+
+impl<const D: usize> PolyNum<D> {
+    /// Sums up the polynomial on these values, starting with index 0.
+    /// That is, if this represents a segment with values `a_0, ..., a_k`,
+    /// this returns `P(0)*a_0 + P(1)*a_1 + ... P(k)a_k`.
+    pub fn apply_poly(&self, poly: &[I; D]) -> I {
+        let mut result = 0;
+        for i in 0..D {
+            result += poly[i] * self.moments[i];
+        }
+        result
+    }
+
+    /// Sums up the polynomial on these values, starting with index `index`.
+    /// That is, if this represents a segment with values a_0, ..., a_k,
+    /// this returns `P(index)*a_0 + P(index+1)*a_1 + ... P(k)a_k`.
+    pub fn apply_poly_index(&self, index: I, poly: &[I; D]) -> I {
+        let shifted_poly = shift_poly(index, poly);
+        self.apply_poly(&shifted_poly)
+    }
+}
+
+impl<const D: usize> Default for PolyNum<D> {
+    fn default() -> Self {
+        PolyNum {
+            size: 0,
+            moments: [0; D]
+        }
+    }
+}
+
+impl<const D: usize> Add for PolyNum<D> {
+    type Output = PolyNum<D>;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        let mut moments: [I; D] = [0; D];
+        let mut power = [0; D];
+        for i in 0..D {
+            power[i] = 1;
+            moments[i] = self.moments[i] + rhs.apply_poly_index(self.size as I, &power);
+            power[i] = 0;
+        }
+        
+        PolyNum {
+            size: self.size + rhs.size,
+            moments
+        }
+    }
+}
+
+impl<const D: usize> FromSingletonValue<I> for PolyNum<D> {
+    fn to_summary(value: &I) -> Self {
+        let mut moments = [0; D];
+        if D > 0 {
+            moments[0] = *value;
+        }
+        PolyNum {
             size: 1,
-            sum: *val,
+            moments,
         }
     }
 }

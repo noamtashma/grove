@@ -181,8 +181,8 @@ where
     }
 }
 
-const SUDDENLY_EMPTY_ERROR: &'static str = "The locator unexpectedly became empty";
-const INCONSISTENT_LOCATOR_ERROR: &'static str = "inconsistent locator";
+const SUDDENLY_EMPTY_ERROR: &str = "The locator unexpectedly became empty";
+const INCONSISTENT_LOCATOR_ERROR: &str = "inconsistent locator";
 
 /// Returns the accumulated values on the locator's segment
 /// Do not use with splay trees - it might mess up the complexity,

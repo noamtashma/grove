@@ -30,6 +30,9 @@ use std::ops::Add;
 /// reverse a subsegment, add a constant to all values in a subsegment, apply `max` with a
 /// constant on all values in a subsegment, and so on.
 ///
+/// All of the trait's requirements are modeled as separated traits in order to allow for easier
+/// mixing and matching of different values, summaries and actions.
+///
 /// # Requirements
 ///
 /// In order for everything to work, we must know how to:
@@ -114,12 +117,26 @@ pub trait Data {
     type Value;
     /// The summaries of values over segments. When querying a segment,
     /// you get a summary of the segment, represented by a value of type `Self::Summary`.
-    type Summary: Copy + Default + Add<Output = Self::Summary>;
+    type Summary: Copy + Default + Add<Output = Self::Summary> + FromSingletonValue<Self::Value>;
     /// The actions you can perform on the values
     type Action: Action + Acts<Self::Value> + Acts<Self::Summary>;
 
     /// Creates the summary of a single value.
-    fn to_summary(val: &Self::Value) -> Self::Summary;
+    fn to_summary(val: &Self::Value) -> Self::Summary {
+        Self::Summary::to_summary(val)
+    }
+}
+
+/// A [`Data`] implementation for a generic triplet of value, summary and action types,
+/// so you don't have to make an `impl` yourself.
+impl<V, S, A> Data for (V, S, A)
+where
+    S: Copy + Default + Add<Output = S> + FromSingletonValue<V>,
+    A: Action + Acts<V> + Acts<S>,
+{
+    type Value = V;
+    type Summary = S;
+    type Action = A;
 }
 
 /// Trait representing actions. this entailes having an identity action ([`Default`]), being able to compose actions
@@ -153,4 +170,11 @@ pub trait Acts<V> {
         self.act_inplace(&mut object);
         object
     }
+}
+
+/// This trait is implemented by Summaries,
+/// and provides a conversion from a value to the summary of that single value.
+pub trait FromSingletonValue<V> {
+    /// Creates the summary of a single value.
+    fn to_summary(value: &V) -> Self;
 }
