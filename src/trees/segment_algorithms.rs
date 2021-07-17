@@ -1,20 +1,17 @@
-//! Methods module
-//! [TODO: outdated]
-//! This module provides generic methods for use on general trees. for example,
-//! search functions, querying on a segment of the tree, applying an
-//! action on a segment of the tree, and so on.
+//! This file contains algorithms for computing the summary of a segment
+//! and for applying an action on a segment.
 //!
 //! Since different balanced tree algorithms are different, the generic functions
-//! may not work as intended. For example, splay trees shouldn't use the `go_up` method too much,
-//! and so some generic functions which use `go_up` may have linear complexity when used with
-//! splay trees.
+//! may not work as intended.
+//!
+//! Specifically, the version of `segment_summary` that doesn't mutate the original tree
+//! (`segment_summary_imm`), shouldn't be used with splay trees, because that removes the 
+//! splay tree's complexity guarantees.
 
 use crate::*;
 use locators::*;
 
 use trees::basic_tree::{ImmDownBasicWalker, *};
-
-// TODO: finger searching.
 
 /// Returns the accumulated values on the locator's segment
 /// Do not use with splay trees - it might mess up the complexity,
@@ -187,7 +184,8 @@ where
 const SUDDENLY_EMPTY_ERROR: &str = "The locator unexpectedly became empty";
 const INCONSISTENT_LOCATOR_ERROR: &str = "inconsistent locator";
 
-/// Returns the accumulated values on the locator's segment
+/// Returns the accumulated values on the locator's segment,
+/// with only immutable access to the tree.
 /// Do not use with splay trees - it might mess up the complexity,
 /// because it uses go_up().
 ///
