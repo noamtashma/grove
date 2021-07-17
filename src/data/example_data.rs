@@ -135,8 +135,66 @@ impl Action for RevAction {
     }
 }
 
+impl Acts<Unit> for RevAction {
+    fn act_inplace(&self, _val: &mut Unit) {}
+}
+
+impl Acts<I> for RevAction {
+    fn act_inplace(&self, _val: &mut I) {}
+}
+
 impl Acts<Size> for RevAction {
     fn act_inplace(&self, _val: &mut Size) {}
+}
+
+impl Acts<NumSummary> for RevAction {
+    fn act_inplace(&self, _val: &mut NumSummary) {}
+}
+
+/// An action for adding a constant to all values in a segment.
+#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug)]
+pub struct AddAction {
+    /// The amount to be added
+    pub add: I,
+}
+
+impl std::ops::Add for AddAction {
+    type Output = Self;
+    fn add(self, other: Self) -> Self {
+        AddAction {
+            add: self.add + other.add,
+        }
+    }
+}
+
+impl Default for AddAction {
+    fn default() -> Self {
+        AddAction { add: 0 }
+    }
+}
+
+impl Action for AddAction {
+    fn is_identity(self) -> bool {
+        self == Default::default()
+    }
+}
+
+impl Acts<Unit> for AddAction {
+    fn act_inplace(&self, _val: &mut Unit) {}
+}
+
+impl Acts<I> for AddAction {
+    fn act_inplace(&self, val: &mut I) {
+        *val += self.add;
+    }
+}
+
+impl Acts<NumSummary> for AddAction {
+    fn act_inplace(&self, summary: &mut NumSummary) {
+        summary.max = summary.max.map(|max: I| max + self.add);
+        summary.min = summary.min.map(|max: I| max + self.add);
+        summary.sum += self.add * summary.size;
+    }
 }
 
 type I = i32;
@@ -205,16 +263,16 @@ impl FromSingletonValue<I> for NumSummary {
 #[derive(PartialEq, Eq, Clone, Copy, Hash, Debug)]
 pub struct RevAddAction {
     /// whether to reverse the segment.
-    pub to_reverse: bool,
+    pub to_reverse: RevAction,
     /// A constant to add to all the values in the segment.
-    pub add: I,
+    pub add: AddAction,
 }
 
 impl Add for RevAddAction {
     type Output = Self;
     fn add(self, other: Self) -> Self {
         RevAddAction {
-            to_reverse: self.to_reverse != other.to_reverse,
+            to_reverse: self.to_reverse + other.to_reverse,
             add: self.add + other.add,
         }
     }
@@ -223,8 +281,8 @@ impl Add for RevAddAction {
 impl Default for RevAddAction {
     fn default() -> Self {
         RevAddAction {
-            to_reverse: false,
-            add: 0,
+            to_reverse: RevAction::default(),
+            add: AddAction::default(),
         }
     }
 }
@@ -235,22 +293,20 @@ impl Action for RevAddAction {
     }
 
     fn to_reverse(self) -> bool {
-        self.to_reverse
+        self.to_reverse.to_reverse()
     }
 }
 
-impl Acts<I> for RevAddAction {
-    fn act_inplace(&self, val: &mut I) {
-        *val += self.add;
+impl<T> Acts<T> for RevAddAction
+where
+    RevAction: Acts<T>,
+    AddAction: Acts<T>,
+{
+    fn act_inplace(&self, val: &mut T) {
+        self.to_reverse.act_inplace(val);
+        self.add.act_inplace(val);
     }
-}
-
-impl Acts<NumSummary> for RevAddAction {
-    fn act_inplace(&self, summary: &mut NumSummary) {
-        summary.max = summary.max.map(|max: I| max + self.add);
-        summary.min = summary.min.map(|max: I| max + self.add);
-        summary.sum += self.add * summary.size;
-    }
+    
 }
 
 /// Actions of reversals, adding a constant, and multiplying by a constant.

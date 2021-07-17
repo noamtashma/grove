@@ -23,7 +23,7 @@ use std::io::{BufRead, BufReader, Error, ErrorKind, Read};
 use std::str::FromStr;
 use std::time::Instant;
 
-use example_data::SizedSummary;
+use example_data::{SizedSummary, AddAction};
 use trees::avl::*;
 use trees::splay::*;
 use trees::treap::*;
@@ -171,32 +171,6 @@ impl FromSingletonValue<Segment> for SizeMinSummary {
             size: val.size,
             min: if val.size == 0 { None } else { Some(val.val) },
         }
-    }
-}
-
-#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug)]
-pub struct AddAction {
-    pub add: I,
-}
-
-impl std::ops::Add for AddAction {
-    type Output = Self;
-    fn add(self, other: Self) -> Self {
-        AddAction {
-            add: self.add + other.add,
-        }
-    }
-}
-
-impl Default for AddAction {
-    fn default() -> Self {
-        AddAction { add: 0 }
-    }
-}
-
-impl Action for AddAction {
-    fn is_identity(self) -> bool {
-        self == Default::default()
     }
 }
 
