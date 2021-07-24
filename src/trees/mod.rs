@@ -358,6 +358,25 @@ pub trait SomeEntry<D: Data> {
     fn assert_correctness_locally(&self)
     where
         D::Summary: Eq;
+
+    #[cfg(debug_assertions)]
+    /// This has to be specified in order for the `representation` method
+    /// to work
+    type EntryTreeData;
+
+    #[cfg(debug_assertions)]
+    /// Used for debugging. Prints a representation of the tree, like so:
+    /// `< < * * > * >`
+    /// Each pair of triangle brackets is a node, and `*` denotes empty trees.
+    /// The trees are printed in the layout they will have atfter all reversals have been
+    /// finished, but nodes which are yet to be reversed (`node.action.to_reverse() == true`)
+    /// are printed with an exclamation mark: `<! * * >`.
+    /// You can provide a custom printer for the alg_data field.
+    /// If the input `to_reverse` is true, it will print the tree in reverse.
+    fn representation<F>(&self, alg_print: &F, to_reverse: bool) -> String
+    where
+        F: Fn(&basic_tree::BasicNode<D, Self::EntryTreeData>) -> String
+        ;
 }
 
 /// Trait for trees that can be modified, i.e., values can be inserted and deleted.

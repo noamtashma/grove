@@ -263,6 +263,20 @@ impl<D: Data, T> SomeEntry<D> for BasicTree<D, T> {
             BasicNode::assert_correctness_locally(node);
         }
     }
+
+    #[cfg(debug_assertions)]
+    type EntryTreeData = T;
+
+    #[cfg(debug_assertions)]
+    fn representation<F>(&self, alg_print: &F, to_reverse: bool) -> String
+    where
+        F: Fn(&BasicNode<D, T>) -> String,
+    {
+        match self {
+            BasicTree::Empty => String::from("*"),
+            BasicTree::Root(node) => format!("<{} >", node.representation(alg_print, to_reverse)),
+        }
+    }
 }
 
 impl<'a, D: Data, T> SomeEntry<D> for BasicWalker<'a, D, T> {
@@ -320,6 +334,17 @@ impl<'a, D: Data, T> SomeEntry<D> for BasicWalker<'a, D, T> {
         D::Summary: Eq,
     {
         self.inner().assert_correctness_locally();
+    }
+
+    #[cfg(debug_assertions)]
+    type EntryTreeData = T;
+
+    #[cfg(debug_assertions)]
+    fn representation<F>(&self, alg_print: &F, to_reverse: bool) -> String
+    where
+        F: Fn(&BasicNode<D, T>) -> String,
+    {
+        self.rec_ref.representation(alg_print, to_reverse)
     }
 }
 

@@ -61,7 +61,7 @@ macro_rules! derive_SomeWalker {
 ///```
 /// expects the `assert_correctness_locally` method to be implemented
 macro_rules! derive_SomeEntry {
-    ($accessor:ident, impl <$($lifetime:lifetime,)? $data:ident : Data> SomeEntry<D> for $self:ty
+    ($accessor:ident, $alg_data:ty, impl <$($lifetime:lifetime,)? $data:ident : Data> SomeEntry<D> for $self:ty
         { $($token:tt)* }
     ) => {
         impl<$($lifetime,)? $data : Data> SomeEntry<$data> for $self {
@@ -102,6 +102,17 @@ macro_rules! derive_SomeEntry {
 
             fn act_right_subtree(&mut self, action: D::Action) -> Option<()> {
                 self.$accessor.act_right_subtree(action)
+            }
+
+            #[cfg(debug_assertions)]
+            type EntryTreeData = $alg_data;
+
+            #[cfg(debug_assertions)]
+            fn representation<F>(&self, alg_print: &F, to_reverse: bool) -> String
+            where
+                F: Fn(&basic_tree::BasicNode<D, Self::EntryTreeData>) -> String
+            {
+                self.$accessor.representation(alg_print, to_reverse)
             }
 
             $($token)*

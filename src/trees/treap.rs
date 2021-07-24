@@ -117,7 +117,7 @@ impl<'a, D: Data> ModifiableTreeRef<D> for &'a mut Treap<D> {
     type ModifiableWalker = TreapWalker<'a, D>;
 }
 
-derive_SomeEntry! {tree,
+derive_SomeEntry! {tree, T,
     impl<D: Data> SomeEntry<D> for Treap<D> {
         fn assert_correctness_locally(&self)
         where
@@ -240,7 +240,7 @@ derive_SomeWalker! {walker,
     }
 }
 
-derive_SomeEntry! {walker,
+derive_SomeEntry! {walker, T,
     impl<'a, D: Data> SomeEntry<D> for TreapWalker<'a, D> {
         fn assert_correctness_locally(&self)
         where
@@ -301,6 +301,7 @@ impl<'a, D: Data> ModifiableWalker<D> for TreapWalker<'a, D> {
                 };
                 std::mem::swap(&mut temp, son);
             }
+            // TODO: consider moving this into the if body?
             self.walker.rebuild();
             prev_side = side;
         }

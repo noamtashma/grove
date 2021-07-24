@@ -349,7 +349,7 @@ impl<D: Data> SomeTree<D> for SplayTree<D> {
     }
 }
 
-derive_SomeEntry! {tree,
+derive_SomeEntry! {tree, (),
     impl<D: Data> SomeEntry<D> for SplayTree<D> {
         fn assert_correctness_locally(&self)
         where
@@ -477,7 +477,7 @@ derive_SomeWalker! {walker,
     }
 }
 
-derive_SomeEntry! {walker,
+derive_SomeEntry! {walker, (),
     impl<'a, D: Data> SomeEntry<D> for SplayWalker<'a, D> {
         fn assert_correctness_locally(&self)
         where

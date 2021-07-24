@@ -219,7 +219,7 @@ impl<'a, D: Data> SplittableTreeRef<D> for &'a mut AVLTree<D> {
     type SplittableWalker = AVLWalker<'a, D>;
 }
 
-derive_SomeEntry! {tree,
+derive_SomeEntry! {tree, T,
     impl<D: Data> SomeEntry<D> for AVLTree<D> {
         fn assert_correctness_locally(&self)
         where
@@ -285,7 +285,7 @@ derive_SomeWalker! {walker,
     }
 }
 
-derive_SomeEntry! {walker,
+derive_SomeEntry! {walker, T,
     impl<'a, D: Data> SomeEntry<D> for AVLWalker<'a, D> {
         fn assert_correctness_locally(&self)
         where

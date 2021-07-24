@@ -131,24 +131,6 @@ impl<D: Data, T> BasicTree<D, T> {
         }
     }
 
-    /// Used for debugging. Prints a representation of the tree, like so:
-    /// `< < * * > * >`
-    /// Each pair of triangle brackets is a node, and `*` denotes empty trees.
-    /// The trees are printed in the layout they will have atfter all reversals have been
-    /// finished, but nodes which are yet to be reversed (`node.action.to_reverse() == true`)
-    /// are printed with an exclamation mark: `<! * * >`.
-    /// You can provide a custom printer for the alg_data field.
-    /// If the input `to_reverse` is true, it will print the tree in reverse.
-    pub fn representation<F>(&self, alg_print: &F, to_reverse: bool) -> String
-    where
-        F: Fn(&T) -> String,
-    {
-        match self {
-            BasicTree::Empty => String::from("*"),
-            BasicTree::Root(node) => format!("<{} >", node.representation(alg_print, to_reverse)),
-        }
-    }
-
     /// Checks that invariants remain correct. i.e., that every node's summary
     /// is the sum of the summaries of its children.
     /// If it is not, panics.
@@ -317,27 +299,23 @@ impl<D: Data, T> BasicNode<D, T> {
     /// If the input `to_reverse` is true, it will print the tree in reverse.
     pub fn representation<F>(&self, alg_print: &F, to_reverse: bool) -> String
     where
-        F: Fn(&T) -> String,
+        F: Fn(&Self) -> String,
     {
         let xor = self.action().to_reverse() ^ to_reverse;
         let shebang = if self.action().to_reverse() { "!" } else { "" };
+        let mut left = self.left.representation(alg_print, xor);
+        let mut right = self.right.representation(alg_print, xor);
         if xor {
-            format!(
-                "{}{} {} {}",
-                alg_print(self.alg_data()),
-                shebang,
-                self.right.representation(alg_print, xor),
-                self.left.representation(alg_print, xor)
-            )
-        } else {
-            format!(
-                "{}{} {} {}",
-                alg_print(self.alg_data()),
-                shebang,
-                self.left.representation(alg_print, xor),
-                self.right.representation(alg_print, xor)
-            )
+            std::mem::swap(&mut left, &mut right);
         }
+
+        format!(
+            "{}{} {} {}",
+            alg_print(self),
+            shebang,
+            left,
+            right
+        )
     }
 
     /// Asserts that the summaries were calculated correctly at the current node.
