@@ -58,8 +58,8 @@ impl<'a, D: Data, T> ImmDownBasicWalker<'a, D, T> {
         }
 
         let extra = self
-            .current_action
-            .act(D::to_summary(&node.node_value) + right.subtree_summary());
+            .current_action.act(D::to_summary(&node.node_value))
+            + self.current_action.act(right.subtree_summary());
         self.far_right_summary = extra + self.far_right_summary;
         self.tree = left;
         self.current_action = self.current_action + left.action();
@@ -88,8 +88,8 @@ impl<'a, D: Data, T> ImmDownBasicWalker<'a, D, T> {
         }
 
         let extra = self
-            .current_action
-            .act(left.subtree_summary() + D::to_summary(&node.node_value));
+            .current_action.act(left.subtree_summary())
+            + self.current_action.act(D::to_summary(&node.node_value));
         self.far_left_summary = self.far_left_summary + extra;
         self.tree = right;
         self.current_action = self.current_action + right.action();
@@ -97,9 +97,6 @@ impl<'a, D: Data, T> ImmDownBasicWalker<'a, D, T> {
     }
 
     /// Returns the value at the current node.
-    // This method is kept for potential future in which ImmDownBasicWalker
-    // is public.
-    #[allow(dead_code)]
     pub fn value(&self) -> Option<D::Value>
     where
         D::Value: Clone,
@@ -118,9 +115,6 @@ impl<'a, D: Data, T> ImmDownBasicWalker<'a, D, T> {
         )
     }
 
-    // This method is kept for potential future in which ImmDownBasicWalker
-    // is public.
-    #[allow(dead_code)]
     pub fn left_summary(&self) -> D::Summary {
         if let Some(node) = self.tree.node() {
             let left = if self.current_action.to_reverse() {
@@ -134,9 +128,6 @@ impl<'a, D: Data, T> ImmDownBasicWalker<'a, D, T> {
         }
     }
 
-    // This method is kept for potential future in which ImmDownBasicWalker
-    // is public.
-    #[allow(dead_code)]
     pub fn right_summary(&self) -> D::Summary {
         if let Some(node) = self.tree.node() {
             let right = if self.current_action.to_reverse() {
@@ -164,9 +155,9 @@ impl<'a, D: Data, T> ImmDownBasicWalker<'a, D, T> {
         }
 
         let direction = locator.locate(
-            self.far_left_summary + self.current_action.act(left.subtree_summary()),
-            &self.current_action.act(node.node_value.clone()),
-            self.current_action.act(right.subtree_summary()) + self.far_right_summary,
+            self.left_summary(),
+            &self.value().expect("suddenly empty error"),
+            self.right_summary(),
         );
 
         Some(direction)

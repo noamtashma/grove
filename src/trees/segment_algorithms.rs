@@ -12,7 +12,7 @@
 use crate::*;
 use locators::*;
 
-use trees::basic_tree::{*, ImmDownBasicWalker};
+use trees::basic_tree::{ImmDownBasicWalker, *};
 
 // TODO: finger searching.
 
@@ -112,7 +112,10 @@ where
     TR: SomeTreeRef<D>,
     L: Locator<D>,
 {
-    assert!(!action.to_reverse(), "This tree type might not support reversals");
+    assert!(
+        !action.to_reverse(),
+        "This tree type might not support reversals"
+    );
     use LocResult::*;
 
     let mut walker = tree.walker();

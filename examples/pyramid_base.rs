@@ -23,7 +23,7 @@ use std::io::{BufRead, BufReader, Error, ErrorKind, Read};
 use std::str::FromStr;
 use std::time::Instant;
 
-use example_data::{SizedSummary, AddAction};
+use example_data::{AddAction, SizedSummary};
 use trees::avl::*;
 use trees::splay::*;
 use trees::treap::*;

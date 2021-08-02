@@ -22,13 +22,14 @@ fn random_action(rng: &mut rand::prelude::ThreadRng) -> RevAffineAction {
 }
 
 const INITIAL_SIZE: usize = 200;
-const NUM_ROUNDS: usize = if cfg!(not(miri)) { 10_000 } else { 100 }; // miri is too slow
-pub fn check_consistency<T1, T2>()
+pub fn check_consistency<D, T1, T2>(num_rounds: u32)
 where
-    T1: SomeTree<StdNum>,
-    for<'a> &'a mut T1: ModifiableTreeRef<StdNum>,
-    T2: SomeTree<StdNum>,
-    for<'a> &'a mut T2: ModifiableTreeRef<StdNum>,
+    D: Data<Value = i32, Action = RevAffineAction>,
+    D::Summary: std::fmt::Debug + Eq + SizedSummary,
+    T1: SomeTree<D>,
+    for<'a> &'a mut T1: ModifiableTreeRef<D>,
+    T2: SomeTree<D>,
+    for<'a> &'a mut T2: ModifiableTreeRef<D>,
 {
     let mut rng = rand::thread_rng();
     let mut len: usize = INITIAL_SIZE;
@@ -37,7 +38,7 @@ where
     let mut tree1: T1 = range.clone().collect();
     let mut tree2: T2 = range.collect();
 
-    for _ in 0..NUM_ROUNDS {
+    for _ in 0..num_rounds {
         match rng.gen_range(0..4) {
             // act on a segment
             0 => {
@@ -49,7 +50,8 @@ where
             // query a segment
             1 => {
                 let range = &random_range(len);
-                let sum1 = tree1.segment_summary(range);
+                // test the unclonable version as well
+                let sum1 = tree1.segment_summary_unclonable(range);
                 let sum2 = tree2.segment_summary(range);
                 assert_eq!(sum1, sum2);
                 assert_eq!(sum1.size(), range.len());

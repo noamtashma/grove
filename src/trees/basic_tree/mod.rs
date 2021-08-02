@@ -289,6 +289,7 @@ impl<D: Data, T> BasicNode<D, T> {
         action.act_inplace(&mut self.node_value);
     }
 
+    #[cfg(debug_assertions)]
     /// Used for debugging. Prints a representation of the tree, like so:
     /// `< < * * > * >`
     /// Each pair of triangle brackets is a node, and `*` denotes empty trees.
@@ -309,13 +310,7 @@ impl<D: Data, T> BasicNode<D, T> {
             std::mem::swap(&mut left, &mut right);
         }
 
-        format!(
-            "{}{} {} {}",
-            alg_print(self),
-            shebang,
-            left,
-            right
-        )
+        format!("{} {} {} {}", shebang, alg_print(self), left, right)
     }
 
     /// Asserts that the summaries were calculated correctly at the current node.

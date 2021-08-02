@@ -375,8 +375,7 @@ pub trait SomeEntry<D: Data> {
     /// If the input `to_reverse` is true, it will print the tree in reverse.
     fn representation<F>(&self, alg_print: &F, to_reverse: bool) -> String
     where
-        F: Fn(&basic_tree::BasicNode<D, Self::EntryTreeData>) -> String
-        ;
+        F: Fn(&basic_tree::BasicNode<D, Self::EntryTreeData>) -> String;
 }
 
 /// Trait for trees that can be modified, i.e., values can be inserted and deleted.

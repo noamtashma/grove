@@ -1,16 +1,44 @@
 mod common;
 use common::*;
 
+use grove::data::example_data::*;
 use grove::{avl::AVLTree, basic_tree::BasicTree, splay::SplayTree, treap::Treap};
+
+const NUM_ROUNDS: u32 = if cfg!(not(miri)) { 100_000 } else { 100 }; // miri is too slow
+const NUM_ROUNDS_SLOW: u32 = if cfg!(not(miri)) { 1_000 } else { 10 }; // miri is too slow
+
+#[test]
+fn treap_consistency() {
+    check_consistency::<StdNum, Treap<_>, Treap<_>>(NUM_ROUNDS);
+}
 
 #[test]
 fn splay_and_treap_consistency() {
-    check_consistency::<SplayTree<_>, Treap<_>>();
+    check_consistency::<StdNum, SplayTree<_>, Treap<_>>(NUM_ROUNDS);
 }
 
 #[test]
 fn splay_and_avl_consistency() {
-    check_consistency::<SplayTree<_>, AVLTree<_>>();
+    check_consistency::<StdNum, SplayTree<_>, AVLTree<_>>(NUM_ROUNDS);
+}
+
+#[test]
+fn splay_and_treap_consistency_noncommutative() {
+    check_consistency::<(i32, PolyNum<3>, RevAffineAction), SplayTree<_>, Treap<_>>(
+        NUM_ROUNDS_SLOW,
+    );
+}
+
+#[test]
+fn splay_and_avl_consistency_noncommutative() {
+    check_consistency::<(i32, PolyNum<3>, RevAffineAction), SplayTree<_>, AVLTree<_>>(
+        NUM_ROUNDS_SLOW,
+    );
+}
+
+#[test]
+fn treap_consistency_noncommutative() {
+    check_consistency::<(i32, PolyNum<3>, RevAffineAction), Treap<_>, Treap<_>>(NUM_ROUNDS_SLOW);
 }
 
 #[test]

@@ -306,7 +306,6 @@ where
         self.to_reverse.act_inplace(val);
         self.add.act_inplace(val);
     }
-    
 }
 
 /// Actions of reversals, adding a constant, and multiplying by a constant.
@@ -384,10 +383,11 @@ impl Data for StdNum {
     type Action = RevAffineAction;
 }
 
-
 /// A summary type that can sum up applications of polynomials.
 /// That is, for a segment that has value a_i, is can compute
 /// (for example) \sum_i a_i*P(i) for any polynomial P of degree at most D-1.
+///
+/// Not the most efficient it could be - meant for small values of D.
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub struct PolyNum<const D: usize> {
     // Contains the amount of elements in this segment
@@ -396,35 +396,6 @@ pub struct PolyNum<const D: usize> {
     // The k'th moment is the sum of i^k*a_i for i in 0..size.
     // In other words, it's the same as `self.apply_poly(x^k)`.
     moments: [I; D],
-}
-
-/// Shifts a polynomial by some shift.
-/// That is, we have `ResultPoly(x) = InputPoly(x+shift)` for all x.
-fn shift_poly<const D: usize>(shift: I, poly: &[I; D]) -> [I; D] {
-    // Represents powers of (x+shift)
-    let mut powers = [0; D];
-    powers[0] = 1;
-
-    let mut result = [0; D];
-
-    for deg in 0..D {
-        // add poly[deg] * (x+shift)^deg to the result
-        for i in 0..D {
-            result[i] += poly[deg] * powers[i];
-        }
-
-        if deg >= D-1 {
-            break // skip multiplying the polynomial by (x+shift) one too many times
-        }
-
-        // multiply `powers` by (x+shift)
-        for i in (0..=deg).rev() {
-            powers[i+1] += powers[i];
-            powers[i] *= shift;
-        }
-    }
-
-    result
 }
 
 impl<const D: usize> PolyNum<D> {
@@ -439,12 +410,38 @@ impl<const D: usize> PolyNum<D> {
         result
     }
 
-    /// Sums up the polynomial on these values, starting with index `index`.
-    /// That is, if this represents a segment with values a_0, ..., a_k,
-    /// this returns `P(index)*a_0 + P(index+1)*a_1 + ... P(k)a_k`.
-    pub fn apply_poly_index(&self, index: I, poly: &[I; D]) -> I {
-        let shifted_poly = shift_poly(index, poly);
-        self.apply_poly(&shifted_poly)
+    /// Shifts this segment right `shift` units to be off-balance, i.e, not start at 0.
+    /// TODO: better explanation.
+    pub fn shift(&self, shift: I) -> Self {
+        let mut moments: [I; D] = [0; D];
+
+        let mut powers = [0; D];
+        powers[0] = 1;
+
+        for deg in 0..D {
+            // sum up (x+self.size)^deg on `rhs` and add to the result
+            let mut sum: i64 = 0;
+            // there can be some cancellation here, so we sum up using a bigger type.
+            for i in 0..=deg {
+                sum += (powers[i] as i64) * (self.moments[i] as i64);
+            }
+            moments[deg] = sum as I;
+
+            if deg >= D - 1 {
+                break; // skip multiplying the polynomial by (x+shift) one too many times
+            }
+
+            // multiply `powers` by (x+shift)
+            for i in (0..=deg).rev() {
+                powers[i + 1] += powers[i];
+                powers[i] *= shift;
+            }
+        }
+
+        PolyNum {
+            size: self.size,
+            moments,
+        }
     }
 }
 
@@ -452,8 +449,14 @@ impl<const D: usize> Default for PolyNum<D> {
     fn default() -> Self {
         PolyNum {
             size: 0,
-            moments: [0; D]
+            moments: [0; D],
         }
+    }
+}
+
+impl<const D: usize> SizedSummary for PolyNum<D> {
+    fn size(self) -> usize {
+        self.size
     }
 }
 
@@ -461,17 +464,14 @@ impl<const D: usize> Add for PolyNum<D> {
     type Output = PolyNum<D>;
 
     fn add(self, rhs: Self) -> Self::Output {
-        let mut moments: [I; D] = [0; D];
-        let mut power = [0; D];
-        for i in 0..D {
-            power[i] = 1;
-            moments[i] = self.moments[i] + rhs.apply_poly_index(self.size as I, &power);
-            power[i] = 0;
+        let mut moments = [0; D];
+        for (i, m) in rhs.shift(self.size as I).moments.iter().enumerate() {
+            moments[i] = self.moments[i] + m;
         }
-        
+
         PolyNum {
             size: self.size + rhs.size,
-            moments
+            moments,
         }
     }
 }
@@ -482,10 +482,59 @@ impl<const D: usize> FromSingletonValue<I> for PolyNum<D> {
         if D > 0 {
             moments[0] = *value;
         }
-        PolyNum {
-            size: 1,
-            moments,
+        PolyNum { size: 1, moments }
+    }
+}
+
+impl<const D: usize> Acts<PolyNum<D>> for AddAction {
+    fn act_inplace(&self, summary: &mut PolyNum<D>) {
+        // inefficient power-and-add method for computing
+        // consecutive power-sums.
+        let singleton = PolyNum::<D>::to_summary(&self.add);
+        let mut power_sums_summary = PolyNum::default();
+        for j in (0..usize::BITS).rev() {
+            power_sums_summary = power_sums_summary + power_sums_summary;
+            if (summary.size() >> j) & 1 == 1 {
+                power_sums_summary = power_sums_summary + singleton;
+            }
         }
+
+        // add the correct power-sums to `summary`'s own sums.
+        for i in 0..D {
+            summary.moments[i] += power_sums_summary.moments[i];
+        }
+    }
+}
+
+impl<const D: usize> Acts<PolyNum<D>> for RevAction {
+    fn act_inplace(&self, summary: &mut PolyNum<D>) {
+        if !self.to_reverse {
+            return;
+        }
+
+        summary.moments = summary.shift(1 - (summary.size as I)).moments;
+
+        for i in 0..D {
+            if i % 2 == 1 {
+                summary.moments[i] *= -1;
+            }
+        }
+    }
+}
+
+impl<const D: usize> Acts<PolyNum<D>> for RevAffineAction {
+    fn act_inplace(&self, summary: &mut PolyNum<D>) {
+        // first: mul action
+        for i in 0..D {
+            summary.moments[i] *= self.mul;
+        }
+        let action = RevAddAction {
+            to_reverse: RevAction {
+                to_reverse: self.to_reverse,
+            },
+            add: AddAction { add: self.add },
+        };
+        action.act_inplace(summary);
     }
 }
 
