@@ -1,8 +1,36 @@
 use example_data::{RevAffineAction, StdNum};
 use grove::*;
 use rand::{self, Rng};
+use std::ops::Range;
 
-fn random_range(len: usize) -> std::ops::Range<usize> {
+/// Something to perform in one round of tests
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+enum RoundAction<D: Data> {
+    Act {
+        range: Range<usize>,
+        action: D::Action,
+    },
+    Query {
+        range: Range<usize>,
+    },
+    Insert {
+        index: usize,
+        value: D::Value,
+    },
+    Delete {
+        index: usize,
+    },
+}
+
+/// The result after one round of querying
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+enum RoundResult<D: Data> {
+    Empty,
+    Summary(D::Summary),
+    Value(D::Value),
+}
+
+fn random_range(len: usize) -> Range<usize> {
     let mut rng = rand::thread_rng();
     let res = (rng.gen_range(0..len + 1), rng.gen_range(0..len + 1));
     if res.0 <= res.1 {
@@ -21,10 +49,99 @@ fn random_action(rng: &mut rand::prelude::ThreadRng) -> RevAffineAction {
     }
 }
 
+fn random_round_action<D>(rng: &mut rand::prelude::ThreadRng, len: usize) -> RoundAction<D>
+where
+    D: Data<Value = i32, Action = RevAffineAction>,
+    D::Summary: std::fmt::Debug + Eq + SizedSummary,
+{
+    use RoundAction::*;
+    match rng.gen_range(0..4) {
+        // act on a segment
+        0 => {
+            let range = random_range(len);
+            let action = random_action(rng);
+            Act { action, range }
+        }
+        // query a segment
+        1 => {
+            let range = random_range(len);
+            Query { range }
+        }
+        // insert a value
+        2 => {
+            let value = rng.gen_range(-MAX_ADD..=MAX_ADD);
+            let index = rng.gen_range(0..=len);
+            Insert { value, index }
+        }
+        // delete a value
+        3 => {
+            let index = if len > 0 {
+                rng.gen_range(0..len)
+            } else {
+                0 // dummy value
+            };
+            Delete { index }
+        }
+        _ => {
+            panic!()
+        }
+    }
+}
+
+fn run_round<D, T>(round_action: RoundAction<D>, tree: &mut T, len: usize) -> RoundResult<D>
+where
+    D: Data<Value = i32, Action = RevAffineAction>,
+    D::Summary: std::fmt::Debug + Eq + SizedSummary,
+    T: SomeTree<D>,
+    for<'a> &'a mut T: ModifiableTreeRef<D>,
+{
+    use RoundAction::*;
+    use RoundResult::*;
+
+    match round_action {
+        // act on a segment
+        Act { range, action } => {
+            tree.act_segment(action, range);
+            Empty
+        }
+        // query a segment
+        Query { range } => {
+            // TODO: test the unclonable version as well
+            //let sum1 = tree1.segment_summary_unclonable(range);
+            let sum = tree.segment_summary(&range);
+            assert_eq!(sum.size(), range.len());
+            Summary(sum)
+        }
+        // insert a value
+        Insert { index, value } => {
+            tree.slice(index..index).insert(value).unwrap();
+            // len += 1;
+            Empty
+        }
+        // delete a value
+        Delete { index } if len > 0 => {
+            let val_op = tree.slice(index..=index).delete();
+            match val_op {
+                None => panic!(), // didn't actually delete a value
+                Some(val) => {
+                    /* len -= 1; */
+                    Value(val)
+                }
+            }
+        }
+        // delete but the tree is empty
+        Delete { .. } => {
+            assert!(tree.is_empty());
+            Empty
+        }
+    }
+}
+
 const INITIAL_SIZE: usize = 200;
 pub fn check_consistency<D, T1, T2>(num_rounds: u32)
 where
     D: Data<Value = i32, Action = RevAffineAction>,
+    D: Clone + std::fmt::Debug + Eq, // useless bounds because the auto-generated clone instance for RoundAction requires it
     D::Summary: std::fmt::Debug + Eq + SizedSummary,
     T1: SomeTree<D>,
     for<'a> &'a mut T1: ModifiableTreeRef<D>,
@@ -39,45 +156,23 @@ where
     let mut tree2: T2 = range.collect();
 
     for _ in 0..num_rounds {
-        match rng.gen_range(0..4) {
-            // act on a segment
-            0 => {
-                let range = &random_range(len);
-                let action = random_action(&mut rng);
-                tree1.act_segment(action, range);
-                tree2.act_segment(action, range);
+        let round_action = random_round_action::<D>(&mut rng, len);
+        let res1 = run_round(round_action.clone(), &mut tree1, len);
+        let res2 = run_round(round_action.clone(), &mut tree2, len);
+        assert_eq!(res1, res2);
+        // update length
+        match round_action {
+            RoundAction::Delete { .. } => {
+                if len > 0 {
+                    len -= 1;
+                }
             }
-            // query a segment
-            1 => {
-                let range = &random_range(len);
-                // test the unclonable version as well
-                let sum1 = tree1.segment_summary_unclonable(range);
-                let sum2 = tree2.segment_summary(range);
-                assert_eq!(sum1, sum2);
-                assert_eq!(sum1.size(), range.len());
-            }
-            // insert a value
-            2 => {
-                let value = rng.gen_range(-MAX_ADD..=MAX_ADD);
-                let index = rng.gen_range(0..=len);
-                tree1.slice(index..index).insert(value).unwrap();
-                tree2.slice(index..index).insert(value).unwrap();
+            RoundAction::Insert { .. } => {
                 len += 1;
             }
-            // delete a value
-            3 if len > 0 => {
-                let index = rng.gen_range(0..len);
-                let val1 = tree1.slice(index..=index).delete();
-                let val2 = tree2.slice(index..=index).delete();
-                assert_eq!(val1, val2);
-                assert!(val1.is_some()); // actually deleted a value
-                len -= 1;
-            }
-            // delete but the tree is empty
-            3 => {}
-            _ => panic!(),
+            _ => {}
         }
-        // do these checks in all cases
+
         let s1 = tree1.subtree_summary();
         let s2 = tree2.subtree_summary();
         assert_eq!(s1, s2);

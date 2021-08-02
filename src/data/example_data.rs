@@ -375,6 +375,8 @@ impl Acts<NumSummary> for RevAffineAction {
 /// A Data marker for a standard set of summaries and actions used for numbers. Specifically,
 /// one can reverse or add a constant to a whole segment at once, and one can query
 /// the maximum, minimum, size and sum of a whole segment at once.
+
+#[derive(Copy, Clone, PartialEq, Eq, Default, Debug, Hash, PartialOrd, Ord)]
 pub struct StdNum {}
 
 impl Data for StdNum {
