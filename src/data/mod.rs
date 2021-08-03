@@ -114,16 +114,16 @@ use std::ops::Add;
 ///   ```
 pub trait Data {
     /// The values that reside in trees.
-    type Value;
+    type Value: ToSummary<Self::Summary>;
     /// The summaries of values over segments. When querying a segment,
     /// you get a summary of the segment, represented by a value of type `Self::Summary`.
-    type Summary: Copy + Default + Add<Output = Self::Summary> + FromSingletonValue<Self::Value>;
+    type Summary: Copy + Default + Add<Output = Self::Summary>;
     /// The actions you can perform on the values
     type Action: Action + Acts<Self::Value> + Acts<Self::Summary>;
 
     /// Creates the summary of a single value.
     fn to_summary(val: &Self::Value) -> Self::Summary {
-        Self::Summary::to_summary(val)
+        val.to_summary()
     }
 }
 
@@ -131,7 +131,8 @@ pub trait Data {
 /// so you don't have to make an `impl` yourself.
 impl<V, S, A> Data for (V, S, A)
 where
-    S: Copy + Default + Add<Output = S> + FromSingletonValue<V>,
+    V: ToSummary<S>,
+    S: Copy + Default + Add<Output = S>,
     A: Action + Acts<V> + Acts<S>,
 {
     type Value = V;
@@ -172,9 +173,9 @@ pub trait Acts<V> {
     }
 }
 
-/// This trait is implemented by Summaries,
+/// This trait is implemented by Values,
 /// and provides a conversion from a value to the summary of that single value.
-pub trait FromSingletonValue<V> {
+pub trait ToSummary<S> {
     /// Creates the summary of a single value.
-    fn to_summary(value: &V) -> Self;
+    fn to_summary(&self) -> S;
 }

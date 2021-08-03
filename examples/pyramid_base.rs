@@ -165,11 +165,11 @@ impl SizedSummary for SizeMinSummary {
     }
 }
 
-impl FromSingletonValue<Segment> for SizeMinSummary {
-    fn to_summary(val: &Segment) -> Self {
+impl ToSummary<SizeMinSummary> for Segment  {
+    fn to_summary(&self) -> SizeMinSummary {
         SizeMinSummary {
-            size: val.size,
-            min: if val.size == 0 { None } else { Some(val.val) },
+            size: self.size,
+            min: if self.size == 0 { None } else { Some(self.val) },
         }
     }
 }

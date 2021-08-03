@@ -29,8 +29,8 @@ impl Action for Unit {
     }
 }
 
-impl<V> FromSingletonValue<V> for Unit {
-    fn to_summary(_value: &V) -> Self {
+impl<V> ToSummary<Unit> for V {
+    fn to_summary(&self) -> Unit {
         Unit {}
     }
 }
@@ -63,8 +63,8 @@ impl SizedSummary for Size {
     }
 }
 
-impl<V> FromSingletonValue<V> for Size {
-    fn to_summary(_value: &V) -> Self {
+impl<V> ToSummary<Size> for V  {
+    fn to_summary(&self) -> Size {
         Size { size: 1 }
     }
 }
@@ -248,13 +248,13 @@ impl SizedSummary for NumSummary {
     }
 }
 
-impl FromSingletonValue<I> for NumSummary {
-    fn to_summary(val: &I) -> Self {
+impl ToSummary<NumSummary> for I  {
+    fn to_summary(&self) -> NumSummary {
         NumSummary {
-            max: Some(*val),
-            min: Some(*val),
+            max: Some(*self),
+            min: Some(*self),
             size: 1,
-            sum: *val,
+            sum: *self,
         }
     }
 }
@@ -478,11 +478,11 @@ impl<const D: usize> Add for PolyNum<D> {
     }
 }
 
-impl<const D: usize> FromSingletonValue<I> for PolyNum<D> {
-    fn to_summary(value: &I) -> Self {
+impl<const D: usize> ToSummary<PolyNum<D>> for I {
+    fn to_summary(&self) -> PolyNum<D> {
         let mut moments = [0; D];
         if D > 0 {
-            moments[0] = *value;
+            moments[0] = *self;
         }
         PolyNum { size: 1, moments }
     }
@@ -492,7 +492,7 @@ impl<const D: usize> Acts<PolyNum<D>> for AddAction {
     fn act_inplace(&self, summary: &mut PolyNum<D>) {
         // inefficient power-and-add method for computing
         // consecutive power-sums.
-        let singleton = PolyNum::<D>::to_summary(&self.add);
+        let singleton: PolyNum<D> = self.add.to_summary();
         let mut power_sums_summary = PolyNum::default();
         for j in (0..usize::BITS).rev() {
             power_sums_summary = power_sums_summary + power_sums_summary;
