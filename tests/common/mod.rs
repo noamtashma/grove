@@ -1,3 +1,7 @@
+
+#[cfg(feature="bench")]
+pub mod bench;
+
 use example_data::{RevAffineAction, StdNum};
 use grove::*;
 use rand::{self, Rng};

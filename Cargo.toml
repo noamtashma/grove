@@ -32,4 +32,5 @@ path = "src/lib.rs"
 
 [features]
 async_union = ["futures", "async-recursion"]
+bench = []
 default = ["async_union"]

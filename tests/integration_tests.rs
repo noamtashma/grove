@@ -1,5 +1,7 @@
-mod common;
-use common::*;
+#![cfg_attr(feature="bench", feature(test))]
+
+pub mod common;
+pub use common::*;
 
 use grove::data::example_data::*;
 use grove::{avl::AVLTree, basic_tree::BasicTree, splay::SplayTree, treap::Treap};
