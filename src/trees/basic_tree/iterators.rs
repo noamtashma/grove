@@ -90,7 +90,7 @@ impl<'a, D: Data, L: Locator<D>, T> Iterator for IterLocatorMut<'a, D, L, T> {
                 // if value has been inserted to the stack, the locator has already been called
                 // on it and returned `Accept`.
                 Fragment::Value(val) => {
-                    self.left = self.left + D::to_summary(val);
+                    self.left = self.left + (*val).to_summary();
                     return Some(val);
                 }
                 Fragment::Node(node) => node,
@@ -101,7 +101,7 @@ impl<'a, D: Data, L: Locator<D>, T> Iterator for IterLocatorMut<'a, D, L, T> {
             let right_node = &mut node.right;
             let left_node = &mut node.left;
 
-            let value_summary = D::to_summary(value);
+            let value_summary = (*value).to_summary();
             let near_left_summary: D::Summary = self.left + left_node.subtree_summary();
             let near_right_summary: D::Summary = right_node.subtree_summary() + summary;
 
@@ -228,7 +228,7 @@ impl<D: Data, L: Locator<D>, T> Iterator for IntoIter<D, L, T> {
                 // if value has been inserted to the stack, the locator has already been called
                 // on it and returned `Accept`.
                 OFragment::Value(val) => {
-                    self.left = self.left + D::to_summary(&val);
+                    self.left = self.left + val.to_summary();
                     return Some(val);
                 }
                 OFragment::Node(node) => node,
@@ -239,7 +239,7 @@ impl<D: Data, L: Locator<D>, T> Iterator for IntoIter<D, L, T> {
             let right_node = node.right;
             let left_node = node.left;
 
-            let value_summary = D::to_summary(&value);
+            let value_summary = value.to_summary();
             let near_left_summary: D::Summary = self.left + left_node.subtree_summary();
             let near_right_summary: D::Summary = right_node.subtree_summary() + summary;
 

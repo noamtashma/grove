@@ -107,7 +107,7 @@ where
 
         if s > *self {
             GoLeft
-        } else if s + D::to_summary(node).size() <= *self {
+        } else if s + node.to_summary().size() <= *self {
             GoRight
         } else {
             Accept
@@ -140,7 +140,7 @@ where
 
         if s >= self.end {
             GoLeft
-        } else if s + D::to_summary(node).size() <= self.start {
+        } else if s + node.to_summary().size() <= self.start {
             GoRight
         } else {
             Accept
@@ -159,7 +159,7 @@ where
 
         if s >= self.end {
             GoLeft
-        } else if s + D::to_summary(node).size() <= self.start {
+        } else if s + node.to_summary().size() <= self.start {
             GoRight
         } else {
             Accept
@@ -179,7 +179,7 @@ where
 
         if s > *self.end() {
             GoLeft
-        } else if s + D::to_summary(node).size() <= *self.start() {
+        } else if s + node.to_summary().size() <= *self.start() {
             GoRight
         } else {
             Accept
@@ -199,7 +199,7 @@ where
 
         if s > *self.end() {
             GoLeft
-        } else if s + D::to_summary(node).size() <= *self.start() {
+        } else if s + node.to_summary().size() <= *self.start() {
             GoRight
         } else {
             Accept
@@ -216,7 +216,7 @@ where
         // find the index of the current node
         let s = left.size();
 
-        if s + D::to_summary(node).size() <= self.start {
+        if s + node.to_summary().size() <= self.start {
             GoRight
         } else {
             Accept
@@ -233,7 +233,7 @@ where
         // find the index of the current node
         let s = left.size();
 
-        if s + D::to_summary(node).size() <= self.start {
+        if s + node.to_summary().size() <= self.start {
             GoRight
         } else {
             Accept

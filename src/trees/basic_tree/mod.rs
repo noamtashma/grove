@@ -162,7 +162,7 @@ pub struct BasicNode<D: ?Sized + Data, T = ()> {
 impl<D: Data> BasicNode<D> {
     /// Creates a node with a single value.
     pub fn new(value: D::Value) -> BasicNode<D> {
-        let subtree_summary = D::to_summary(&value);
+        let subtree_summary = value.to_summary();
         BasicNode {
             action: Default::default(),
             node_value: value,
@@ -177,7 +177,7 @@ impl<D: Data> BasicNode<D> {
 impl<D: Data, T> BasicNode<D, T> {
     /// Creates a node with a single value, and the algorithm specific data.
     pub fn new_alg(value: D::Value, alg_data: T) -> BasicNode<D, T> {
-        let subtree_summary = D::to_summary(&value);
+        let subtree_summary = value.to_summary();
         BasicNode {
             action: Default::default(),
             node_value: value,
@@ -206,7 +206,7 @@ impl<D: Data, T> BasicNode<D, T> {
     /// Returns a summary for the value in this node specifically,
     /// and not the subtree.
     pub fn node_summary(&self) -> D::Summary {
-        let summary = D::to_summary(&self.node_value);
+        let summary = self.node_value.to_summary();
         self.action.act(summary)
     }
 
@@ -257,7 +257,7 @@ impl<D: Data, T> BasicNode<D, T> {
     /// subtree to be accurate.
     pub(crate) fn rebuild(&mut self) {
         assert!(self.action.is_identity());
-        let temp = D::to_summary(&self.node_value);
+        let temp = self.node_value.to_summary();
         self.subtree_summary = self.left.subtree_summary() + temp + self.right.subtree_summary();
     }
 
@@ -321,7 +321,7 @@ impl<D: Data, T> BasicNode<D, T> {
     {
         let ns = self.subtree_summary;
         let os: D::Summary = self.left.subtree_summary()
-            + D::to_summary(&self.node_value)
+            + self.node_value.to_summary()
             + self.right.subtree_summary();
         assert!(ns == os, "Incorrect summaries found.");
     }

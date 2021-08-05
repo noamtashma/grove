@@ -58,7 +58,7 @@ impl<'a, D: Data, T> ImmDownBasicWalker<'a, D, T> {
         }
 
         let extra = self
-            .current_action.act(D::to_summary(&node.node_value))
+            .current_action.act(node.node_value.to_summary())
             + self.current_action.act(right.subtree_summary());
         self.far_right_summary = extra + self.far_right_summary;
         self.tree = left;
@@ -89,7 +89,7 @@ impl<'a, D: Data, T> ImmDownBasicWalker<'a, D, T> {
 
         let extra = self
             .current_action.act(left.subtree_summary())
-            + self.current_action.act(D::to_summary(&node.node_value));
+            + self.current_action.act(node.node_value.to_summary());
         self.far_left_summary = self.far_left_summary + extra;
         self.tree = right;
         self.current_action = self.current_action + right.action();
@@ -111,7 +111,7 @@ impl<'a, D: Data, T> ImmDownBasicWalker<'a, D, T> {
     pub fn node_summary(&self) -> Option<D::Summary> {
         Some(
             self.current_action
-                .act(D::to_summary(&self.tree.node()?.node_value))
+                .act(self.tree.node()?.node_value.to_summary())
         )
     }
 

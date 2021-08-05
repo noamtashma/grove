@@ -97,10 +97,6 @@ impl<V: Eq + Copy> Data for NoAction<V> {
     type Summary = Unit;
     type Action = Unit;
     type Value = V;
-
-    fn to_summary(_val: &Self::Value) -> Self::Summary {
-        Unit {}
-    }
 }
 
 /// Actions that either reverses a segment or keeps it as it is
