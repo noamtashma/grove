@@ -1,5 +1,3 @@
-#[macro_use]
-
 /// deriving SomeWalker by an inner walker
 /// format is:
 ///```

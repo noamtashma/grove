@@ -5,7 +5,7 @@
 //! may not work as intended.
 //!
 //! Specifically, the version of `segment_summary` that doesn't mutate the original tree
-//! (`segment_summary_imm`), shouldn't be used with splay trees, because that removes the 
+//! (`segment_summary_imm`), shouldn't be used with splay trees, because that removes the
 //! splay tree's complexity guarantees.
 
 use crate::*;

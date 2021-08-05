@@ -63,7 +63,7 @@ impl SizedSummary for Size {
     }
 }
 
-impl<V> ToSummary<Size> for V  {
+impl<V> ToSummary<Size> for V {
     fn to_summary(&self) -> Size {
         Size { size: 1 }
     }
@@ -244,7 +244,7 @@ impl SizedSummary for NumSummary {
     }
 }
 
-impl ToSummary<NumSummary> for I  {
+impl ToSummary<NumSummary> for I {
     fn to_summary(&self) -> NumSummary {
         NumSummary {
             max: Some(*self),

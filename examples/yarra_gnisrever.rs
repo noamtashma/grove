@@ -16,7 +16,6 @@ use std::time::Instant;
 use grove::*;
 
 use example_data::RevAction;
-use example_data::Size;
 use trees::avl::*;
 use trees::splay::*;
 use trees::treap::*;

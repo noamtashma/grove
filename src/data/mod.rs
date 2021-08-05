@@ -102,15 +102,15 @@ use std::ops::Add;
 ///   action.act(summary1 + summary2) == action.act(summary2) + action.act(summary1)
 ///   ```
 ///
-/// * The action should respect [`Self::to_summary()`]:
+/// * The action should respect [`ToSummary::to_summary()`]:
 ///   ```notrust
-///   D::to_summary(&action.act(value)) === action.act(D::to_summary(&value))
+///   action.act(value).to_summary() === action.act(value.to_summary())
 ///   ```
 ///
 /// * If the action can reverse segments, it should also satisfy that composing two actions
 ///   xor's their [`Action::to_reverse()`] results:
 ///   ```notrust
-///   D::to_reverse(action2 + action1) === D::to_reverse(action2) ^ D::to_reverse(action1)
+///   (action2 + action1).to_reverse() === action2.to_reverse() ^ action1.to_reverse()
 ///   ```
 pub trait Data {
     /// The values that reside in trees.
@@ -144,10 +144,6 @@ pub trait Action: Copy + Default + Add<Output = Self> {
 
     /// This function should be implemented if you want to be able to reverse subsegments of your tree.
     /// The default implementation always returns `false`.
-    ///
-    /// Note that if the action reverses a segment, it shouldn't be used with [`crate::methods::act_segment`].
-    /// Instead, use a tree type that supports reversals (e.g, SplayTree, Treap) and use its native
-    /// [`crate::SomeTree::act_segment`] function.
     ///
     /// This function should return whether this action reverses the segment it is applied to.
     fn to_reverse(self) -> bool {

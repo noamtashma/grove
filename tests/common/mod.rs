@@ -1,5 +1,4 @@
-
-#[cfg(feature="bench")]
+#[cfg(feature = "bench")]
 pub mod bench;
 
 use example_data::{RevAffineAction, StdNum};

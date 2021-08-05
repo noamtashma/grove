@@ -33,8 +33,6 @@
 //! 
 //! Indeed, the library is generic in both the tree type and the [`Data`] instance: you can use any
 //! setting with any tree type.
-//! 
-//! The [`methods`] module provides some general methods for use on all trees.
 //!
 //! # Advanced examples
 //! 
