@@ -138,16 +138,56 @@ impl Acts<Interval> for RevAction {
     }
 }
 
+/// This represents the size of a segment.
+/// This is separate from the standard [`example_data::Size`] struct
+/// Because [`Size`][example_data::Size] has a default [`ToSummary`] method that
+/// always returns a size of `1`, and we would like to override that.
+/// Storing the size of a subtree.
+#[derive(PartialEq, Eq, Clone, Copy, Debug)]
+pub struct SegmentSize {
+    /// The size of a subtree
+    pub size: usize,
+}
+
+impl std::ops::Add for SegmentSize {
+    type Output = SegmentSize;
+    fn add(self, b: SegmentSize) -> SegmentSize {
+        SegmentSize {
+            size: self.size + b.size,
+        }
+    }
+}
+
+impl Default for SegmentSize {
+    fn default() -> SegmentSize {
+        SegmentSize { size: 0 }
+    }
+}
+
+impl SizedSummary for SegmentSize {
+    fn size(self) -> usize {
+        self.size
+    }
+}
+
+impl ToSummary<SegmentSize> for Interval {
+    fn to_summary(&self) -> SegmentSize {
+        SegmentSize{ size: self.size() }
+    }
+}
+
+impl Acts<SegmentSize> for RevAction {
+    fn act_inplace(&self, _object: &mut SegmentSize) {
+        // do nothing
+    }
+}
+
 struct RevData {}
 
 impl Data for RevData {
     type Action = RevAction;
-    type Summary = Size;
+    type Summary = SegmentSize;
     type Value = Interval;
-
-    fn to_summary(val: &Interval) -> Size {
-        Size { size: val.size() }
-    }
 }
 
 // splits a segment inside the tree

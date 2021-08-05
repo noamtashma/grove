@@ -121,6 +121,8 @@ pub trait Data {
     /// The actions you can perform on the values
     type Action: Action + Acts<Self::Value> + Acts<Self::Summary>;
 
+    // TODO: this should be forgotten in favor of the more easily written
+    // `ToSummary::to_summary` method.
     /// Creates the summary of a single value.
     fn to_summary(val: &Self::Value) -> Self::Summary {
         val.to_summary()
