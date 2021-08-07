@@ -64,11 +64,11 @@ After choosing the three types, you can use either `(Value, Summary, Action)` as
 
 ```rust
 use grove::*;
-use example_data::{Ordered, Size, Unit};
+use example_data::{Size, Unit};
 
 /// instantiation for an int set type
 type IntSetData = (
-    /* ordered integers */ Ordered<i32>,
+    /* ordered integers */ i32,
     /* for indexing purposes */ Size,
     /* no actions */ Unit
 );
@@ -95,21 +95,21 @@ splay/AVL/treaps/unbalanced trees are implemented)
 ```rust
 use grove::*;
 use locators::ByKey; // for ordered sets
-use example_data::{Ordered, Size, Unit};
+use example_data::{Size, Unit};
 
 /// instantiation for an int set type
 type IntSetData = (
-    /* ordered integers */ Ordered<i32>,
+    /* integers */ i32,
     /* for indexing purposes */ Size,
     /* no actions */ Unit
 );
 
 type Set = treap::Treap<IntSetData>;
 
-let mut my_set: Set = [0,1,2,4,6,7,8].iter().map(|x| Ordered(*x)).collect();
-// insert 5
-my_set.slice(ByKey((&5,))).insert(Ordered(5));
-let vec: Vec<i32> = my_set.into_iter().map(|x| x.0).collect();
+let mut my_set: Set = [0,1,2,4,6,7,8].iter().cloned().collect();
+// at the location in the ordered set where 5 should be, insert 5
+my_set.slice(ByKey((&5,))).insert(5);
+let vec: Vec<i32> = my_set.into_iter().collect();
 assert_eq!(vec, vec![0,1,2,4,5,6,7,8]);
 ```
 

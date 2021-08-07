@@ -321,9 +321,9 @@ pub struct ByKey<T>(pub T);
 
 /// Can't be an instance for `ByKey<D::Value::Key>` directly, because the `Key` might itself
 /// be a range type, and so it would conflict with the other implementations.
-impl<'a, D: Data> Locator<D> for ByKey<(&<D::Value as Keyed>::Key,)>
+impl<'a, D: Data, Key: Ord> Locator<D> for ByKey<(&Key,)>
 where
-    D::Value: Keyed,
+    D::Value: Keyed<Key>,
 {
     fn locate(&self, _left: D::Summary, node: &D::Value, _right: D::Summary) -> LocResult {
         match node.get_key().cmp(self.0 .0) {
@@ -342,9 +342,9 @@ impl<D: Data> Locator<D> for ByKey<std::ops::RangeFull> {
 }
 
 /// Locator instance for [`ByKey`]`<std::ops::Range<D::Value::Key>>` representing searching by a key.
-impl<'a, D: Data> Locator<D> for ByKey<std::ops::Range<&'a <D::Value as Keyed>::Key>>
+impl<D: Data, Key: Ord> Locator<D> for ByKey<std::ops::Range<&Key>>
 where
-    D::Value: Keyed,
+    D::Value: Keyed<Key>,
 {
     fn locate(&self, _left: D::Summary, node: &D::Value, _right: D::Summary) -> LocResult {
         // find the index of the current node
@@ -381,9 +381,9 @@ impl<D: Data> Locator<D> for &ByKey<std::ops::Range<<D::Value as Keyed>::Key>> w
 
 /// Locator instance for [`ByKey`]`<std::ops::RangeInclusive<D::Value::Key>>` representing searching by a key.
 /// Do not use with ranges that have been iterated on to exhaustion.
-impl<'a, D: Data> Locator<D> for ByKey<std::ops::RangeInclusive<&'a <D::Value as Keyed>::Key>>
+impl<D: Data, Key: Ord> Locator<D> for ByKey<std::ops::RangeInclusive<&Key>>
 where
-    D::Value: Keyed,
+    D::Value: Keyed<Key>,
 {
     fn locate(&self, _left: D::Summary, node: &D::Value, _right: D::Summary) -> LocResult {
         // find the index of the current node
@@ -420,9 +420,9 @@ impl<D: Data> Locator<D> for &ByKey<std::ops::RangeInclusive<<D::Value as Keyed>
 */
 
 /// Locator instance for [`ByKey`]`<`[`std::ops::RangeFrom`]`<D::Value::Key>>` representing an index range.
-impl<'a, D: Data> Locator<D> for ByKey<std::ops::RangeFrom<&'a <D::Value as Keyed>::Key>>
+impl<D: Data, Key: Ord> Locator<D> for ByKey<std::ops::RangeFrom<&Key>>
 where
-    D::Value: Keyed,
+    D::Value: Keyed<Key>,
 {
     fn locate(&self, _left: D::Summary, node: &D::Value, _right: D::Summary) -> LocResult {
         // find the index of the current node
@@ -436,9 +436,9 @@ where
 }
 
 /// Locator instance for [`ByKey`]`<std::ops::RangeTo<D::Value::Key>>` representing searching by a key.
-impl<'a, D: Data> Locator<D> for ByKey<std::ops::RangeTo<&'a <D::Value as Keyed>::Key>>
+impl<D: Data, Key: Ord> Locator<D> for ByKey<std::ops::RangeTo<&Key>>
 where
-    D::Value: Keyed,
+    D::Value: Keyed<Key>,
 {
     fn locate(&self, _left: D::Summary, node: &D::Value, _right: D::Summary) -> LocResult {
         // find the index of the current node
@@ -452,9 +452,9 @@ where
 }
 
 /// Locator instance for [`ByKey`]`<std::ops::RangeToInclusive<D::Value::Key>>` representing searching by a key.
-impl<'a, D: Data> Locator<D> for ByKey<std::ops::RangeToInclusive<&'a <D::Value as Keyed>::Key>>
+impl<D: Data, Key: Ord> Locator<D> for ByKey<std::ops::RangeToInclusive<&Key>>
 where
-    D::Value: Keyed,
+    D::Value: Keyed<Key>,
 {
     fn locate(&self, _left: D::Summary, node: &D::Value, _right: D::Summary) -> LocResult {
         // find the index of the current node

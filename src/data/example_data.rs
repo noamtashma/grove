@@ -15,7 +15,7 @@ pub trait SizedSummary {
 
 // TODO: consider retiring this and just requiring Value: Ord instead.
 
-/// A trait for values that are keyed. When using keyed values, we assume
+/// A trait for values that are keyed by a key type `Key`. When using keyed values, we assume
 /// that all of the elements in the tree are in sorted order.
 ///
 /// For example, when storing integers in sorted order, use the `Ordered`
@@ -23,24 +23,18 @@ pub trait SizedSummary {
 /// specify the edges of the segments you want to act upon.
 ///
 /// Smaller values go on the left.
-pub trait Keyed {
-    /// The key type that elements are ordered by.
-    type Key: std::cmp::Ord;
-
+pub trait Keyed<Key>
+where
+    Key: std::cmp::Ord
+{
     // TODO: is it possible to switch to `impl Borrow<Self::Key> + '_` or something similar?
     /// Gets the key associated with a value
-    fn get_key(&self) -> &Self::Key;
+    fn get_key(&self) -> &Key;
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
-/// A wrapper that wraps around values that should be stored in sorted order.
-/// Implements `Keyed` with the key being the value itself.
-pub struct Ordered<T>(pub T);
-
-impl<T: Ord> Keyed for Ordered<T> {
-    type Key = T;
-    fn get_key(&self) -> &Self::Key {
-        &self.0
+impl<T: Ord> Keyed<T> for T {
+    fn get_key(&self) -> &Self {
+        &self
     }
 }
 

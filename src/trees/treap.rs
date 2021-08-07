@@ -168,7 +168,7 @@ impl<D: Data> Treap<D> {
     /// `O(n*log(n))`.
     pub fn union(&mut self, tree2: Treap<D>)
     where
-        D::Value: Keyed,
+        D::Value: Ord,
     {
         union_internal(&mut self.tree, tree2);
     }
@@ -353,7 +353,7 @@ impl<'a, D: Data> ModifiableWalker<D> for TreapWalker<'a, D> {
 /// `O(n*log(n))`.
 fn union_internal<D: Data>(tree1: &mut BasicTree<D, T>, mut tree2: Treap<D>)
 where
-    D::Value: Keyed,
+    D::Value: Ord,
 {
     if tree2.is_empty() {
         return;
@@ -423,11 +423,9 @@ use async_recursion::async_recursion;
 #[async_recursion]
 pub async fn union_internal_concurrent<D: Data>(tree1: &mut BasicTree<D, T>, mut tree2: Treap<D>)
 where
-    D::Value: Keyed,
-    <D::Value as Keyed>::Key: Sync,
+    D::Value: Ord + Send + Sync,
     D::Action: Send,
     D::Summary: Send,
-    D::Value: Send,
 {
     if tree2.is_empty() {
         return;
@@ -488,16 +486,16 @@ where
 ///
 ///```rust
 /// use grove::{SomeTree, treap, treap::Treap};
-///use grove::example_data::{PlainData, Ordered};
+///use grove::example_data::{PlainData};
 ///
-///type T = Treap<PlainData<Ordered<i32>>>;
-///let tree1: T = (0..7).map(|x| Ordered(x)).collect();
-///let tree2: T = (4..9).map(|x| Ordered(x)).collect();
+///type T = Treap<PlainData<i32>>;
+///let tree1: T = (0..7).collect();
+///let tree2: T = (4..9).collect();
 ///let tree = tokio_test::block_on(treap::union_concurrent(tree1, tree2));
 /// # tree.assert_correctness();
 ///assert_eq!(
 ///    tree.into_iter().collect::<Vec<_>>(),
-///    [0,1,2,3,4,4,5,5,6,6,7,8].iter().map(|x| Ordered(*x)).collect::<Vec<_>>()
+///    [0,1,2,3,4,4,5,5,6,6,7,8].iter().cloned().collect::<Vec<_>>()
 ///);
 ///```
 ///
@@ -509,11 +507,9 @@ where
 /// `O(n*log(n))`.
 pub async fn union_concurrent<D: Data>(mut tree1: Treap<D>, tree2: Treap<D>) -> Treap<D>
 where
-    D::Value: Keyed,
-    <D::Value as Keyed>::Key: Sync,
+    D::Value: Ord + Send + Sync,
     D::Action: Send,
     D::Summary: Send,
-    D::Value: Send,
 {
     union_internal_concurrent(&mut tree1.tree, tree2).await;
     tree1
@@ -529,14 +525,15 @@ where
 ///
 ///```rust
 ///use grove::{SomeTree, treap, treap::Treap};
-///use grove::example_data::{PlainData, Ordered};
+///use grove::example_data::{PlainData};
 ///
-///type T = Treap<PlainData<Ordered<i32>>>;
-///let tree1: T = (0..7).map(|x| Ordered(x)).collect();
-///let tree2: T = (4..9).map(|x| Ordered(x)).collect();
+///type T = Treap<PlainData<i32>>;
+///let tree1: T = (0..7).collect();
+///let tree2: T = (4..9).collect();
 ///let tree = treap::union(tree1, tree2);
 /// # tree.assert_correctness();
-///assert_eq!(tree.into_iter().collect::<Vec<_>>(), [0,1,2,3,4,4,5,5,6,6,7,8].iter().map(|x| Ordered(*x)).collect::<Vec<_>>());
+///assert_eq!(tree.into_iter().collect::<Vec<_>>(),
+///    [0,1,2,3,4,4,5,5,6,6,7,8].iter().cloned().collect::<Vec<_>>());
 ///```
 ///
 /// # Complexity
@@ -547,7 +544,7 @@ where
 /// `O(n*log(n))`.
 pub fn union<D: Data>(mut tree1: Treap<D>, tree2: Treap<D>) -> Treap<D>
 where
-    D::Value: Keyed,
+    D::Value: Ord,
 {
     tree1.union(tree2);
     tree1
