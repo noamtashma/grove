@@ -61,6 +61,11 @@ impl<D: Data, T> BasicTree<D, T> {
         Root(Box::new(node))
     }
 
+    /// Constructs a new non-empty tree from a boxed node.
+    pub fn from_boxed_node(boxed: Box<BasicNode<D, T>>) -> Self {
+        Root(boxed)
+    }
+
     /// Returns the algorithm-specific data
     pub fn alg_data(&self) -> Option<&T> {
         Some(self.node()?.alg_data())
@@ -146,7 +151,7 @@ impl<D: Data, T> BasicTree<D, T> {
     }
 }
 
-// TODO: decide if the fields should really be public
+// TODO: try to move the fields from pub(crate) to private
 /// A basic node. can be viewed as a non-empty basic tree: it always has at least one value.
 /// The `T` parameter is for algorithm-specific bookeeping data.
 /// For example, red-block trees store a color in each node.

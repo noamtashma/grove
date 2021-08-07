@@ -300,9 +300,8 @@ impl<'a, D: Data> ModifiableWalker<D> for TreapWalker<'a, D> {
                     Side::Right => &mut node.right,
                 };
                 std::mem::swap(&mut temp, son);
+                self.walker.rebuild();
             }
-            // TODO: consider moving this into the if body?
-            self.walker.rebuild();
             prev_side = side;
         }
 
@@ -385,18 +384,16 @@ where
 
     let key = node.node_value().get_key(); // this performs access()
 
-    // TODO: replace by a locator that does the handling of the equality case by itself
-    let mut split_walker = tree2.search(locators::ByKey((key,)));
-    // if an element with the same key was found, arbitrarily decide to put it more to the right
-    if !split_walker.is_empty() {
-        split_walker.previous_empty().unwrap();
-    }
+    // if an element with the same key was found, arbitrarily decide to put it more to the left
+    let mut split_walker = tree2.search(
+        locators::LeftEdgeOf(locators::ByKey((key,)))
+    );
+    
     // split
     let right = split_walker.split_right().unwrap();
     drop(split_walker);
     let left = tree2;
 
-    // TODO: nice possible location for parrallelization
     union_internal(&mut node.left, left);
     union_internal(&mut node.right, right);
     node.rebuild();
@@ -457,9 +454,10 @@ where
 
     let key = node.node_value().get_key(); // this performs access()
 
-    // TODO: replace by a locator that does the handling of the equality case by itself
-    let mut split_walker = tree2.search(locators::ByKey((key,)));
-    // if an element with the same key was found, arbitrarily decide to put it more to the right
+    // if an element with the same key was found, arbitrarily decide to put it more to the left
+    let mut split_walker = tree2.search(
+        locators::LeftEdgeOf(locators::ByKey((key,)))
+    );
     if !split_walker.is_empty() {
         split_walker.previous_empty().unwrap();
     }

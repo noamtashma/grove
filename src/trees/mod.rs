@@ -47,7 +47,6 @@ pub trait SomeTree<D: Data>:
 where
     for<'a> &'a mut Self: SomeTreeRef<D>,
 {
-    // TODO: make immutable
     /// Compute the summary of a subsegment.
     /// Requires `D::Value: Clone`.
     ///

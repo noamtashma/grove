@@ -93,9 +93,6 @@ where
     }
 }
 
-// TODO: Splitter. locators that can't `Accept`. used for splitting trees
-// and for insertions.
-
 /// Locator instance for `usize` representing a single index.
 impl<D: Data> Locator<D> for usize
 where
@@ -466,9 +463,6 @@ where
         }
     }
 }
-
-// TODO: finish all the range types
-// TODO: switch to ranges of references to keys
 
 /// A Wrapper for other locators what will find exactly the left edge
 /// of the previous locator. So, this is always a splitting locator.

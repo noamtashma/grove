@@ -174,11 +174,11 @@ impl<'a, D: Data, T> BasicWalker<'a, D, T> {
         bn2.subtree_summary = bn1.subtree_summary; // this is insetad of bn2.rebuild(), since we already know the result
         bn1.rebuild();
         rebuilder(&mut *bn1);
-        bn2.left = Root(bn1);
+        bn2.left = BasicTree::from_boxed_node(bn1);
         // bn2.rebuild()
         rebuilder(&mut *bn2);
 
-        *self.rec_ref = Root(bn2); // restore the node back
+        *self.rec_ref = BasicTree::from_boxed_node(bn2); // restore the node back
         Some(())
     }
 
@@ -208,11 +208,11 @@ impl<'a, D: Data, T> BasicWalker<'a, D, T> {
         bn2.subtree_summary = bn1.subtree_summary; // this is insetad of bn2.rebuild(), since we already know the result
         bn1.rebuild();
         rebuilder(&mut *bn1);
-        bn2.right = Root(bn1);
+        bn2.right = BasicTree::from_boxed_node(bn1);
         // bn2.rebuild()
         rebuilder(&mut *bn2);
 
-        *self.rec_ref = Root(bn2); // restore the node back
+        *self.rec_ref = BasicTree::from_boxed_node(bn2); // restore the node back
         Some(())
     }
 
@@ -334,7 +334,7 @@ impl<'a, D: Data, T> BasicWalker<'a, D, T> {
             boxed_replacement_node.left = node.left;
             boxed_replacement_node.right = node.right;
             boxed_replacement_node.rebuild();
-            self.put_subtree(BasicTree::Root(boxed_replacement_node))
+            self.put_subtree(BasicTree::from_boxed_node(boxed_replacement_node))
                 .unwrap();
         }
         Some((node.node_value, node.alg_data))

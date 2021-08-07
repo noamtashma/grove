@@ -162,9 +162,7 @@ impl<'a, D: Data> SplayWalker<'a, D> {
 
     // using this function can really mess up the structure
     // use wisely
-    // this function shouldn't really be public
-    // TODO: should this function exist?
-    pub(super) fn inner_mut(&mut self) -> &mut BasicTree<D> {
+    fn inner_mut(&mut self) -> &mut BasicTree<D> {
         self.walker.inner_mut()
     }
 
@@ -523,7 +521,7 @@ impl<'a, D: Data> ModifiableWalker<D> for SplayWalker<'a, D> {
             boxed_replacement_node.right = node.right;
             boxed_replacement_node.rebuild();
             self.walker
-                .put_subtree(BasicTree::Root(boxed_replacement_node))
+                .put_subtree(BasicTree::from_boxed_node(boxed_replacement_node))
                 .unwrap();
         }
         Some(node.node_value)

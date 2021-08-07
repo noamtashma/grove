@@ -245,7 +245,6 @@ impl<D: Data> std::iter::FromIterator<D::Value> for AVLTree<D> {
         for val in iter.into_iter() {
             // note: this relies on the assumption, that after we insert a node, the new position of the locator
             // will be an ancestor of the location where the value was inserted.
-            // TODO: check.
             while walker.go_right().is_ok() {}
             walker.insert(val);
         }
@@ -381,7 +380,7 @@ impl<'a, D: Data> AVLWalker<'a, D> {
                     } else {
                         // left.rank() = 1, left right case
                         self.go_left().unwrap();
-                        self.rot_left().unwrap(); // TODO
+                        self.rot_left().unwrap();
                         let res = self.rot_up();
                         assert!(res == Ok(Side::Left));
                     }
@@ -422,10 +421,11 @@ impl<'a, D: Data> AVLWalker<'a, D> {
         }
     }
 
-    // TODO: specify where the walker will be.
     /// Deletes a node and returns it with the box.
+    /// The walker reorganizes the current subtree in order to delete the current node,
+    /// and then rebalances. During rebalancing it may only go up the tree.
     fn delete_boxed(&mut self) -> Option<Box<BasicNode<D, T>>> {
-        // the delete implementation is copied from `BasicTree`,
+        // the delete implementation is modified from `BasicTree`,
         // in order for rebalancing to be done properly.
         let mut node = self.walker.take_subtree().into_node_boxed()?;
         if node.right.is_empty() {
@@ -450,7 +450,7 @@ impl<'a, D: Data> AVLWalker<'a, D> {
             node.right = BasicTree::Empty;
             boxed_replacement_node.rebuild();
             self.walker
-                .put_subtree(BasicTree::Root(boxed_replacement_node))
+                .put_subtree(BasicTree::from_boxed_node(boxed_replacement_node))
                 .unwrap();
             self.rebalance(); // rebalance here
         }
@@ -470,7 +470,9 @@ impl<'a, D: Data> ModifiableWalker<D> for AVLWalker<'a, D> {
         Some(())
     }
 
-    // TODO: specify where the walker will be.
+    
+    /// The walker reorganizes the current subtree in order to delete the current node,
+    /// and then rebalances. During rebalancing it may only go up the tree.
     fn delete(&mut self) -> Option<D::Value> {
         Some(self.delete_boxed()?.node_value)
     }
@@ -588,7 +590,7 @@ impl<D: Data> AVLTree<D> {
         mid.left = walker.walker.take_subtree();
         mid.right = right.tree;
         mid.rebuild();
-        walker.walker.put_subtree(BasicTree::Root(mid)).unwrap();
+        walker.walker.put_subtree(BasicTree::from_boxed_node(mid)).unwrap();
         walker.rebalance();
     }
 
@@ -628,7 +630,7 @@ impl<D: Data> AVLTree<D> {
         mid.right = walker.walker.take_subtree();
         mid.left = left.tree;
         mid.rebuild();
-        walker.walker.put_subtree(BasicTree::Root(mid)).unwrap();
+        walker.walker.put_subtree(BasicTree::from_boxed_node(mid)).unwrap();
         walker.rebalance();
     }
 }
@@ -651,7 +653,7 @@ impl<D: Data> ConcatenableTree<D> for AVLTree<D> {
         if !right.is_empty() {
             let mut walker = right.search(locators::LeftEdgeOf(..));
             walker.go_up().unwrap();
-            let mid = walker.delete_boxed().unwrap(); // TODO: deallocated node only to reallocate it later. fix.
+            let mid = walker.delete_boxed().unwrap();
             drop(walker);
             self.concatenate_boxed_middle_right(mid, right);
         }
