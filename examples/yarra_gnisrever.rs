@@ -1,5 +1,5 @@
 //! This is an example solution to question #680 in [project euler], [yarra gnisrever].
-//! 
+//!
 //! This file also contain some unit tests that test that the algorithm's
 //! results are correct on small inputs.
 //!
@@ -171,7 +171,7 @@ impl SizedSummary for SegmentSize {
 
 impl ToSummary<SegmentSize> for Interval {
     fn to_summary(&self) -> SegmentSize {
-        SegmentSize{ size: self.size() }
+        SegmentSize { size: self.size() }
     }
 }
 

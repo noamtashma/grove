@@ -150,8 +150,8 @@ where
 /// * The action should respect [`ToSummary::to_summary()`]:
 ///   ```notrust
 ///   action.act(value).to_summary() === action.act(value.to_summary())
-///   ``` 
-/// 
+///   ```
+///
 pub trait Action: Copy + Default + Add<Output = Self> {
     /// Test whether this action is the identity action.
     fn is_identity(self) -> bool;

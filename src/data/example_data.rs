@@ -25,7 +25,7 @@ pub trait SizedSummary {
 /// Smaller values go on the left.
 pub trait Keyed<Key>
 where
-    Key: std::cmp::Ord
+    Key: std::cmp::Ord,
 {
     // TODO: is it possible to switch to `impl Borrow<Self::Key> + '_` or something similar?
     /// Gets the key associated with a value
@@ -178,7 +178,7 @@ mod rev_action {
 
 pub use add_action::*;
 mod add_action {
-   use super::*; 
+    use super::*;
     /// An action for adding a constant to all values in a segment.
     #[derive(PartialEq, Eq, Clone, Copy, Hash, Debug)]
     pub struct AddAction {

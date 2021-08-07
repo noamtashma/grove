@@ -3,7 +3,7 @@
 //! In order to run pyramid_base, you will need to download the pyramid
 //! base test files from [here], and save
 //! them in a new folder named "pyramid_base_test_files", in the package's directory.
-//! 
+//!
 //! For each tree type (currently treap, splay, and avl) the code will so this:
 //! * It will look for the test files in "package/pyramid_base_test_files/".
 //! * It will sort them by difficulty based on their name. run the solution on them (with the specific tree type).
@@ -165,7 +165,7 @@ impl SizedSummary for SizeMinSummary {
     }
 }
 
-impl ToSummary<SizeMinSummary> for Segment  {
+impl ToSummary<SizeMinSummary> for Segment {
     fn to_summary(&self) -> SizeMinSummary {
         SizeMinSummary {
             size: self.size,
