@@ -488,9 +488,9 @@ where
 ///
 ///```rust
 /// use grove::{SomeTree, treap, treap::Treap};
-///use grove::example_data::{NoAction, Ordered};
+///use grove::example_data::{PlainData, Ordered};
 ///
-///type T = Treap<NoAction<Ordered<i32>>>;
+///type T = Treap<PlainData<Ordered<i32>>>;
 ///let tree1: T = (0..7).map(|x| Ordered(x)).collect();
 ///let tree2: T = (4..9).map(|x| Ordered(x)).collect();
 ///let tree = tokio_test::block_on(treap::union_concurrent(tree1, tree2));
@@ -529,9 +529,9 @@ where
 ///
 ///```rust
 ///use grove::{SomeTree, treap, treap::Treap};
-///use grove::example_data::{NoAction, Ordered};
+///use grove::example_data::{PlainData, Ordered};
 ///
-///type T = Treap<NoAction<Ordered<i32>>>;
+///type T = Treap<PlainData<Ordered<i32>>>;
 ///let tree1: T = (0..7).map(|x| Ordered(x)).collect();
 ///let tree2: T = (4..9).map(|x| Ordered(x)).collect();
 ///let tree = treap::union(tree1, tree2);

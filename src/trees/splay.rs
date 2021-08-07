@@ -531,8 +531,6 @@ impl<'a, D: Data> ModifiableWalker<D> for SplayWalker<'a, D> {
 }
 
 impl<D: Data> ConcatenableTree<D> for SplayTree<D> {
-    // `tree3 = union(tree1, tree2)`, not
-    // `tree1.concatenate(tree2)`.
     /// Concatenates the other tree into this tree.
     ///```
     /// use grove::{SomeTree, ConcatenableTree, splay::SplayTree};
