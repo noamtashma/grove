@@ -13,8 +13,6 @@ pub trait SizedSummary {
     fn size(self) -> usize;
 }
 
-// TODO: consider retiring this and just requiring Value: Ord instead.
-
 /// A trait for values that are keyed by a key type `Key`. When using keyed values, we assume
 /// that all of the elements in the tree are in sorted order.
 ///
@@ -424,12 +422,12 @@ mod poly_num {
     /// Not the most efficient it could be - meant for small values of D.
     #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
     pub struct PolyNum<const D: usize> {
-        // Contains the amount of elements in this segment
-        size: usize,
-        // Contains the moments of the segment.
-        // The k'th moment is the sum of i^k*a_i for i in 0..size.
-        // In other words, it's the same as `self.apply_poly(x^k)`.
-        moments: [I; D],
+        /// Contains the amount of elements in this segment
+        pub size: usize,
+        /// Contains the moments of the segment.
+        /// The k'th moment is the sum of i^k*a_i for i in 0..size.
+        /// In other words, it's the same as `self.apply_poly(x^k)`.
+        pub moments: [I; D],
     }
 
     impl<const D: usize> PolyNum<D> {
@@ -445,7 +443,15 @@ mod poly_num {
         }
 
         /// Shifts this segment right `shift` units to be off-balance, i.e, not start at 0.
-        /// TODO: better explanation.
+        ///
+        /// ```
+        /// use grove::example_data::PolyNum;
+        /// let summary = PolyNum { size: 2, moments: [7, 4, 4] }; // summary of [3,4]
+        /// // Summary of [0,3,4], except with size = 2
+        /// // So it is actually [3,4] that starts at index `i=1`
+        /// let new_summary = PolyNum { size: 2, moments: [7, 11, 19] };
+        /// assert_eq!(summary.shift(1), new_summary);
+        /// ```
         pub fn shift(&self, shift: I) -> Self {
             let mut moments: [I; D] = [0; D];
 

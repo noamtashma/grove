@@ -107,10 +107,12 @@ type IntSetData = (
 type Set = treap::Treap<IntSetData>;
 
 let mut my_set: Set = [0,1,2,4,6,7,8].iter().cloned().collect();
-// at the location in the ordered set where 5 should be, insert 5
-my_set.slice(ByKey((&5,))).insert(5);
+// At the location in the ordered set where 5 should be, insert 5
+my_set.slice(ByKey((&5,))).insert(5).unwrap();
+// Delete the element at index 2 and ensure it is 2
+assert_eq!(my_set.slice(2).delete().unwrap(), 2);
 let vec: Vec<i32> = my_set.into_iter().collect();
-assert_eq!(vec, vec![0,1,2,4,5,6,7,8]);
+assert_eq!(vec, vec![0,1,4,5,6,7,8]);
 ```
 
 # Advanced examples
