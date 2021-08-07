@@ -18,7 +18,7 @@ use trees::basic_tree::{ImmDownBasicWalker, *};
 /// because it uses go_up().
 ///
 /// Instead, use the specific [`SomeTree::segment_summary`]
-pub fn segment_summary_unclonable<TR, L, D: Data>(tree: TR, locator: L) -> D::Summary
+pub fn segment_summary<TR, L, D: Data>(tree: TR, locator: L) -> D::Summary
 where
     TR: SomeTreeRef<D>,
     L: Locator<D>,
@@ -214,8 +214,8 @@ where
                 left_walker.go_left().expect(SUDDENLY_EMPTY_ERROR);
                 right_walker.go_right().expect(SUDDENLY_EMPTY_ERROR);
 
-                let left_half = segment_summary_on_suffix(left_walker, locator.clone());
-                let right_half = segment_summary_on_prefix(right_walker, locator);
+                let left_half = segment_summary_on_suffix_imm(left_walker, locator.clone());
+                let right_half = segment_summary_on_prefix_imm(right_walker, locator);
                 return left_half + current_node_summary + right_half;
             }
         }
@@ -226,7 +226,7 @@ where
 
 /// Returns the summary of the segment in the current tree,
 /// provided the segment is a suffix.
-fn segment_summary_on_suffix<D: Data, T, L>(
+fn segment_summary_on_suffix_imm<D: Data, T, L>(
     mut walker: ImmDownBasicWalker<D, T>,
     locator: L,
 ) -> D::Summary
@@ -253,7 +253,7 @@ where
 
 /// Returns the summary of the segment in the current tree,
 /// provided the segment is a suffix.
-fn segment_summary_on_prefix<D: Data, T, L>(
+fn segment_summary_on_prefix_imm<D: Data, T, L>(
     mut walker: ImmDownBasicWalker<D, T>,
     locator: L,
 ) -> D::Summary

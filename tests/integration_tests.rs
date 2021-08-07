@@ -6,8 +6,8 @@ pub use common::*;
 use grove::data::example_data::*;
 use grove::{avl::AVLTree, basic_tree::BasicTree, splay::SplayTree, treap::Treap};
 
-const NUM_ROUNDS: u32 = if cfg!(not(miri)) { 100_000 } else { 100 }; // miri is too slow
-const NUM_ROUNDS_SLOW: u32 = if cfg!(not(miri)) { 1_000 } else { 10 }; // miri is too slow
+const NUM_ROUNDS: u32 = if cfg!(not(miri)) { 10_000 } else { 100 }; // miri is too slow
+const NUM_ROUNDS_SLOW: u32 = if cfg!(not(miri)) { 100 } else { 10 }; // miri is too slow
 
 #[test]
 fn treap_consistency() {

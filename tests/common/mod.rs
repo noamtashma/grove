@@ -91,7 +91,7 @@ where
     }
 }
 
-fn run_round<D, T>(round_action: RoundAction<D>, tree: &mut T, len: usize) -> RoundResult<D>
+fn run_round<D, T>(round_action: RoundAction<D>, tree: &mut T, len: usize, mutable_query: bool) -> RoundResult<D>
 where
     D: Data<Value = i32, Action = RevAffineAction>,
     D::Summary: std::fmt::Debug + Eq + SizedSummary,
@@ -109,9 +109,11 @@ where
         }
         // query a segment
         Query { range } => {
-            // TODO: test the unclonable version as well
-            //let sum1 = tree1.segment_summary_unclonable(range);
-            let sum = tree.segment_summary(&range);
+            let sum = if mutable_query {
+                tree.segment_summary(&range)
+            } else {
+                tree.segment_summary_imm(&range)
+            };
             assert_eq!(sum.size(), range.len());
             Summary(sum)
         }
@@ -160,8 +162,8 @@ where
 
     for _ in 0..num_rounds {
         let round_action = random_round_action::<D>(&mut rng, len);
-        let res1 = run_round(round_action.clone(), &mut tree1, len);
-        let res2 = run_round(round_action.clone(), &mut tree2, len);
+        let res1 = run_round(round_action.clone(), &mut tree1, len, true);
+        let res2 = run_round(round_action.clone(), &mut tree2, len, false);
         assert_eq!(res1, res2);
         // update length
         match round_action {

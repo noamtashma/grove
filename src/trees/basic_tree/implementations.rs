@@ -17,11 +17,11 @@ impl<D: Data> SomeTree<D> for BasicTree<D> {
         segment_algorithms::segment_summary_imm(self, locator)
     }
 
-    fn segment_summary_unclonable<L>(&mut self, locator: L) -> D::Summary
+    fn segment_summary<L>(&mut self, locator: L) -> D::Summary
     where
         L: Locator<D>,
     {
-        segment_algorithms::segment_summary_unclonable(self, locator)
+        segment_algorithms::segment_summary(self, locator)
     }
 
     fn act_segment<L>(&mut self, action: D::Action, locator: L)

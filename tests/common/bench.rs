@@ -2,9 +2,9 @@ use super::*;
 extern crate test;
 use test::Bencher;
 
-use grove::{avl::AVLTree, basic_tree::BasicTree, splay::SplayTree, treap::Treap};
+use grove::{avl::AVLTree, splay::SplayTree, treap::Treap};
 
-pub fn bench_tree<D, T>(b: &mut Bencher)
+pub fn bench_tree<D, T>(b: &mut Bencher, mutable: bool)
 where
     D: Data<Value = i32, Action = RevAffineAction>,
     D: Clone + std::fmt::Debug + Eq, // useless bounds because the auto-generated clone instance for RoundAction requires it
@@ -19,7 +19,7 @@ where
     let mut tree: T = range.clone().collect();
     b.iter(|| {
         let round_action = random_round_action::<D>(&mut rng, len);
-        let res = run_round(round_action.clone(), &mut tree, len);
+        let res = run_round(round_action.clone(), &mut tree, len, mutable);
         test::bench::black_box(res);
 
         // update length
@@ -43,15 +43,30 @@ where
 
 #[bench]
 fn bench_splay(b: &mut Bencher) {
-    bench_tree::<StdNum, SplayTree<_>>(b)
+    bench_tree::<StdNum, SplayTree<_>>(b, true)
 }
 
 #[bench]
 fn bench_treap(b: &mut Bencher) {
-    bench_tree::<StdNum, Treap<_>>(b)
+    bench_tree::<StdNum, Treap<_>>(b, true)
 }
 
 #[bench]
 fn bench_avl(b: &mut Bencher) {
-    bench_tree::<StdNum, AVLTree<_>>(b)
+    bench_tree::<StdNum, AVLTree<_>>(b, true)
+}
+
+#[bench]
+fn bench_splay_imm(b: &mut Bencher) {
+    bench_tree::<StdNum, SplayTree<_>>(b, false)
+}
+
+#[bench]
+fn bench_treap_imm(b: &mut Bencher) {
+    bench_tree::<StdNum, Treap<_>>(b, false)
+}
+
+#[bench]
+fn bench_avl_imm(b: &mut Bencher) {
+    bench_tree::<StdNum, AVLTree<_>>(b, false)
 }

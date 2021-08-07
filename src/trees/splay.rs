@@ -311,13 +311,6 @@ impl<D: Data> SomeTree<D> for SplayTree<D> {
     where
         L: locators::Locator<D>,
     {
-        self.segment_summary_unclonable(locator)
-    }
-
-    fn segment_summary_unclonable<L>(&mut self, locator: L) -> D::Summary
-    where
-        L: locators::Locator<D>,
-    {
         let walker = self.isolate_segment(locator);
         walker.subtree_summary()
     }
