@@ -14,7 +14,7 @@ use crate::trees::SomeWalker; // in order to be able to use our own go_up method
 /// already the case.
 ///
 /// When this invariant is violated, this error is thrown.
-const UNIQUE_RC_IN_RECREF: &'static str = "persistent tree inner invariant violated";
+const UNIQUE_RC_IN_RECREF: &str = "persistent tree inner invariant violated";
 
 pub(super) struct Frame<D: ?Sized + Data> {
     pub left: D::Summary,
@@ -137,7 +137,7 @@ impl<'a, D: Data, T> PersistentWalker<'a, D, T> {
 
     /// Not public since the walker should maintain the invariant that the current position
     /// is always clean. Ergo, for internal use.
-    pub(in super::super) fn rebuild(&mut self)
+    fn rebuild(&mut self)
     where
         PersistentNode<D, T>: Clone,
     {

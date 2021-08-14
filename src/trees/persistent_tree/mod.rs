@@ -295,7 +295,7 @@ impl<D: Data, T> PersistentNode<D, T> {
     }
 
     /// Returns the summary of all values in this node's subtree.
-    /// Same as [`BasicTree::subtree_summary`].
+    /// Same as [`SomeEntry::subtree_summary`].
     pub fn subtree_summary(&self) -> D::Summary {
         self.action.act(self.subtree_summary)
     }
@@ -359,7 +359,7 @@ impl<D: Data, T> PersistentNode<D, T> {
     }
 
     /// This function applies the given action to its whole subtree.
-    /// Same as [`SomeEntry::act_subtree`], but for [`BasicNode<D>`].
+    /// Same as [`SomeEntry::act_subtree`], but for [`PersistentNode<D>`].
     ///
     /// This function leaves the [`self.action`] field "dirty" - after calling
     /// this you might need to call access, to push the action to this node's sons.
