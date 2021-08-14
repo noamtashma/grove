@@ -158,7 +158,7 @@ impl<'a, D: Data, T> PersistentWalker<'a, D, T> {
         self.rec_ref.node()
     }
 
-    pub(in super::super) fn node_mut(&mut self) -> Option<&mut PersistentNode<D, T>> 
+    fn node_mut(&mut self) -> Option<&mut PersistentNode<D, T>> 
     where
         PersistentNode<D, T>: Clone
     {

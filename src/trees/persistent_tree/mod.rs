@@ -5,6 +5,9 @@ use std::rc::Rc;
 
 mod walker;
 mod implementations;
+mod iterators;
+// more useful for persistent trees than for regular trees
+pub mod imm_down_walker;
 /*
 
 //! The basic tree module.

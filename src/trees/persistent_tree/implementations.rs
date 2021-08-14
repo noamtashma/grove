@@ -288,7 +288,6 @@ where
     where
         F: Fn(&crate::basic_tree::BasicNode<D, T>) -> String,
     {
-        
         match self {
             PersistentTree::Empty => String::from("*"),
             PersistentTree::Root(node) => format!("<{} >", node.representation(&|_| {String::from("")}, to_reverse)),
