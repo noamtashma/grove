@@ -1,5 +1,5 @@
-use crate::*;
 use super::PersistentTree;
+use crate::*;
 
 /// A BasicWalker version that is immutable, and can only go down.
 #[derive(Copy)]

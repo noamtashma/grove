@@ -3,9 +3,9 @@
 use crate::*;
 use std::rc::Rc;
 
-mod walker;
 mod implementations;
 mod iterators;
+mod walker;
 // more useful for persistent trees than for regular trees
 pub mod imm_down_walker;
 /*
@@ -69,12 +69,11 @@ impl<D: Data, T> PersistentTree<D, T> {
     }
 }
 
-impl<D: ?Sized + Data, T> Clone for PersistentTree<D, T> 
-{
+impl<D: ?Sized + Data, T> Clone for PersistentTree<D, T> {
     fn clone(&self) -> Self {
         match self {
             Empty => Empty,
-            Root(rc) => Root(rc.clone())
+            Root(rc) => Root(rc.clone()),
         }
     }
 }
@@ -115,7 +114,10 @@ impl<D: Data, T> PersistentTree<D, T> {
     /// For example, after inserting a new node, all of the nodes from it to the root
     /// must be rebuilt, in order for the segment values accumulated over the whole
     /// subtree to be accurate.
-    pub(crate) fn rebuild(&mut self) where PersistentNode<D, T>: Clone {
+    pub(crate) fn rebuild(&mut self)
+    where
+        PersistentNode<D, T>: Clone,
+    {
         if let Root(node) = self {
             Rc::make_mut(node).rebuild()
         }
@@ -142,7 +144,10 @@ impl<D: Data, T> PersistentTree<D, T> {
     /// Actions stored in nodes are supposed to be eventually applied to its
     /// whole subtree. Therefore, in order to access a node cleanly, without
     /// the still-unapplied-function complicating things, you must `access()` the node.
-    pub(crate) fn access(&mut self) where PersistentNode<D, T>: Clone {
+    pub(crate) fn access(&mut self)
+    where
+        PersistentNode<D, T>: Clone,
+    {
         if let Root(node) = self {
             // If the action is the identity, no mdofication is required.
             // TODO: his if statement slow down programs, but it reduces allocations.
@@ -164,7 +169,7 @@ impl<D: Data, T> PersistentTree<D, T> {
     /// Returns The inner node.
     pub fn node_mut(&mut self) -> Option<&mut PersistentNode<D, T>>
     where
-        PersistentNode<D, T>: Clone
+        PersistentNode<D, T>: Clone,
     {
         match self {
             Empty => None,
@@ -183,7 +188,10 @@ impl<D: Data, T> PersistentTree<D, T> {
     }
 
     /// Returns The inner node.
-    pub fn into_node(self) -> Option<PersistentNode<D, T>> where PersistentNode<D, T>: Clone {
+    pub fn into_node(self) -> Option<PersistentNode<D, T>>
+    where
+        PersistentNode<D, T>: Clone,
+    {
         match self {
             Empty => None,
             Root(node) => match Rc::try_unwrap(node) {
@@ -231,7 +239,7 @@ pub struct PersistentNode<D: ?Sized + Data, T = ()> {
     pub(crate) alg_data: T,
 }
 
-impl<D: ?Sized + Data, T: Clone> Clone for PersistentNode<D, T> 
+impl<D: ?Sized + Data, T: Clone> Clone for PersistentNode<D, T>
 where
     D::Value: Clone,
     D::Summary: Clone,
@@ -401,8 +409,8 @@ impl<D: Data, T> PersistentNode<D, T> {
         // let mut right = self.right.representation(alg_print, xor);
         // TODO: fix type problems with this debugging function requiring a callback looking
         // for a BasicNode instead of a PersistentNode
-        let mut left = self.left.representation(&|_| {String::from("")}, xor);
-        let mut right = self.right.representation(&|_| {String::from("")}, xor);
+        let mut left = self.left.representation(&|_| String::from(""), xor);
+        let mut right = self.right.representation(&|_| String::from(""), xor);
         if xor {
             std::mem::swap(&mut left, &mut right);
         }
@@ -410,7 +418,6 @@ impl<D: Data, T> PersistentNode<D, T> {
         format!("{} {} {} {}", shebang, alg_print(self), left, right)
     }
 
-    
     /// Asserts that the summaries were calculated correctly at the current node.
     /// Otherwise, panics.
     pub fn assert_correctness_locally(&self)

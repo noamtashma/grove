@@ -91,7 +91,12 @@ where
     }
 }
 
-fn run_round<D, T>(round_action: RoundAction<D>, tree: &mut T, len: usize, mutable_query: bool) -> RoundResult<D>
+fn run_round<D, T>(
+    round_action: RoundAction<D>,
+    tree: &mut T,
+    len: usize,
+    mutable_query: bool,
+) -> RoundResult<D>
 where
     D: Data<Value = i32, Action = RevAffineAction>,
     D::Summary: std::fmt::Debug + Eq + SizedSummary,

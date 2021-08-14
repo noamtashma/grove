@@ -1,5 +1,5 @@
-use crate::*;
 use super::*;
+use crate::*;
 use locators::LocResult;
 
 enum Fragment<'a, D: Data, T = ()> {

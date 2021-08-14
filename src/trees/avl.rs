@@ -470,7 +470,6 @@ impl<'a, D: Data> ModifiableWalker<D> for AVLWalker<'a, D> {
         Some(())
     }
 
-    
     /// The walker reorganizes the current subtree in order to delete the current node,
     /// and then rebalances. During rebalancing it may only go up the tree.
     fn delete(&mut self) -> Option<D::Value> {
@@ -590,7 +589,10 @@ impl<D: Data> AVLTree<D> {
         mid.left = walker.walker.take_subtree();
         mid.right = right.tree;
         mid.rebuild();
-        walker.walker.put_subtree(BasicTree::from_boxed_node(mid)).unwrap();
+        walker
+            .walker
+            .put_subtree(BasicTree::from_boxed_node(mid))
+            .unwrap();
         walker.rebalance();
     }
 
@@ -630,7 +632,10 @@ impl<D: Data> AVLTree<D> {
         mid.right = walker.walker.take_subtree();
         mid.left = left.tree;
         mid.rebuild();
-        walker.walker.put_subtree(BasicTree::from_boxed_node(mid)).unwrap();
+        walker
+            .walker
+            .put_subtree(BasicTree::from_boxed_node(mid))
+            .unwrap();
         walker.rebalance();
     }
 }

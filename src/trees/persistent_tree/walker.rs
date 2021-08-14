@@ -5,7 +5,7 @@ use super::*;
 use recursive_reference::*;
 
 use crate::trees::SomeWalker; // in order to be able to use our own go_up method
-// use super::implementations::*;
+                              // use super::implementations::*;
 
 /// The persistent tree holds the invariant that every `&mut PersistentTree` containted
 /// in the `rec_ref`, except the last one, must have a unique `Rc`. That is, its `Rc` is the
@@ -82,7 +82,7 @@ impl<'a, D: Data, T> PersistentWalker<'a, D, T> {
     /// Creates a new walker that walks on the given tree.
     pub fn new(tree: &'a mut PersistentTree<D, T>) -> PersistentWalker<'a, D, T>
     where
-        PersistentNode<D, T>: Clone
+        PersistentNode<D, T>: Clone,
     {
         tree.access();
         PersistentWalker {
@@ -101,7 +101,7 @@ impl<'a, D: Data, T> PersistentWalker<'a, D, T> {
         right_summary: D::Summary,
     ) -> PersistentWalker<'a, D, T>
     where
-        PersistentNode<D, T>: Clone
+        PersistentNode<D, T>: Clone,
     {
         tree.access();
         PersistentWalker {
@@ -117,7 +117,7 @@ impl<'a, D: Data, T> PersistentWalker<'a, D, T> {
     /// Returns true if at an empty position.
     pub fn is_empty(&self) -> bool
     where
-        PersistentNode<D, T>: Clone
+        PersistentNode<D, T>: Clone,
     {
         self.rec_ref.is_empty()
     }
@@ -139,7 +139,7 @@ impl<'a, D: Data, T> PersistentWalker<'a, D, T> {
     /// is always clean. Ergo, for internal use.
     pub(in super::super) fn rebuild(&mut self)
     where
-        PersistentNode<D, T>: Clone
+        PersistentNode<D, T>: Clone,
     {
         self.rec_ref.rebuild();
     }
@@ -158,9 +158,9 @@ impl<'a, D: Data, T> PersistentWalker<'a, D, T> {
         self.rec_ref.node()
     }
 
-    fn node_mut(&mut self) -> Option<&mut PersistentNode<D, T>> 
+    fn node_mut(&mut self) -> Option<&mut PersistentNode<D, T>>
     where
-        PersistentNode<D, T>: Clone
+        PersistentNode<D, T>: Clone,
     {
         self.rec_ref.node_mut()
     }
@@ -184,7 +184,8 @@ impl<'a, D: Data, T> PersistentWalker<'a, D, T> {
     /// Performs a left rotation
     /// Returns [`None`] if this is an empty tree or if it has no right son.
     pub fn rot_left(&mut self) -> Option<()>
-    where PersistentNode<D, T>: Clone
+    where
+        PersistentNode<D, T>: Clone,
     {
         self.rot_left_with_custom_rebuilder(|_| {})
     }
@@ -197,7 +198,8 @@ impl<'a, D: Data, T> PersistentWalker<'a, D, T> {
         &mut self,
         mut rebuilder: F,
     ) -> Option<()>
-    where PersistentNode<D, T>: Clone
+    where
+        PersistentNode<D, T>: Clone,
     {
         let owned_tree = std::mem::replace(&mut *self.rec_ref, PersistentTree::Empty);
 
@@ -225,7 +227,8 @@ impl<'a, D: Data, T> PersistentWalker<'a, D, T> {
     /// Performs a right rotation
     /// Returns [`None`] if this node has no left son.
     pub fn rot_right(&mut self) -> Option<()>
-    where PersistentNode<D, T>: Clone
+    where
+        PersistentNode<D, T>: Clone,
     {
         self.rot_right_with_custom_rebuilder(|_| {})
     }
@@ -238,7 +241,8 @@ impl<'a, D: Data, T> PersistentWalker<'a, D, T> {
         &mut self,
         mut rebuilder: F,
     ) -> Option<()>
-    where PersistentNode<D, T>: Clone
+    where
+        PersistentNode<D, T>: Clone,
     {
         let owned_tree = std::mem::replace(&mut *self.rec_ref, PersistentTree::Empty);
 
@@ -265,7 +269,8 @@ impl<'a, D: Data, T> PersistentWalker<'a, D, T> {
     /// Performs rot_left if `side` is [`Side::Left`]
     /// rot_right otherwise
     pub fn rot_side(&mut self, side: Side) -> Option<()>
-    where PersistentNode<D, T>: Clone
+    where
+        PersistentNode<D, T>: Clone,
     {
         match side {
             Side::Left => self.rot_left(),
@@ -280,7 +285,8 @@ impl<'a, D: Data, T> PersistentWalker<'a, D, T> {
         side: Side,
         rebuilder: F,
     ) -> Option<()>
-    where PersistentNode<D, T>: Clone
+    where
+        PersistentNode<D, T>: Clone,
     {
         match side {
             Side::Left => self.rot_left_with_custom_rebuilder(rebuilder),
@@ -293,7 +299,7 @@ impl<'a, D: Data, T> PersistentWalker<'a, D, T> {
     /// Fails if the current node is the root.
     pub fn rot_up(&mut self) -> Result<Side, ()>
     where
-        PersistentNode<D, T>: Clone
+        PersistentNode<D, T>: Clone,
     {
         let b = self.go_up()?;
         self.rot_side(b.flip())
@@ -309,7 +315,7 @@ impl<'a, D: Data, T> PersistentWalker<'a, D, T> {
         rebuilder: F,
     ) -> Result<Side, ()>
     where
-        PersistentNode<D, T>: Clone
+        PersistentNode<D, T>: Clone,
     {
         let b = self.go_up()?;
         self.rot_side_with_custom_rebuilder::<F>(b.flip(), rebuilder)
@@ -326,7 +332,7 @@ impl<'a, D: Data, T> PersistentWalker<'a, D, T> {
     /// This takes the walker and turns it into a reference to the root
     pub fn root_into_ref(mut self) -> &'a mut PersistentTree<D, T>
     where
-        PersistentNode<D, T>: Clone
+        PersistentNode<D, T>: Clone,
     {
         // go to the root
         self.go_to_root();
@@ -340,7 +346,7 @@ impl<'a, D: Data, T> PersistentWalker<'a, D, T> {
     /// the whole tree, and not the seventh in the subtree).
     pub fn detached_walker(&mut self) -> PersistentWalker<D, T>
     where
-        PersistentNode<D, T>: Clone
+        PersistentNode<D, T>: Clone,
     {
         let left = self.far_left_summary();
         let right = self.far_right_summary();
@@ -368,7 +374,7 @@ impl<'a, D: Data, T> PersistentWalker<'a, D, T> {
     /// Intended to help writing tree algorithms.
     pub(in super::super) fn put_subtree(&mut self, new: PersistentTree<D, T>) -> Option<()>
     where
-        PersistentNode<D, T>: Clone
+        PersistentNode<D, T>: Clone,
     {
         if self.rec_ref.is_empty() {
             *self.rec_ref = new;
@@ -382,7 +388,7 @@ impl<'a, D: Data, T> PersistentWalker<'a, D, T> {
     /// the algorithm's custom data.
     pub fn delete_with_alg_data(&mut self) -> Option<(D::Value, T)>
     where
-        PersistentNode<D, T>: Clone
+        PersistentNode<D, T>: Clone,
     {
         let mut node = self.take_subtree().into_node()?;
         if node.right.is_empty() {

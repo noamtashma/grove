@@ -12,7 +12,7 @@ const NO_VALUE_ERROR: &str = "invariant violated: RecRef can't be empty";
 
 impl<D: Data> SomeTree<D> for PersistentTree<D>
 where
-    PersistentNode<D>: Clone
+    PersistentNode<D>: Clone,
 {
     fn segment_summary_imm<L>(&self, locator: L) -> D::Summary
     where
@@ -114,8 +114,8 @@ impl<D: Data> IntoIterator for PersistentTree<D> {
 }
 
 impl<'a, D: Data, T> SomeTreeRef<D> for &'a mut PersistentTree<D, T>
-    where
-        PersistentNode<D, T>: Clone
+where
+    PersistentNode<D, T>: Clone,
 {
     type Walker = PersistentWalker<'a, D, T>;
 
@@ -126,7 +126,7 @@ impl<'a, D: Data, T> SomeTreeRef<D> for &'a mut PersistentTree<D, T>
 
 impl<'a, D: Data, T> SomeWalker<D> for PersistentWalker<'a, D, T>
 where
-    PersistentNode<D, T>: Clone
+    PersistentNode<D, T>: Clone,
 {
     fn go_left(&mut self) -> Result<(), ()> {
         let mut frame = self.vals.last().expect(NO_VALUE_ERROR).clone();
@@ -204,7 +204,7 @@ where
 
 impl<D: Data, T> SomeEntry<D> for PersistentTree<D, T>
 where
-    PersistentNode<D, T>: Clone
+    PersistentNode<D, T>: Clone,
 {
     fn node_summary(&self) -> D::Summary {
         match self.node() {
@@ -290,14 +290,17 @@ where
     {
         match self {
             PersistentTree::Empty => String::from("*"),
-            PersistentTree::Root(node) => format!("<{} >", node.representation(&|_| {String::from("")}, to_reverse)),
+            PersistentTree::Root(node) => format!(
+                "<{} >",
+                node.representation(&|_| { String::from("") }, to_reverse)
+            ),
         }
     }
 }
 
 impl<'a, D: Data, T> SomeEntry<D> for PersistentWalker<'a, D, T>
 where
-    PersistentNode<D, T>: Clone
+    PersistentNode<D, T>: Clone,
 {
     fn node_summary(&self) -> D::Summary {
         self.rec_ref.node_summary()
@@ -369,14 +372,14 @@ where
 
 impl<'a, D: Data> ModifiableTreeRef<D> for &'a mut PersistentTree<D>
 where
-    PersistentNode<D>: Clone
+    PersistentNode<D>: Clone,
 {
     type ModifiableWalker = PersistentWalker<'a, D>;
 }
 
 impl<'a, D: Data> ModifiableWalker<D> for PersistentWalker<'a, D>
 where
-    PersistentNode<D>: Clone
+    PersistentNode<D>: Clone,
 {
     /// Inserts the value into the tree at the current empty position.
     /// If the current position is not empty, return [`None`].
