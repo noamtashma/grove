@@ -179,9 +179,10 @@ where
     }
 }
 
-// Owning iterators aren't vary useful for persistent trees
+// Owning iterators make a small amount of sense for Persistent trees.
+// If the nodes are owned only by this tree, then it's somewhat useful
+// to not clone the values.
 
-/*
 /// Owning fragment
 enum OFragment<D: Data, T = ()> {
     Value(D::Value),
@@ -211,13 +212,17 @@ impl<D: Data, L, T> IntoIter<D, L, T> {
     /// Internal method: same as stack.push(...), but deals with the [`Empty`] case.
     /// If empty, do nothing.
     fn push(&mut self, tree: PersistentTree<D, T>, summary: D::Summary) {
-        if let Some(boxed_node) = tree.into_node_rc() {
-            self.stack.push((OFragment::Node(boxed_node), summary));
+        if let Some(rc_node) = tree.into_node_rc() {
+            self.stack.push((OFragment::Node(rc_node), summary));
         }
     }
 }
 
-impl<D: Data, L: Locator<D>, T> Iterator for IntoIter<D, L, T> {
+impl<D: Data, L: Locator<D>, T> Iterator for IntoIter<D, L, T>
+where
+    D::Value: Clone,
+    T: Clone,
+{
     type Item = D::Value;
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -240,7 +245,7 @@ impl<D: Data, L: Locator<D>, T> Iterator for IntoIter<D, L, T> {
                 Some(x) => x,
             };
 
-            let mut node = match frag {
+            let node = match frag {
                 // if value has been inserted to the stack, the locator has already been called
                 // on it and returned `Accept`.
                 OFragment::Value(val) => {
@@ -250,11 +255,34 @@ impl<D: Data, L: Locator<D>, T> Iterator for IntoIter<D, L, T> {
                 OFragment::Node(node) => node,
             };
 
-            node.access();
-            let value = node.node_value;
-            let right_node = node.right;
-            let left_node = node.left;
+            let value: D::Value;
+            let right_node: PersistentTree<D, T>;
+            let left_node: PersistentTree<D, T>;
 
+            match Rc::try_unwrap(node) {
+                // no need to clone any Rc if we are the unique owner
+                Ok(mut owned_node) => {
+                    owned_node.access();
+                    value = owned_node.node_value;
+                    right_node = owned_node.right;
+                    left_node = owned_node.left;
+                },
+                // no need to clone `node` if the action is the identity
+                Err(node) if node.action.is_identity() => {
+                    value = node.node_value.clone();
+                    right_node = node.right.clone();
+                    left_node = node.left.clone();
+                },
+                // we need to clone everything
+                Err(mut node) => {
+                    let node_ref = Rc::make_mut(&mut node);
+                    node_ref.access();
+                    value = node_ref.node_value.clone();
+                    right_node = node_ref.right.clone();
+                    left_node = node_ref.left.clone();
+                },
+            }
+            
             let value_summary = value.to_summary();
             let near_left_summary: D::Summary = self.left + left_node.subtree_summary();
             let near_right_summary: D::Summary = right_node.subtree_summary() + summary;
@@ -283,5 +311,3 @@ impl<D: Data, L: Locator<D>, T> Iterator for IntoIter<D, L, T> {
         }
     }
 }
-
-*/

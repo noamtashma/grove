@@ -169,7 +169,7 @@ impl<'a, D: Data, T> PersistentWalker<'a, D, T> {
     /// `PersistentNode<D, T>: Clone`. This is important so that the `Drop` instance can
     /// be unconditional.
     fn go_up(&mut self) -> Result<Side, ()> {
-        const NO_VALUE_ERROR: &str = "TODO: replace this error";
+        const NO_VALUE_ERROR: &str = "invariant violated: walker should not be empty";
         match self.is_left.pop() {
             None => Err(()),
             Some(b) => {
@@ -211,7 +211,6 @@ impl<'a, D: Data, T> PersistentWalker<'a, D, T> {
         let bn2_ref = Rc::make_mut(&mut bn2);
         bn2_ref.access();
 
-        // TODO: this will error
         bn1_ref.right = bn2_ref.left.take();
         bn2_ref.subtree_summary = bn1_ref.subtree_summary; // this is insetad of bn2.rebuild(), since we already know the result
         bn1_ref.rebuild();

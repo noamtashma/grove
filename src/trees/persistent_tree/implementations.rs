@@ -12,7 +12,7 @@ const NO_VALUE_ERROR: &str = "invariant violated: RecRef can't be empty";
 
 impl<D: Data> SomeTree<D> for PersistentTree<D>
 where
-    PersistentNode<D>: Clone,
+    D::Value: Clone,
 {
     fn segment_summary_imm<L>(&self, locator: L) -> D::Summary
     where
@@ -104,12 +104,14 @@ impl<D: Data> std::iter::FromIterator<D::Value> for PersistentTree<D> {
     }
 }
 
-impl<D: Data> IntoIterator for PersistentTree<D> {
+impl<D: Data> IntoIterator for PersistentTree<D>
+where
+    D::Value: Clone,
+{
     type Item = D::Value;
-    type IntoIter = <Vec<D::Value> as IntoIterator>::IntoIter; // iterators::IntoIter<D, std::ops::RangeFull>;
+    type IntoIter = iterators::IntoIter<D, std::ops::RangeFull>; // iterators::IntoIter<D, std::ops::RangeFull>;
     fn into_iter(self) -> Self::IntoIter {
-        todo!();
-        // iterators::IntoIter::new(self, ..)
+        iterators::IntoIter::new(self, ..)
     }
 }
 
