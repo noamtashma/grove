@@ -1,17 +1,8 @@
+// TODO: finalize docs and remove
 #![allow(missing_docs)]
 
-use crate::*;
-use std::rc::Rc;
-
-mod implementations;
-mod iterators;
-mod walker;
-// more useful for persistent trees than for regular trees
-pub mod imm_down_walker;
-/*
-
-//! The basic tree module.
-//! This module implements basic unbalanced trees.
+//! The persistent tree module.
+//! This module implements persistent unbalanced trees.
 //!
 //! This module is meant to provide an inner tree type that other tree implementations
 //! can wrap around. Therefore, it exposes more of its inner workings than the other trees,
@@ -20,28 +11,38 @@ pub mod imm_down_walker;
 //! Also,  The type parameter `T` is supposed to be used to store the balancing algorithm's
 //! bookeeping data (ranks, sizes and so on). Therefore, most of the functionality is
 //! implemented for general `T`, even though by default `T = ()`.
+//!
+//! # Persistence
+//!
+//! Persistence is implemented using [`std::rc::Rc`] pointers. When using the tree,
+//! Nodes will be cloned, unless your `Rc` is the only pointer to that node, in which case
+//! it will be mutated directly without any cloning or allocation.
+//!
+//! In order to save the current state of your tree, just `.clone()` your tree. If you don't,
+//! You won't be able to access the previous state.
+//!
+//! There is an effort to try to keep cloning and allocations to a minimum when not using
+//! the persistence of the tree. However, it might not be air-tight.
+//!
+//! Currently, You can't use a persistent tree together with one of the balanced trees,
+//! i.e, a persistent AVL tree or a persistent treap. However, it is planned
+//! to make the code support this in the future.
 
-// these two should not be public as they are merely separate files
-// for some of the functions of this module
+use crate::*;
+use std::rc::Rc;
 
+// more useful for persistent trees than for regular trees
 mod imm_down_walker;
-pub(crate) use imm_down_walker::ImmDownBasicWalker;
-
-mod walker;
-pub use walker::*;
+pub use imm_down_walker::ImmDownBasicWalker;
 
 mod implementations;
 pub use implementations::*;
 
-/// Iterators for [`BasicTree`]
-pub mod iterators;
+mod iterators;
+pub use iterators::*;
 
-mod iterative_deallocator;
-pub use iterative_deallocator::deallocate_iteratively;
-
-use crate::*;
-
-*/
+mod walker;
+pub use walker::*;
 
 /// A basic tree. might be empty.
 /// The `T` parameter is for algorithm-specific bookeeping data.
