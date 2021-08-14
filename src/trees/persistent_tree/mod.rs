@@ -3,6 +3,8 @@
 use crate::*;
 use std::rc::Rc;
 
+mod walker;
+mod implementations;
 /*
 
 //! The basic tree module.
@@ -48,6 +50,21 @@ pub enum PersistentTree<D: ?Sized + Data, T = ()> {
     Root(Rc<PersistentNode<D, T>>), // TODO: rename Root
 }
 use PersistentTree::*;
+
+impl<D: Data, T> PersistentTree<D, T> {
+    fn take(&mut self) -> PersistentTree<D, T> {
+        std::mem::take(self)
+    }
+
+    /// Copy of the [`SomeEntry`] method that doesn't require PersistentNode<D, T>: Clone.
+    fn subtree_summary(&self) -> D::Summary {
+        if let Some(node) = self.node() {
+            node.subtree_summary()
+        } else {
+            Default::default()
+        }
+    }
+}
 
 impl<D: ?Sized + Data, T> Clone for PersistentTree<D, T> 
 {
@@ -101,13 +118,35 @@ impl<D: Data, T> PersistentTree<D, T> {
         }
     }
 
+    /// Remakes the data that is stored in this node, based on its sons.
+    /// This is necessary when the data in the sons might have changed.
+    /// For example, after inserting a new node, all of the nodes from it to the root
+    /// must be rebuilt, in order for the segment values accumulated over the whole
+    /// subtree to be accurate.
+    ///
+    /// Rebuild a node only if this `Rc` holds unique ownership of this node,
+    /// i.e, if there isn't any other `Rc` pointing to it.
+    /// Otherwise returns `None`.
+    /// Rebuild on an empty tree returns `Some(())`.
+    fn rebuild_unique(&mut self) -> Option<()> {
+        if let Root(node) = self {
+            Rc::get_mut(node)?.rebuild();
+        }
+        Some(())
+    }
+
     /// Pushes any actions stored in this node to its sons.
     /// Actions stored in nodes are supposed to be eventually applied to its
     /// whole subtree. Therefore, in order to access a node cleanly, without
     /// the still-unapplied-function complicating things, you must `access()` the node.
     pub(crate) fn access(&mut self) where PersistentNode<D, T>: Clone {
         if let Root(node) = self {
-            Rc::make_mut(node).access()
+            // If the action is the identity, no mdofication is required.
+            // TODO: his if statement slow down programs, but it reduces allocations.
+            // which is more important?
+            if !node.action.is_identity() {
+                Rc::make_mut(node).access()
+            }
         }
     }
 
@@ -305,7 +344,7 @@ impl<D: Data, T> PersistentNode<D, T> {
     pub(crate) fn rebuild(&mut self) {
         assert!(self.action.is_identity());
         let temp = self.node_value.to_summary();
-        //self.subtree_summary = self.left.subtree_summary() + temp + self.right.subtree_summary();
+        self.subtree_summary = self.left.subtree_summary() + temp + self.right.subtree_summary();
     }
 
     /// This function applies the given action to its whole subtree.
@@ -346,34 +385,40 @@ impl<D: Data, T> PersistentNode<D, T> {
     /// are printed with an exclamation mark: `<! * * >`.
     /// You can provide a custom printer for the alg_data field.
     /// If the input `to_reverse` is true, it will print the tree in reverse.
-    
+    */
+
     pub fn representation<F>(&self, alg_print: &F, to_reverse: bool) -> String
     where
+        Self: Clone,
         F: Fn(&Self) -> String,
     {
         let xor = self.action().to_reverse() ^ to_reverse;
         let shebang = if self.action().to_reverse() { "!" } else { "" };
-        let mut left = self.left.representation(alg_print, xor);
-        let mut right = self.right.representation(alg_print, xor);
+        // let mut left = self.left.representation(alg_print, xor);
+        // let mut right = self.right.representation(alg_print, xor);
+        // TODO: fix type problems with this debugging function requiring a callback looking
+        // for a BasicNode instead of a PersistentNode
+        let mut left = self.left.representation(&|_| {String::from("")}, xor);
+        let mut right = self.right.representation(&|_| {String::from("")}, xor);
         if xor {
             std::mem::swap(&mut left, &mut right);
         }
 
         format!("{} {} {} {}", shebang, alg_print(self), left, right)
     }
-    */
 
-    /*
+    
     /// Asserts that the summaries were calculated correctly at the current node.
     /// Otherwise, panics.
     pub fn assert_correctness_locally(&self)
     where
         D::Summary: Eq,
+        Self: Clone,
     {
         let ns = self.subtree_summary;
         let os: D::Summary = self.left.subtree_summary()
             + self.node_value.to_summary()
             + self.right.subtree_summary();
         assert!(ns == os, "Incorrect summaries found.");
-    } */
+    }
 }

@@ -1,4 +1,4 @@
-//! This module implements the tree traits for the [`BasicTree`] and [`BasicWalker`]
+//! This module implements the tree traits for the [`PersistentTree`] and [`PersistentWalker`]
 //! It is mostly a separate file from the main module file, since it's a private module, and its
 //! contents are re-exported.
 
@@ -6,15 +6,21 @@ use super::super::*; // crate::trees::*
 use super::*;
 use recursive_reference::RecRef;
 
+use super::walker::PersistentWalker;
+
 const NO_VALUE_ERROR: &str = "invariant violated: RecRef can't be empty";
 
-impl<D: Data> SomeTree<D> for BasicTree<D> {
+impl<D: Data> SomeTree<D> for PersistentTree<D>
+where
+    PersistentNode<D>: Clone
+{
     fn segment_summary_imm<L>(&self, locator: L) -> D::Summary
     where
         L: Locator<D>,
         D::Value: Clone,
     {
-        segment_algorithms::segment_summary_imm(self, locator)
+        todo!();
+        //segment_algorithms::segment_summary_imm(self, locator)
     }
 
     fn segment_summary<L>(&mut self, locator: L) -> D::Summary
@@ -36,7 +42,8 @@ impl<D: Data> SomeTree<D> for BasicTree<D> {
         &'a mut self,
         locator: L,
     ) -> basic_tree::iterators::IterLocator<'a, D, L> {
-        iterators::IterLocator::new(self, locator)
+        todo!();
+        // iterators::IterLocator::new(self, locator)
     }
 
     /// Checks that invariants remain correct. i.e., that every node's summary
@@ -54,32 +61,32 @@ impl<D: Data> SomeTree<D> for BasicTree<D> {
     }
 }
 
-impl<D: Data, T> Default for BasicTree<D, T> {
+impl<D: Data, T> Default for PersistentTree<D, T> {
     fn default() -> Self {
         Empty
     }
 }
 
-impl<D: Data> std::iter::FromIterator<D::Value> for BasicTree<D> {
-    /// Builds a balanced [`BasicTree`] from an iterator of values,
+impl<D: Data> std::iter::FromIterator<D::Value> for PersistentTree<D> {
+    /// Builds a balanced [`PersistentTree`] from an iterator of values,
     /// in the sense that is has logarithmic depth. However,
     /// it doesn't fit other balancing invariants.
     /// We can't do better because we don't know the size of the tree in advance.
     fn from_iter<T: IntoIterator<Item = D::Value>>(into_iter: T) -> Self {
-        // The stack holds boxed nodes, each of which has no right son, and a left son which is
+        // The stack holds nodes, each of which has no right son, and a left son which is
         // a perfect binary tree. The trees correspond to the binary digits of `count`:
         // the i'th digit of `count` is `1` iff there is a tree in the stack of size `2^i`.
-        let mut stack: Vec<Box<BasicNode<D>>> = vec![];
+        let mut stack: Vec<PersistentNode<D>> = vec![];
         for (count, val) in into_iter.into_iter().enumerate() {
-            let mut tree = BasicTree::Empty;
+            let mut tree = PersistentTree::Empty;
             for i in 0.. {
                 if (count >> i) & 1 == 1 {
                     let mut prev_node = stack.pop().unwrap();
                     prev_node.right = tree;
                     prev_node.rebuild();
-                    tree = BasicTree::from_boxed_node(prev_node);
+                    tree = PersistentTree::from_node(prev_node);
                 } else {
-                    let mut node = Box::new(BasicNode::new(val));
+                    let mut node = PersistentNode::new(val);
                     node.left = tree;
                     stack.push(node);
                     break;
@@ -87,33 +94,40 @@ impl<D: Data> std::iter::FromIterator<D::Value> for BasicTree<D> {
             }
         }
 
-        let mut tree = BasicTree::Empty;
+        let mut tree = PersistentTree::Empty;
         for mut prev_node in stack.into_iter().rev() {
             prev_node.right = tree;
             prev_node.rebuild();
-            tree = BasicTree::from_boxed_node(prev_node);
+            tree = PersistentTree::from_node(prev_node);
         }
         tree
     }
 }
 
-impl<D: Data> IntoIterator for BasicTree<D> {
+impl<D: Data> IntoIterator for PersistentTree<D> {
     type Item = D::Value;
-    type IntoIter = iterators::IntoIter<D, std::ops::RangeFull>;
+    type IntoIter = <Vec<D::Value> as IntoIterator>::IntoIter; // iterators::IntoIter<D, std::ops::RangeFull>;
     fn into_iter(self) -> Self::IntoIter {
-        iterators::IntoIter::new(self, ..)
+        todo!();
+        // iterators::IntoIter::new(self, ..)
     }
 }
 
-impl<'a, D: Data, T> SomeTreeRef<D> for &'a mut BasicTree<D, T> {
-    type Walker = BasicWalker<'a, D, T>;
+impl<'a, D: Data, T> SomeTreeRef<D> for &'a mut PersistentTree<D, T>
+    where
+        PersistentNode<D, T>: Clone
+{
+    type Walker = PersistentWalker<'a, D, T>;
 
     fn walker(self) -> Self::Walker {
-        BasicWalker::new(self)
+        PersistentWalker::new(self)
     }
 }
 
-impl<'a, D: Data, T> SomeWalker<D> for BasicWalker<'a, D, T> {
+impl<'a, D: Data, T> SomeWalker<D> for PersistentWalker<'a, D, T>
+where
+    PersistentNode<D, T>: Clone
+{
     fn go_left(&mut self) -> Result<(), ()> {
         let mut frame = self.vals.last().expect(NO_VALUE_ERROR).clone();
         let res = RecRef::extend_result(&mut self.rec_ref, |tree| {
@@ -178,7 +192,7 @@ impl<'a, D: Data, T> SomeWalker<D> for BasicWalker<'a, D, T> {
         self.vals.last().expect(NO_VALUE_ERROR).right
     }
 
-    // fn inner(&self) -> &BasicTree<A> {
+    // fn inner(&self) -> &PersistentTree<A> {
     //     &*self.rec_ref
     // }
 
@@ -188,7 +202,10 @@ impl<'a, D: Data, T> SomeWalker<D> for BasicWalker<'a, D, T> {
     }
 }
 
-impl<D: Data, T> SomeEntry<D> for BasicTree<D, T> {
+impl<D: Data, T> SomeEntry<D> for PersistentTree<D, T>
+where
+    PersistentNode<D, T>: Clone
+{
     fn node_summary(&self) -> D::Summary {
         match self.node() {
             None => Default::default(),
@@ -259,7 +276,7 @@ impl<D: Data, T> SomeEntry<D> for BasicTree<D, T> {
         D::Summary: Eq,
     {
         if let Some(node) = self.node() {
-            BasicNode::assert_correctness_locally(node);
+            PersistentNode::assert_correctness_locally(node);
         }
     }
 
@@ -269,16 +286,20 @@ impl<D: Data, T> SomeEntry<D> for BasicTree<D, T> {
     #[cfg(debug_assertions)]
     fn representation<F>(&self, alg_print: &F, to_reverse: bool) -> String
     where
-        F: Fn(&BasicNode<D, T>) -> String,
+        F: Fn(&crate::basic_tree::BasicNode<D, T>) -> String,
     {
+        
         match self {
-            BasicTree::Empty => String::from("*"),
-            BasicTree::Root(node) => format!("<{} >", node.representation(alg_print, to_reverse)),
+            PersistentTree::Empty => String::from("*"),
+            PersistentTree::Root(node) => format!("<{} >", node.representation(&|_| {String::from("")}, to_reverse)),
         }
     }
 }
 
-impl<'a, D: Data, T> SomeEntry<D> for BasicWalker<'a, D, T> {
+impl<'a, D: Data, T> SomeEntry<D> for PersistentWalker<'a, D, T>
+where
+    PersistentNode<D, T>: Clone
+{
     fn node_summary(&self) -> D::Summary {
         self.rec_ref.node_summary()
     }
@@ -341,17 +362,23 @@ impl<'a, D: Data, T> SomeEntry<D> for BasicWalker<'a, D, T> {
     #[cfg(debug_assertions)]
     fn representation<F>(&self, alg_print: &F, to_reverse: bool) -> String
     where
-        F: Fn(&BasicNode<D, T>) -> String,
+        F: Fn(&crate::basic_tree::BasicNode<D, T>) -> String,
     {
         self.rec_ref.representation(alg_print, to_reverse)
     }
 }
 
-impl<'a, D: Data> ModifiableTreeRef<D> for &'a mut BasicTree<D> {
-    type ModifiableWalker = BasicWalker<'a, D>;
+impl<'a, D: Data> ModifiableTreeRef<D> for &'a mut PersistentTree<D>
+where
+    PersistentNode<D>: Clone
+{
+    type ModifiableWalker = PersistentWalker<'a, D>;
 }
 
-impl<'a, D: Data> ModifiableWalker<D> for BasicWalker<'a, D> {
+impl<'a, D: Data> ModifiableWalker<D> for PersistentWalker<'a, D>
+where
+    PersistentNode<D>: Clone
+{
     /// Inserts the value into the tree at the current empty position.
     /// If the current position is not empty, return [`None`].
     /// When the function returns, the walker will be at the position the node
