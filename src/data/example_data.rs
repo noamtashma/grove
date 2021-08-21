@@ -32,7 +32,7 @@ where
 
 impl<T: Ord> Keyed<T> for T {
     fn get_key(&self) -> &Self {
-        &self
+        self
     }
 }
 

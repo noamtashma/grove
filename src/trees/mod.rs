@@ -13,6 +13,7 @@ mod segment_algorithms;
 
 pub mod avl;
 pub mod basic_tree;
+pub mod persistent_tree;
 mod basic_tree_trait;
 pub use basic_tree_trait::*;
 pub mod slice;
@@ -253,7 +254,7 @@ pub trait SomeWalker<D: Data>: SomeEntry<D> {
 
     /// Finds any node that the locator `Accept`s. Looks only inside the current subtree.
     /// If there isn't any, it finds the empty location where that node would be instead.
-    /// Returns a walker at the wanted position.
+    /// Ater calling the walker will be at the wanted position.
     fn search_subtree<L: crate::Locator<D>>(&mut self, locator: L) {
         use locators::LocResult;
         while let Some(res) = locators::query_locator(self, &locator) {
@@ -333,6 +334,7 @@ pub trait SomeEntry<D: Data> {
     fn right_subtree_summary(&self) -> Option<D::Summary>;
 
     /// Applies the action on the current node.
+    /// Fails if at an empty position.
     fn act_node(&mut self, action: D::Action) -> Option<()>;
 
     /// Applies the given action on this subtree.

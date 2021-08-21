@@ -31,7 +31,7 @@ use crate::*;
 
 /// A basic tree. might be empty.
 /// The `T` parameter is for algorithm-specific bookeeping data.
-/// For example, red-block trees store a color in each node.
+/// For example, red-black trees store a color in each node.
 pub enum BasicTree<D: ?Sized + Data, T = ()> {
     /// An empty tree
     Empty,
@@ -48,9 +48,9 @@ impl<D: Data, T> BasicTreeTrait<D, T> for BasicTree<D, T> {
         Empty
     }
 
-    /// Returns the action that is (locally) going to be applied to all of
-    /// this tree's nodes.
-    /// Returns `default()` if the tree is empty, and `self.node().action` otherwise
+    /// Returns the action that is currently stored at the root.
+    /// This action is to be applied to all of the tree's values.
+    /// Returns `default()` if the tree is empty, and the node's action otherwise.
     fn action(&self) -> D::Action {
         match self.node() {
             Some(node) => node.action,
@@ -70,10 +70,10 @@ impl<D: Data, T> BasicTreeTrait<D, T> for BasicTree<D, T> {
         Some(self.node()?.alg_data())
     }
 
-    /// Remakes the data that is stored in this node, based on its sons.
-    /// This is necessary when the data in the sons might have changed.
+    /// Remakes the summary that is stored in this node, based on its sons.
+    /// This is necessary when the sons might have changed.
     /// For example, after inserting a new node, all of the nodes from it to the root
-    /// must be rebuilt, in order for the segment values accumulated over the whole
+    /// must be rebuilt, in order for the summaries accumulated over the whole
     /// subtree to be accurate.
     fn rebuild(&mut self) {
         if let Root(node) = self {
@@ -117,9 +117,11 @@ impl<D: Data, T> BasicTreeTrait<D, T> for BasicTree<D, T> {
     }
 
 
-    /// Checks that invariants remain correct. e.g., that every node's summary
-    /// is the sum of the summaries of its children.
-    /// If it is not, panics.
+    /// Checks that invariants remain correct. Invariants are checked by running
+    /// the given function on every node in the current subtree.
+    ///
+    /// The function should perfoem checks (e.g, check that the current node's summary is indeed
+    /// the sum of its children's summaries) and panic if they're violated.
     fn assert_correctness_with<F>(&self, func: F)
     where
         F: Fn(&BasicNode<D, T>) + Copy,
@@ -162,7 +164,7 @@ impl<D: Data, T> BasicTree<D, T> {
 // TODO: try to move the fields from pub(crate) to private
 /// A basic node. can be viewed as a non-empty basic tree: it always has at least one value.
 /// The `T` parameter is for algorithm-specific bookeeping data.
-/// For example, red-block trees store a color in each node.
+/// For example, red-black trees store a color in each node.
 pub struct BasicNode<D: ?Sized + Data, T = ()> {
     action: D::Action,
     subtree_summary: D::Summary,
@@ -278,7 +280,7 @@ impl<D: Data, T> BasicNodeTrait<D, T> for BasicNode<D, T> {
     /// Same as [`SomeEntry::act_subtree`], but for [`BasicNode<D>`].
     ///
     /// This function leaves the [`self.action`] field "dirty" - after calling
-    /// this you might need to call access, to push the action to this node's sons.
+    /// this you might need to call `access`, to push the action to this node's sons.
     ///```
     /// use grove::{*, basic_tree::*};
     /// use grove::example_data::{StdNum, RevAffineAction};
