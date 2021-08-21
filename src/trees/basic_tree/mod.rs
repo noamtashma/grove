@@ -136,7 +136,7 @@ impl<D: Data, T> BasicTree<D, T> {
         }
     }
 
-    /// Checks that invariants remain correct. i.e., that every node's summary
+    /// Checks that invariants remain correct. e.g., that every node's summary
     /// is the sum of the summaries of its children.
     /// If it is not, panics.
     pub fn assert_correctness_with<F>(&self, func: F)

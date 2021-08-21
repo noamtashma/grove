@@ -54,7 +54,7 @@ impl<D: Data> SomeTree<D> for BasicTree<D> {
     }
 }
 
-impl<D: Data> Default for BasicTree<D> {
+impl<D: Data, T> Default for BasicTree<D, T> {
     fn default() -> Self {
         Empty
     }
