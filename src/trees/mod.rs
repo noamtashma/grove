@@ -14,6 +14,8 @@ mod segment_algorithms;
 pub mod avl;
 pub mod basic_tree;
 pub mod persistent_tree;
+mod basic_tree_trait;
+pub use basic_tree_trait::*;
 pub mod slice;
 pub mod splay;
 pub mod treap;

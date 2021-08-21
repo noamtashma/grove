@@ -40,16 +40,18 @@ pub enum BasicTree<D: ?Sized + Data, T = ()> {
 }
 use BasicTree::*;
 
-impl<D: Data, T> BasicTree<D, T> {
+impl<D: Data, T> BasicTreeTrait<D, T> for BasicTree<D, T> {
+    type Node = BasicNode<D, T>;
+
     /// Creates an empty tree
-    pub fn new() -> Self {
+    fn new() -> Self {
         Empty
     }
 
     /// Returns the action that is currently stored at the root.
     /// This action is to be applied to all of the tree's values.
-    /// Returns `default()` if the tree is empty, and `self.node().action` otherwise.
-    pub fn action(&self) -> D::Action {
+    /// Returns `default()` if the tree is empty, and the node's action otherwise.
+    fn action(&self) -> D::Action {
         match self.node() {
             Some(node) => node.action,
             None => Default::default(),
@@ -57,17 +59,14 @@ impl<D: Data, T> BasicTree<D, T> {
     }
 
     /// Constructs a new non-empty tree from a node.
-    pub fn from_node(node: BasicNode<D, T>) -> Self {
+    fn from_node(node: BasicNode<D, T>) -> Self {
         Root(Box::new(node))
     }
 
-    /// Constructs a new non-empty tree from a boxed node.
-    pub fn from_boxed_node(boxed: Box<BasicNode<D, T>>) -> Self {
-        Root(boxed)
-    }
+    
 
     /// Returns the algorithm-specific data
-    pub fn alg_data(&self) -> Option<&T> {
+    fn alg_data(&self) -> Option<&T> {
         Some(self.node()?.alg_data())
     }
 
@@ -76,7 +75,7 @@ impl<D: Data, T> BasicTree<D, T> {
     /// For example, after inserting a new node, all of the nodes from it to the root
     /// must be rebuilt, in order for the summaries accumulated over the whole
     /// subtree to be accurate.
-    pub(crate) fn rebuild(&mut self) {
+    fn rebuild(&mut self) {
         if let Root(node) = self {
             node.rebuild()
         }
@@ -86,14 +85,14 @@ impl<D: Data, T> BasicTree<D, T> {
     /// Actions stored in nodes are supposed to be eventually applied to its
     /// whole subtree. Therefore, in order to access a node cleanly, without
     /// the still-unapplied-function complicating things, you must `access()` the node.
-    pub(crate) fn access(&mut self) {
+    fn access(&mut self) {
         if let Root(node) = self {
             node.access()
         }
     }
 
     /// Returns The inner node.
-    pub fn node(&self) -> Option<&BasicNode<D, T>> {
+    fn node(&self) -> Option<&BasicNode<D, T>> {
         match self {
             Empty => None,
             Root(node) => Some(node),
@@ -101,7 +100,50 @@ impl<D: Data, T> BasicTree<D, T> {
     }
 
     /// Returns The inner node.
-    pub fn node_mut(&mut self) -> Option<&mut BasicNode<D, T>> {
+    fn node_mut(&mut self) -> Option<&mut BasicNode<D, T>> {
+        match self {
+            Empty => None,
+            Root(node) => Some(node),
+        }
+    }
+
+
+    /// Returns The inner node.
+    fn into_node(self) -> Option<BasicNode<D, T>> {
+        match self {
+            Empty => None,
+            Root(node) => Some(*node),
+        }
+    }
+
+
+    /// Checks that invariants remain correct. Invariants are checked by running
+    /// the given function on every node in the current subtree.
+    ///
+    /// The function should perfoem checks (e.g, check that the current node's summary is indeed
+    /// the sum of its children's summaries) and panic if they're violated.
+    pub fn assert_correctness_with<F>(&self, func: F)
+    where
+        F: Fn(&BasicNode<D, T>) + Copy,
+    {
+        if let Some(node) = self.node() {
+            func(node);
+            node.left.assert_correctness_with(func);
+            node.right.assert_correctness_with(func);
+        }
+    }
+}
+
+impl<D: Data, T> BasicTree<D, T> {
+    /// Constructs a new non-empty tree from a boxed node.
+    pub fn from_boxed_node(boxed: Box<BasicNode<D, T>>) -> Self {
+        Root(boxed)
+    }
+
+    /// Returns The inner node with its box. This is exposed in order
+    /// to allow easier coding while preventing from moving values of `BasicNode`,
+    /// because `BasicNode` is bigger than a single pointer.
+    pub fn into_node_boxed(self) -> Option<Box<BasicNode<D, T>>> {
         match self {
             Empty => None,
             Root(node) => Some(node),
@@ -115,40 +157,6 @@ impl<D: Data, T> BasicTree<D, T> {
         match self {
             Empty => None,
             Root(node) => Some(node),
-        }
-    }
-
-    /// Returns The inner node.
-    pub fn into_node(self) -> Option<BasicNode<D, T>> {
-        match self {
-            Empty => None,
-            Root(node) => Some(*node),
-        }
-    }
-
-    /// Returns The inner node with its box. This is exposed in order
-    /// to allow easier coding while preventing from moving values of `BasicNode`,
-    /// because `BasicNode` is bigger than a single pointer.
-    pub fn into_node_boxed(self) -> Option<Box<BasicNode<D, T>>> {
-        match self {
-            Empty => None,
-            Root(node) => Some(node),
-        }
-    }
-
-    /// Checks that invariants remain correct. Invariants are checked by running
-    /// the given function on every node in the current subtree.
-    ///
-    /// The function should perfoem checks (e.g, check that the current node's summary is indeed
-    /// the sum of its children's summaries) and panic if they're violated.s
-    pub fn assert_correctness_with<F>(&self, func: F)
-    where
-        F: Fn(&BasicNode<D, T>) + Copy,
-    {
-        if let Some(node) = self.node() {
-            func(node);
-            node.left.assert_correctness_with(func);
-            node.right.assert_correctness_with(func);
         }
     }
 }
@@ -181,9 +189,9 @@ impl<D: Data> BasicNode<D> {
     }
 }
 
-impl<D: Data, T> BasicNode<D, T> {
+impl<D: Data, T> BasicNodeTrait<D, T> for BasicNode<D, T> {
     /// Creates a node with a single value, and the algorithm specific data.
-    pub fn new_alg(value: D::Value, alg_data: T) -> BasicNode<D, T> {
+    fn new_alg(value: D::Value, alg_data: T) -> BasicNode<D, T> {
         let subtree_summary = value.to_summary();
         BasicNode {
             action: Default::default(),
@@ -196,23 +204,23 @@ impl<D: Data, T> BasicNode<D, T> {
     }
 
     /// Returns the algorithm-specific data
-    pub fn alg_data(&self) -> &T {
+    fn alg_data(&self) -> &T {
         &self.alg_data
     }
 
-    pub(crate) fn action(&self) -> &D::Action {
+    fn action(&self) -> &D::Action {
         &self.action
     }
 
     /// Returns the summary of all values in this node's subtree.
     /// Same as [`BasicTree::subtree_summary`].
-    pub fn subtree_summary(&self) -> D::Summary {
+    fn subtree_summary(&self) -> D::Summary {
         self.action.act(self.subtree_summary)
     }
 
     /// Returns a summary for the value in this node specifically,
     /// and not the subtree.
-    pub fn node_summary(&self) -> D::Summary {
+    fn node_summary(&self) -> D::Summary {
         let summary = self.node_value.to_summary();
         self.action.act(summary)
     }
@@ -220,20 +228,20 @@ impl<D: Data, T> BasicNode<D, T> {
     /// Returns a reference to the value stored in this node specifically.
     /// Requires mutable access because it calls `BasicNode::access`, to ensure
     /// that the action applies.
-    pub fn node_value(&mut self) -> &D::Value {
+    fn node_value(&mut self) -> &D::Value {
         self.access();
         &self.node_value
     }
 
     /// Returns a mutable reference to the value stored in this node specifically.
-    pub fn node_value_mut(&mut self) -> &mut D::Value {
+    fn node_value_mut(&mut self) -> &mut D::Value {
         self.access();
         &mut self.node_value
     }
 
     /// Returns the value stored in this node specifically.
     /// Assumes that the node has been accessed. Panics otherwise.
-    pub(crate) fn node_value_clean(&self) -> &D::Value {
+    fn node_value_clean(&self) -> &D::Value {
         assert!(self.action.is_identity());
         &self.node_value
     }
@@ -242,7 +250,7 @@ impl<D: Data, T> BasicNode<D, T> {
     /// Actions stored in nodes are supposed to be eventually applied to its
     /// whole subtree. Therefore, in order to access a node cleanly, without
     /// the still-unapplied-function complicating things, you must `access()` the node.
-    pub(crate) fn access(&mut self) {
+    fn access(&mut self) {
         // reversing
         // for data that doesn't implement reversing, this becomes a no-op
         // and hopefully optimized away
@@ -262,7 +270,7 @@ impl<D: Data, T> BasicNode<D, T> {
     /// For example, after inserting a new node, all of the nodes from it to the root
     /// must be rebuilt, in order for the segment values accumulated over the whole
     /// subtree to be accurate.
-    pub(crate) fn rebuild(&mut self) {
+    fn rebuild(&mut self) {
         assert!(self.action.is_identity());
         let temp = self.node_value.to_summary();
         self.subtree_summary = self.left.subtree_summary() + temp + self.right.subtree_summary();
@@ -285,13 +293,13 @@ impl<D: Data, T> BasicNode<D, T> {
     /// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (-3..=4).rev().collect::<Vec<_>>());
     /// # tree.assert_correctness();
     ///```
-    pub fn act(&mut self, action: D::Action) {
+    fn act(&mut self, action: D::Action) {
         self.action = action + self.action;
     }
 
     /// This function applies the given action only to the current value in this node.
     /// Same as [`SomeEntry::act_node`].
-    pub fn act_value(&mut self, action: D::Action) {
+    fn act_value(&mut self, action: D::Action) {
         self.access();
         action.act_inplace(&mut self.node_value);
     }
@@ -305,7 +313,7 @@ impl<D: Data, T> BasicNode<D, T> {
     /// are printed with an exclamation mark: `<! * * >`.
     /// You can provide a custom printer for the alg_data field.
     /// If the input `to_reverse` is true, it will print the tree in reverse.
-    pub fn representation<F>(&self, alg_print: &F, to_reverse: bool) -> String
+    fn representation<F>(&self, alg_print: &F, to_reverse: bool) -> String
     where
         F: Fn(&Self) -> String,
     {
@@ -322,7 +330,7 @@ impl<D: Data, T> BasicNode<D, T> {
 
     /// Asserts that the summaries were calculated correctly at the current node.
     /// Otherwise, panics.
-    pub fn assert_correctness_locally(&self)
+    fn assert_correctness_locally(&self)
     where
         D::Summary: Eq,
     {
@@ -332,4 +340,8 @@ impl<D: Data, T> BasicNode<D, T> {
             + self.right.subtree_summary();
         assert!(ns == os, "Incorrect summaries found.");
     }
+}
+
+
+impl<D: Data, T> BasicNode<D, T> {
 }
