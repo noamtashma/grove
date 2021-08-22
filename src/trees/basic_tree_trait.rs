@@ -1,26 +1,31 @@
-#![allow(missing_docs)]
-
-//! The basic tree trait.
-//!
-//! This trait represents unbalanced trees implemented in different ways.
-//! They specify the implementation details in how the tree itself is built.
-//! For example, whether your tree has parent pointers, whether it has next-neighbor pointers,
-//! whether it is implemented using safe rust, and so on.
-//!
-//! Then different balancing algorithms (Treap, AVL, ...) can be built generically on
-//! top of these basic trees.
-
 use crate::Data;
 use super::*;
 
+/// The basic tree trait.
+///
+/// This trait represents unbalanced trees implemented in different ways.
+/// They specify the implementation details in how the tree itself is built.
+/// For example, whether your tree has parent pointers, whether it has next-neighbor pointers,
+/// whether it is implemented using safe rust, and so on.
+///
+/// Then different balancing algorithms (Treap, AVL, ...) can be built generically on
+/// top of these basic trees.
+///
+/// The trait is accompanied by the [`BasicNodeTrait`] which applies to the nodes of the tree.
+/// It is also accompanied by an implementation of `SomeTreeRef<D>` which provides a walker
+/// for the tree.
 pub trait BasicTreeTrait<D: Data, T>: SomeEntry<D> + Default where
     for<'a> &'a mut Self: SomeTreeRef<D>,
 {
+    /// The type of a node.
+    ///
+    /// This is semantically the same as a non empty tree, and
+    /// the tree type can be essentially converted to and from `Option<Self::Node>`.
     type Node: BasicNodeTrait<D, T>;
 
-    /// Returns the action that is (locally) going to be applied to all of
-    /// this tree's nodes.
-    /// Returns `default()` if the tree is empty, and `self.node().action` otherwise
+    /// Returns the action that is currently stored at the root.
+    /// This action is to be applied to all of the tree's values.
+    /// Returns `default()` if the tree is empty, and the node's action otherwise.
     fn action(&self) -> D::Action {
         if let Some(node) = self.node() {
             *node.action()
@@ -105,6 +110,15 @@ pub trait BasicTreeTrait<D: Data, T>: SomeEntry<D> + Default where
     }
 }
 
+/// The basic node trait.
+///
+/// This trait represents the nodes of unbalanced trees implemented in different ways. See also
+/// [`BasicTreeTrait`].
+///
+/// A Node is equivalent to a non empty tree.
+///
+/// In order to access the node's children, you hve to go through the tree's walker, instead of
+/// using the methods of this trait.
 pub trait BasicNodeTrait<D: Data, T> {
     /// Creates a node with a single value, and the algorithm specific data.
     fn new_alg(value: D::Value, alg_data: T) -> Self;
@@ -112,10 +126,12 @@ pub trait BasicNodeTrait<D: Data, T> {
     /// Returns the algorithm-specific data
     fn alg_data(&self) -> &T;
 
+    /// Returns the action that is currently stored at the root.
+    /// This action is to be applied to all of the tree's values.
+    /// Returns `default()` if the tree is empty, and the node's action otherwise.
     fn action(&self) -> &D::Action;
 
     /// Returns the summary of all values in this node's subtree.
-    /// Same as [`BasicTree::subtree_summary`].
     fn subtree_summary(&self) -> D::Summary;
 
     /// Returns a summary for the value in this node specifically,
@@ -123,7 +139,7 @@ pub trait BasicNodeTrait<D: Data, T> {
     fn node_summary(&self) -> D::Summary;
 
     /// Returns a reference to the value stored in this node specifically.
-    /// Requires mutable access because it calls `BasicNode::access`, to ensure
+    /// Requires mutable access because it calls [`BasicNodeTrait::access`], to ensure
     /// that the action applies.
     fn node_value(&mut self) -> &D::Value;
 
@@ -148,7 +164,7 @@ pub trait BasicNodeTrait<D: Data, T> {
     fn rebuild(&mut self);
 
     /// This function applies the given action to its whole subtree.
-    /// Same as [`SomeEntry::act_subtree`], but for [`BasicNode<D>`].
+    /// Same as [`SomeEntry::act_subtree`], but for [`BasicNodeTrait`].
     ///
     /// This function leaves the [`self.action`] field "dirty" - after calling
     /// this you might need to call access, to push the action to this node's sons.

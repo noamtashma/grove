@@ -79,6 +79,8 @@ where
         slice::Slice::new(self, locator)
     }
 
+    // TODO: when we advance to generalized associated types, we should instead use
+    // type IterLocator<'a, L: Locator>: Iterator<Item = &'a D::Value> + 'a
     /// This is here just so that the signature for iter_locator can be written out. Don't use this.
     type TreeData;
 

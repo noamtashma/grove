@@ -1,5 +1,5 @@
 // This is a private module, so no documentation for it directly.
-// instead look for documentation of the `BasicWalker` struct.
+// instead look for documentation of the `PersistentWalker` struct.
 
 use super::*;
 use recursive_reference::*;
@@ -52,14 +52,15 @@ impl<D: Data> Frame<D> {
 /// The walker may also be in a position which is the son of a node, but doesn't contain
 /// a node by itself, and then it is said to be in an empty position.
 ///
-/// Walkers for other kinds of trees may be built by wrapping around the [`BasicWalker`] type,
+/// Walkers for other kinds of trees may be built by wrapping around the [`PersistentWalker`] type,
 /// as tree types can be built by wrapping around the [`PersistentTree`] type.
 ///
 /// The walker will automatically go back up the tree to the root when dropped,
 /// in order to rebuild all the nodes.
 ///
 /// Internally, [`recursive_reference::RecRef`] is used, in order to be able to dynamically
-/// go up and down the tree without upsetting the borrow checker.
+/// go up and down the tree. Without the `RecRef`, the walker would have to duplicate its whole path
+/// even when the current tree isn't sharing its nodes.
 #[derive(destructure)]
 pub struct PersistentWalker<'a, D: Data, T = ()> {
     /// The telescope, holding references to all the subtrees from the root to the
@@ -73,7 +74,7 @@ pub struct PersistentWalker<'a, D: Data, T = ()> {
 
     /// This array holds for every node, whether the next subtree in the walker
     /// is its left son or the right son. (true corresponds to the left son).
-    /// This array is always one shorter than [`BasicWalker::rec_ref`] and [`BasicWalker::vals`],
+    /// This array is always one shorter than [`PersistentWalker::rec_ref`] and [`PersistentWalker::vals`],
     /// because the last node has no son in the walker.
     pub(super) is_left: Vec<Side>,
 }
