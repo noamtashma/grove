@@ -43,52 +43,14 @@ use BasicTree::*;
 impl<D: Data, T> BasicTreeTrait<D, T> for BasicTree<D, T> {
     type Node = BasicNode<D, T>;
 
-    /// Creates an empty tree
-    fn new() -> Self {
-        Empty
-    }
-
-    /// Returns the action that is currently stored at the root.
-    /// This action is to be applied to all of the tree's values.
-    /// Returns `default()` if the tree is empty, and the node's action otherwise.
-    fn action(&self) -> D::Action {
-        match self.node() {
-            Some(node) => node.action,
-            None => Default::default(),
-        }
-    }
-
     /// Constructs a new non-empty tree from a node.
     fn from_node(node: BasicNode<D, T>) -> Self {
         Root(Box::new(node))
     }
 
-    
-
     /// Returns the algorithm-specific data
     fn alg_data(&self) -> Option<&T> {
         Some(self.node()?.alg_data())
-    }
-
-    /// Remakes the summary that is stored in this node, based on its sons.
-    /// This is necessary when the sons might have changed.
-    /// For example, after inserting a new node, all of the nodes from it to the root
-    /// must be rebuilt, in order for the summaries accumulated over the whole
-    /// subtree to be accurate.
-    fn rebuild(&mut self) {
-        if let Root(node) = self {
-            node.rebuild()
-        }
-    }
-
-    /// Pushes any actions stored in this node to its sons.
-    /// Actions stored in nodes are supposed to be eventually applied to its
-    /// whole subtree. Therefore, in order to access a node cleanly, without
-    /// the still-unapplied-function complicating things, you must `access()` the node.
-    fn access(&mut self) {
-        if let Root(node) = self {
-            node.access()
-        }
     }
 
     /// Returns The inner node.

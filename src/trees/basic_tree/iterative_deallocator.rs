@@ -29,7 +29,7 @@ impl<D: Data, T> IterativeDeallocator<D, T> {
 /// Input is a reference and not an owned value so that this funcction can get
 /// called in `Drop` implementations.
 pub fn deallocate_iteratively<D: Data, T>(tree: &mut BasicTree<D, T>) {
-    let my_tree = std::mem::replace(tree, BasicTree::new());
+    let my_tree = std::mem::replace(tree, BasicTree::default());
     let mut deallocator = IterativeDeallocator { stack: vec![] };
     deallocator.push(my_tree);
     while deallocator.step().is_some() {}

@@ -76,7 +76,7 @@ impl<D: Data, T> PersistentTree<D, T> {
     }
 
     /// TODO: this is a temporary replacement for [`SomeTree::iter_locator`], since
-    /// that method currently requires using `BasiTree`'s iterator.
+    /// that method currently requires using `BasicTree`'s iterator.
     pub fn iter_locator<'a, L: locators::Locator<D>>(
         &'a mut self,
         locator: L,
@@ -130,6 +130,7 @@ impl<D: Data, T> PersistentTree<D, T> {
     }
 
     /// Returns The inner node.
+    /// Copy of trait method that doesn't require `PersistentNode<D, T>: Clone`.
     pub fn node(&self) -> Option<&PersistentNode<D, T>> {
         match self {
             Empty => None,
@@ -138,6 +139,7 @@ impl<D: Data, T> PersistentTree<D, T> {
     }
 
     /// Constructs a new non-empty tree from a node.
+    /// Copy of trait method that doesn't require `PersistentNode<D, T>: Clone`.
     pub fn from_node(node: PersistentNode<D, T>) -> Self {
         Root(Rc::new(node))
     }
@@ -145,6 +147,7 @@ impl<D: Data, T> PersistentTree<D, T> {
     /// Returns the action that is currently stored at the root.
     /// This action is to be applied to all of the tree's values.
     /// Returns `default()` if the tree is empty, and the node's action otherwise.
+    /// Copy of trait method that doesn't require `PersistentNode<D, T>: Clone`.
     pub fn action(&self) -> D::Action {
         match self.node() {
             Some(node) => node.action,
@@ -171,44 +174,14 @@ where
 {
     type Node = PersistentNode<D, T>;
 
-    /// Creates an empty tree
-    fn new() -> Self {
-        Empty
-    }
-
-    /// Returns the action that is currently stored at the root.
-    /// This action is to be applied to all of the tree's values.
-    /// Returns `default()` if the tree is empty, and the node's action otherwise.
-    fn action(&self) -> D::Action {
-        match self.node() {
-            Some(node) => node.action,
-            None => Default::default(),
-        }
-    }
-
     /// Constructs a new non-empty tree from a node.
     fn from_node(node: PersistentNode<D, T>) -> Self {
         Root(Rc::new(node))
     }
 
-
     /// Returns the algorithm-specific data
     fn alg_data(&self) -> Option<&T> {
         Some(self.node()?.alg_data())
-    }
-
-    /// Remakes the summary that is stored in this node, based on its sons.
-    /// This is necessary when the sons might have changed.
-    /// For example, after inserting a new node, all of the nodes from it to the root
-    /// must be rebuilt, in order for the summaries accumulated over the whole
-    /// subtree to be accurate.
-    fn rebuild(&mut self)
-    where
-        PersistentNode<D, T>: Clone,
-    {
-        if let Root(node) = self {
-            Rc::make_mut(node).rebuild()
-        }
     }
 
     /// Pushes any actions stored in this node to its sons.
@@ -221,8 +194,9 @@ where
     {
         if let Root(node) = self {
             // If the action is the identity, no mdofication is required.
-            // TODO: this if statement slows down programs, but it reduces allocations.
-            // which is more important?
+            // This overrides the default implementation which doesn't bother checking for identity.
+            // This if statement slows down programs, but it reduces allocations.
+            // TODO: Worth checking what's actually more performant.
             if !node.action.is_identity() {
                 Rc::make_mut(node).access()
             }
@@ -329,6 +303,9 @@ impl<D: ?Sized + Data> PersistentNode<D> {
 
 
 impl<D: Data, T> PersistentNode<D, T> {
+    // methods that are in comments here are duplicate methods that already exist in traits
+    // but need a version that works without the `PersistentNode<D, T>: Clone` constrait.
+
     /// Creates a node with a single value, and the algorithm specific data.
     pub fn new_alg(value: D::Value, alg_data: T) -> PersistentNode<D, T> {
         let subtree_summary = value.to_summary();
@@ -342,14 +319,14 @@ impl<D: Data, T> PersistentNode<D, T> {
         }
     }
 
-    /// Returns the algorithm-specific data
-    pub fn alg_data(&self) -> &T {
-        &self.alg_data
-    }
+    // /// Returns the algorithm-specific data
+    // pub fn alg_data(&self) -> &T {
+    //     &self.alg_data
+    // }
 
-    pub fn action(&self) -> &D::Action {
-        &self.action
-    }
+    // pub fn action(&self) -> &D::Action {
+    //     &self.action
+    // }
 
     /// Returns the summary of all values in this node's subtree.
     /// Same as [`SomeEntry::subtree_summary`].
@@ -357,70 +334,60 @@ impl<D: Data, T> PersistentNode<D, T> {
         self.action.act(self.subtree_summary)
     }
 
-    /// Returns a summary for the value in this node specifically,
-    /// and not the subtree.
-    pub fn node_summary(&self) -> D::Summary {
-        let summary = self.node_value.to_summary();
-        self.action.act(summary)
-    }
+    // /// Returns a summary for the value in this node specifically,
+    // /// and not the subtree.
+    // pub fn node_summary(&self) -> D::Summary {
+    //     let summary = self.node_value.to_summary();
+    //     self.action.act(summary)
+    // }
 
-    /// Returns a reference to the value stored in this node specifically.
-    /// Requires mutable access because it calls `PersistentNode::access`, to ensure
-    /// that the action applies.
-    pub fn node_value(&mut self) -> &D::Value
-    where
-        PersistentNode<D, T>: Clone,
-    {
-        self.access();
-        &self.node_value
-    }
-
-    /// Returns the value stored in this node specifically.
-    /// Assumes that the node has been accessed. Panics otherwise.
-    pub fn node_value_clean(&self) -> &D::Value {
-        assert!(self.action.is_identity());
-        &self.node_value
-    }
+    // /// Returns the value stored in this node specifically.
+    // /// Assumes that the node has been accessed. Panics otherwise.
+    // pub fn node_value_clean(&self) -> &D::Value {
+    //     assert!(self.action.is_identity());
+    //     &self.node_value
+    // }
 
     /// Remakes the data that is stored in this node, based on its sons.
     /// This is necessary when the data in the sons might have changed.
     /// For example, after inserting a new node, all of the nodes from it to the root
     /// must be rebuilt, in order for the segment values accumulated over the whole
     /// subtree to be accurate.
+    ///
+    /// Copy of trait method that doesn't require `PersistentNode<D, T>: Clone`.
     pub fn rebuild(&mut self) {
         assert!(self.action.is_identity());
         let temp = self.node_value.to_summary();
         self.subtree_summary = self.left.subtree_summary() + temp + self.right.subtree_summary();
     }
 
-    // TODO: replace `.iter_locator(..)` with `.iter()` when it works.
-    /// This function applies the given action to its whole subtree.
-    /// Same as [`SomeEntry::act_subtree`], but for [`PersistentNode<D>`].
-    ///
-    /// This function leaves the [`self.action`] field "dirty" - after calling
-    /// this you might need to call `access`, to push the action to this node's sons.
-    ///```
-    /// use grove::{*, persistent_tree::*};
-    /// use grove::example_data::{StdNum, RevAffineAction};
-    ///
-    /// let mut tree: PersistentTree<StdNum> = (1..=8).collect();
-    /// let node: &mut PersistentNode<StdNum> = tree.node_mut().unwrap();
-    /// node.act(RevAffineAction {to_reverse: false, mul: -1, add: 5});
-    /// # tree.assert_correctness();
-    ///
-    /// assert_eq!(tree.iter_locator(..).cloned().collect::<Vec<_>>(), (-3..=4).rev().collect::<Vec<_>>());
-    /// # tree.assert_correctness();
-    ///```
-    pub fn act(&mut self, action: D::Action) {
-        self.action = action + self.action;
-    }
+    // // TODO: replace `.iter_locator(..)` with `.iter()` when it works.
+    // /// This function applies the given action to its whole subtree.
+    // /// Same as [`SomeEntry::act_subtree`], but for [`PersistentNode<D>`].
+    // ///
+    // /// This function leaves the [`self.action`] field "dirty" - after calling
+    // /// this you might need to call `access`, to push the action to this node's sons.
+    // ///```
+    // /// use grove::{*, persistent_tree::*};
+    // /// use grove::example_data::{StdNum, RevAffineAction};
+    // ///
+    // /// let mut tree: PersistentTree<StdNum> = (1..=8).collect();
+    // /// let node: &mut PersistentNode<StdNum> = tree.node_mut().unwrap();
+    // /// node.act(RevAffineAction {to_reverse: false, mul: -1, add: 5});
+    // /// # tree.assert_correctness();
+    // ///
+    // /// assert_eq!(tree.iter_locator(..).cloned().collect::<Vec<_>>(), (-3..=4).rev().collect::<Vec<_>>());
+    // /// # tree.assert_correctness();
+    // ///```
+    // pub fn act(&mut self, action: D::Action) {
+    //     self.action = action + self.action;
+    // }
 }
 
 impl<D: Data, T> BasicNodeTrait<D, T> for PersistentNode<D, T>
 where
     PersistentNode<D, T>: Clone,
 {
-
     /// Creates a node with a single value, and the algorithm specific data.
     fn new_alg(value: D::Value, alg_data: T) -> PersistentNode<D, T> {
         let subtree_summary = value.to_summary();

@@ -245,6 +245,7 @@ where
     }
 
     fn act_subtree(&mut self, action: D::Action) {
+        // TODO: consider checking if the action is the identity
         if let Some(node) = self.node_mut() {
             node.act(action);
         }

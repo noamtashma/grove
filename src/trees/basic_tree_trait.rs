@@ -17,20 +17,29 @@ pub trait BasicTreeTrait<D: Data, T>: SomeEntry<D> + Default where
     for<'a> &'a mut Self: SomeTreeRef<D>,
 {
     type Node: BasicNodeTrait<D, T>;
-    fn new() -> Self {
-        Default::default()
-    }
 
     /// Returns the action that is (locally) going to be applied to all of
     /// this tree's nodes.
     /// Returns `default()` if the tree is empty, and `self.node().action` otherwise
-    fn action(&self) -> D::Action;
+    fn action(&self) -> D::Action {
+        if let Some(node) = self.node() {
+            *node.action()
+        } else {
+            Default::default()
+        }
+    }
 
     /// Constructs a new non-empty tree from a node.
     fn from_node(node: Self::Node) -> Self;
 
+    // TODO: this function should have an automatic impl.
+    // Currently it doesn't work because somehow it doesn't recognize that
+    // `Self::Node` is live as long as `Self` is live.
     /// Returns the algorithm-specific data
-    fn alg_data(&self) -> Option<&T>;
+    fn alg_data<'a>(&'a self) -> Option<&'a T>;
+    // fn alg_data<'a>(&'a self) -> Option<&'a T> {
+    //     Some(self.node()?.alg_data())
+    // }
 
     /// Remakes the data that is stored in this node, based on its sons.
     /// This is necessary when the data in the sons might have changed.
@@ -49,6 +58,9 @@ pub trait BasicTreeTrait<D: Data, T>: SomeEntry<D> + Default where
     /// the still-unapplied-function complicating things, you must `access()` the node.
     fn access(&mut self) {
         if let Some(node) = self.node_mut() {
+            // Accesses even if the action is the identity,
+            // Because we don't want to check for the identity. TODO: Worth
+            // checking what's actually more performant.
             node.access()
         }
     }
@@ -68,6 +80,8 @@ pub trait BasicTreeTrait<D: Data, T>: SomeEntry<D> + Default where
     fn assert_correctness_with<F>(&self, func: F)
     where
         F: Fn(&Self::Node) + Copy;
+
+    // TODO: add a representation method to the trees too
 }
 
 pub trait BasicNodeTrait<D: Data, T> {
