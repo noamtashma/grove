@@ -102,17 +102,6 @@ macro_rules! derive_SomeEntry {
                 self.$accessor.act_right_subtree(action)
             }
 
-            #[cfg(debug_assertions)]
-            type EntryTreeData = $alg_data;
-
-            #[cfg(debug_assertions)]
-            fn representation<F>(&self, alg_print: &F, to_reverse: bool) -> String
-            where
-                F: Fn(&basic_tree::BasicNode<D, Self::EntryTreeData>) -> String
-            {
-                self.$accessor.representation(alg_print, to_reverse)
-            }
-
             $($token)*
         }
     }

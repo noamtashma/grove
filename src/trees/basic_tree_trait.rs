@@ -81,7 +81,28 @@ pub trait BasicTreeTrait<D: Data, T>: SomeEntry<D> + Default where
     where
         F: Fn(&Self::Node) + Copy;
 
-    // TODO: add a representation method to the trees too
+    #[cfg(debug_assertions)]
+    /// Used for debugging. Prints a representation of the tree, like so:
+    /// `< < * * > * >`
+    /// Each pair of triangle brackets is a node, and `*` denotes empty trees.
+    /// The trees are printed in the layout they will have atfter all reversals have been
+    /// finished, but nodes which are yet to be reversed (`node.action.to_reverse() == true`)
+    /// are printed with an exclamation mark: `<! * * >`.
+    /// You can provide a custom printer for the alg_data field.
+    /// If the input `to_reverse` is true, it will print the tree in reverse.
+    fn representation<F>(&self, alg_print: &F, to_reverse: bool) -> String
+    where
+        F: Fn(&Self::Node) -> String
+    {
+        if let Some(node) = self.node() {
+            format!(
+                "<{} >",
+                node.representation(alg_print, to_reverse)
+            )
+        } else {
+            String::from("*")
+        }
+    }
 }
 
 pub trait BasicNodeTrait<D: Data, T> {

@@ -515,7 +515,6 @@ where
         action.act_inplace(&mut self.node_value);
     }
 
-    /*
     #[cfg(debug_assertions)]
     /// TODO: Currently broken because `BasicNode` isn't `PersistentNode`.
     ///
@@ -527,7 +526,6 @@ where
     /// are printed with an exclamation mark: `<! * * >`.
     /// You can provide a custom printer for the alg_data field.
     /// If the input `to_reverse` is true, it will print the tree in reverse.
-    */
 
     fn representation<F>(&self, alg_print: &F, to_reverse: bool) -> String
     where
@@ -536,12 +534,8 @@ where
     {
         let xor = self.action().to_reverse() ^ to_reverse;
         let shebang = if self.action().to_reverse() { "!" } else { "" };
-        // let mut left = self.left.representation(alg_print, xor);
-        // let mut right = self.right.representation(alg_print, xor);
-        // TODO: fix type problems with this debugging function requiring a callback looking
-        // for a BasicNode instead of a PersistentNode
-        let mut left = self.left.representation(&|_| String::from(""), xor);
-        let mut right = self.right.representation(&|_| String::from(""), xor);
+        let mut left = self.left.representation(alg_print, xor);
+        let mut right = self.right.representation(alg_print, xor);
         if xor {
             std::mem::swap(&mut left, &mut right);
         }
