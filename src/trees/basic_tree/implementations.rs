@@ -31,11 +31,12 @@ impl<D: Data, T> SomeTree<D> for BasicTree<D, T> {
         segment_algorithms::act_segment(self, action, locator);
     }
 
-    type TreeData = T;
-    fn iter_locator<'a, L: locators::Locator<D>>(
+    type IterLocator<'a, L> where D: 'a, T: 'a, L: locators::Locator<D> + 'a = basic_tree::iterators::IterLocator<'a, D, L, T>;
+    
+    fn iter_locator<'a, L: locators::Locator<D> + 'a>(
         &'a mut self,
         locator: L,
-    ) -> basic_tree::iterators::IterLocator<'a, D, L, T> {
+    ) -> Self::IterLocator<'a, L> {
         iterators::IterLocator::new(self, locator)
     }
 

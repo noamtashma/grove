@@ -37,13 +37,12 @@ where
         segment_algorithms::act_segment(self, action, locator);
     }
 
-    type TreeData = T;
-    fn iter_locator<'a, L: locators::Locator<D>>(
+    type IterLocator<'a, L> where D: 'a, T: 'a, L: locators::Locator<D> + 'a = persistent_tree::iterators::IterLocator<'a, D, L, T>;
+    fn iter_locator<'a, L: locators::Locator<D> + 'a>(
         &'a mut self,
         locator: L,
-    ) -> basic_tree::iterators::IterLocator<'a, D, L, T> {
-        todo!();
-        // iterators::IterLocator::new(self, locator)
+    ) -> Self::IterLocator<'a, L> {
+        iterators::IterLocator::new(self, locator)
     }
 
     /// Checks that invariants remain correct. i.e., that every node's summary

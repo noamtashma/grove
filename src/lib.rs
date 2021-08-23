@@ -136,6 +136,8 @@
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
 
+#![feature(generic_associated_types)]
+
 #[macro_use]
 extern crate derive_destructure;
 

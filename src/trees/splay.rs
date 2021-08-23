@@ -322,12 +322,12 @@ impl<D: Data> SomeTree<D> for SplayTree<D> {
         let mut walker = self.isolate_segment(locator);
         walker.act_subtree(action);
     }
-
-    type TreeData = ();
-    fn iter_locator<'a, L: locators::Locator<D>>(
+    type IterLocator<'a, L> where D: 'a, L: locators::Locator<D> + 'a = basic_tree::iterators::IterLocator<'a, D, L>;
+    
+    fn iter_locator<'a, L: locators::Locator<D> + 'a>(
         &'a mut self,
         locator: L,
-    ) -> basic_tree::iterators::IterLocator<'a, D, L> {
+    ) -> Self::IterLocator<'a, L> {
         self.isolate_segment(locator.clone());
         iterators::IterLocator::new(&mut self.tree, locator)
     }

@@ -79,10 +79,11 @@ where
         slice::Slice::new(self, locator)
     }
 
-    // TODO: when we advance to generalized associated types, we should instead use
-    // type IterLocator<'a, L: Locator>: Iterator<Item = &'a D::Value> + 'a
-    /// This is here just so that the signature for iter_locator can be written out. Don't use this.
-    type TreeData;
+    /// The return type of [`SomeTree::IterLocator`].
+    type IterLocator<'a, L: locators::Locator<D> + 'a>: Iterator<Item = &'a D::Value> + 'a
+        where Self: 'a, D::Value: 'a;
+    // /// This is here just so that the signature for iter_locator can be written out. Don't use this.
+    // type TreeData;
 
     /// Iterating on values.
     /// This iterator assumes you won't change the values using interior mutability. If you change the values,
@@ -100,10 +101,10 @@ where
     /// assert_eq!(segment_iter.cloned().collect::<Vec<_>>(), (23..33).collect::<Vec<_>>());
     /// # tree.assert_correctness();
     ///```
-    fn iter_locator<'a, L: locators::Locator<D>>(
+    fn iter_locator<'a, L: locators::Locator<D> + 'a>(
         &'a mut self,
         locator: L,
-    ) -> basic_tree::iterators::IterLocator<'a, D, L, Self::TreeData>;
+    ) -> Self::IterLocator<'a, L>;
 
     /// Iterates over the whole tree.
     ///```
@@ -117,7 +118,7 @@ where
     ///```
     fn iter(
         &mut self,
-    ) -> basic_tree::iterators::IterLocator<'_, D, std::ops::RangeFull, Self::TreeData> {
+    ) -> Self::IterLocator<'_, std::ops::RangeFull> {
         self.iter_locator(..)
     }
 
