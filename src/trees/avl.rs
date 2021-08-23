@@ -180,11 +180,12 @@ impl<D: Data> SomeTree<D> for AVLTree<D> {
         }
     }
 
-    type TreeData = u8;
-    fn iter_locator<'a, L: locators::Locator<D>>(
+    type IterLocator<'a, L> where D: 'a, L: locators::Locator<D> + 'a = basic_tree::iterators::IterLocator<'a, D, L, u8>;
+    
+    fn iter_locator<'a, L: locators::Locator<D> + 'a>(
         &'a mut self,
         locator: L,
-    ) -> basic_tree::iterators::IterLocator<'a, D, L, u8> {
+    ) -> Self::IterLocator<'a, L> {
         iterators::IterLocator::new(&mut self.tree, locator)
     }
 

@@ -75,18 +75,6 @@ impl<D: Data, T> PersistentTree<D, T> {
         }
     }
 
-    /// TODO: this is a temporary replacement for [`SomeTree::iter_locator`], since
-    /// that method currently requires using `BasicTree`'s iterator.
-    pub fn iter_locator<'a, L: locators::Locator<D>>(
-        &'a mut self,
-        locator: L,
-    ) -> IterLocator<'a, D, L, T>
-    where
-        PersistentNode<D, T>: Clone,
-    {
-        IterLocator::new(self, locator)
-    }
-
     /// Constructs a new non-empty tree from an `Rc` node.
     pub fn from_rc_node(rc: Rc<PersistentNode<D, T>>) -> Self {
         Root(rc)
@@ -483,7 +471,6 @@ where
         self.subtree_summary = self.left.subtree_summary() + temp + self.right.subtree_summary();
     }
 
-    // TODO: replace `.iter_locator(..)` with `.iter()` when it works.
     /// This function applies the given action to its whole subtree.
     /// Same as [`SomeEntry::act_subtree`], but for [`PersistentNode<D>`].
     ///
@@ -498,7 +485,7 @@ where
     /// node.act(RevAffineAction {to_reverse: false, mul: -1, add: 5});
     /// # tree.assert_correctness();
     ///
-    /// assert_eq!(tree.iter_locator(..).cloned().collect::<Vec<_>>(), (-3..=4).rev().collect::<Vec<_>>());
+    /// assert_eq!(tree.iter().cloned().collect::<Vec<_>>(), (-3..=4).rev().collect::<Vec<_>>());
     /// # tree.assert_correctness();
     ///```
     fn act(&mut self, action: D::Action) {
