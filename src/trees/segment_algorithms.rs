@@ -18,9 +18,8 @@ use trees::basic_tree::{ImmDownBasicWalker, *};
 /// because it uses go_up().
 ///
 /// Instead, use the specific [`SomeTree::segment_summary`]
-pub fn segment_summary<TR, L, D: Data>(tree: TR, locator: L) -> D::Summary
+pub fn segment_summary<'a, T: SomeTree<D>, L, D: Data>(tree: &'a mut T, locator: L) -> D::Summary
 where
-    TR: SomeTreeRef<D>,
     L: Locator<D>,
 {
     use LocResult::*;
@@ -104,9 +103,8 @@ where
 /// Don't use with actions that reverse segments. Panics otherwise.
 ///
 /// Instead, use [`SomeTree::act_segment`]
-pub fn act_segment<TR, L, D: Data>(tree: TR, action: D::Action, locator: L)
+pub fn act_segment<'a, T: SomeTree<D>, L, D: Data>(tree: &'a mut T, action: D::Action, locator: L)
 where
-    TR: SomeTreeRef<D>,
     L: Locator<D>,
 {
     assert!(

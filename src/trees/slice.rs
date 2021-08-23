@@ -19,8 +19,6 @@ pub struct Slice<'a, D, T, L> {
 }
 
 impl<'a, D: Data, T: SomeTree<D>, L: Locator<D>> Slice<'a, D, T, L>
-where
-    for<'b> &'b mut T: SomeTreeRef<D>,
 {
     /// Creates a new slice that represents the locator's segment in the tree.
     pub fn new(tree: &'a mut T, locator: L) -> Self {
@@ -47,7 +45,7 @@ where
     /// Finds any node in the current subsegment.
     /// If there isn't any, it finds the empty location where that node would be instead.
     /// Returns a walker at the wanted position.
-    pub fn search(self) -> <&'a mut T as SomeTreeRef<D>>::Walker {
+    pub fn search(self) -> T::Walker<'a> {
         self.tree.search(self.locator)
     }
 
@@ -69,7 +67,7 @@ where
 
 impl<'a, D: Data, T: SomeTree<D>, L: Locator<D>> Slice<'a, D, T, L>
 where
-    for<'b> &'b mut T: ModifiableTreeRef<D>,
+    for<'b> T::Walker<'b>: ModifiableWalker<D>,
 {
     /// Assumes that the this subsegment is empty.
     /// Inserts the value into the tree into the position of this empty subsegment.
@@ -87,16 +85,15 @@ where
     }
 }
 
-impl<'a, D: Data, T: SomeTree<D>, L: Locator<D>> Slice<'a, D, T, L>
-where
-    for<'b> &'b mut T: SplittableTreeRef<D>,
-{
+impl<'a, D: Data, T: SomeTree<D>, L: Locator<D>> Slice<'a, D, T, L> {
     /// Assumes that the this subsegment is empty.
     /// Split out everything to the right of this subsegment, if it is an empty subsegment.
     /// Otherwise returns [`None`].
-    pub fn split_right(
-        &mut self,
-    ) -> Option<<<&mut T as SplittableTreeRef<D>>::SplittableWalker as SplittableWalker<D>>::T>
+    pub fn split_right<'b>(
+        &'b mut self,
+    ) -> Option<T>
+    where
+        T::Walker<'b>: SplittableWalker<D, T=T>,
     {
         let mut walker = self.tree.search(self.locator.clone());
         walker.split_right()
@@ -105,9 +102,11 @@ where
     /// Assumes that the this subsegment is empty.
     /// Split out everything to the left of the this subsegment, if it is an empty subsegment.
     /// Otherwise returns [`None`].
-    pub fn split_left(
-        &mut self,
-    ) -> Option<<<&mut T as SplittableTreeRef<D>>::SplittableWalker as SplittableWalker<D>>::T>
+    pub fn split_left<'b>(
+        &'b mut self,
+    ) -> Option<T>
+    where
+        T::Walker<'b>: SplittableWalker<D, T=T>,
     {
         let mut walker = self.tree.search(self.locator.clone());
         walker.split_left()

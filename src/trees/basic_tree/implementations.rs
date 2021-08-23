@@ -9,6 +9,12 @@ use recursive_reference::RecRef;
 const NO_VALUE_ERROR: &str = "invariant violated: RecRef can't be empty";
 
 impl<D: Data, T> SomeTree<D> for BasicTree<D, T> {
+    type Walker<'a> where Self: 'a = BasicWalker<'a, D, T>;
+
+    fn walker<'a>(&'a mut self) -> Self::Walker<'a> {
+        BasicWalker::new(self)
+    }
+
     fn segment_summary_imm<L>(&self, locator: L) -> D::Summary
     where
         L: Locator<D>,
@@ -107,11 +113,6 @@ impl<D: Data, T> IntoIterator for BasicTree<D, T> {
 }
 
 impl<'a, D: Data, T> SomeTreeRef<D> for &'a mut BasicTree<D, T> {
-    type Walker = BasicWalker<'a, D, T>;
-
-    fn walker(self) -> Self::Walker {
-        BasicWalker::new(self)
-    }
 }
 
 impl<'a, D: Data, T> SomeWalker<D> for BasicWalker<'a, D, T> {

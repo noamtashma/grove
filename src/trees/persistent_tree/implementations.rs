@@ -15,6 +15,12 @@ where
     D::Value: Clone,
     T: Clone,
 {
+    type Walker<'a> where Self: 'a = PersistentWalker<'a, D, T>;
+
+    fn walker(&mut self) -> Self::Walker<'_> {
+        PersistentWalker::new(self)
+    }
+
     fn segment_summary_imm<L>(&self, locator: L) -> D::Summary
     where
         L: Locator<D>,
@@ -120,11 +126,6 @@ impl<'a, D: Data, T> SomeTreeRef<D> for &'a mut PersistentTree<D, T>
 where
     PersistentNode<D, T>: Clone,
 {
-    type Walker = PersistentWalker<'a, D, T>;
-
-    fn walker(self) -> Self::Walker {
-        PersistentWalker::new(self)
-    }
 }
 
 impl<'a, D: Data, T> SomeWalker<D> for PersistentWalker<'a, D, T>
@@ -348,14 +349,14 @@ where
 
 impl<'a, D: Data> ModifiableTreeRef<D> for &'a mut PersistentTree<D>
 where
-    PersistentNode<D>: Clone,
+    D::Value: Clone,
 {
     type ModifiableWalker = PersistentWalker<'a, D>;
 }
 
 impl<'a, D: Data> ModifiableWalker<D> for PersistentWalker<'a, D>
 where
-    PersistentNode<D>: Clone,
+    D::Value: Clone,
 {
     /// Inserts the value into the tree at the current empty position.
     /// If the current position is not empty, return [`None`].

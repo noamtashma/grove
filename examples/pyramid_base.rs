@@ -201,7 +201,10 @@ impl Data for MyData {
 // here the actual algorithms start
 
 // splits a segment inside the tree
-fn search_split<TR: ModifiableTreeRef<MyData>>(tree: TR, index: usize) {
+fn search_split<'a, T: SomeTree<MyData>>(tree: &'a mut T, index: usize)
+where
+    for<'b> T::Walker<'b>: ModifiableWalker<MyData>,
+{
     let mut walker = tree.walker();
     // using an empty range so that we'll only end up at a node
     // if we actually need to split that node
@@ -225,7 +228,7 @@ fn solve<T>(m: usize, n: usize, budget: I, obstacles: Vec<Obstacle>) -> usize
 where
     T: SomeTree<MyData>,
     T: std::iter::FromIterator<Segment>,
-    for<'b> &'b mut T: ModifiableTreeRef<MyData>,
+    for<'b> T::Walker<'b>: ModifiableWalker<MyData>,
 {
     let (mut opening_edges, mut closing_edges): (Vec<Edge>, Vec<Edge>) =
         obstacles.iter().map(|x| x.edges()).unzip();
@@ -321,7 +324,7 @@ fn run_from<R: Read, T>(io: R) -> usize
 where
     T: SomeTree<MyData>,
     T: std::iter::FromIterator<Segment>,
-    for<'b> &'b mut T: ModifiableTreeRef<MyData>,
+    for<'b> T::Walker<'b>: ModifiableWalker<MyData>,
 {
     let br = BufReader::new(io);
 
@@ -368,7 +371,7 @@ where
 fn run_on_file<T>(name: &str) -> Result<(), Error>
 where
     T: SomeTree<MyData> + std::iter::FromIterator<Segment>,
-    for<'b> &'b mut T: ModifiableTreeRef<MyData>,
+    for<'b> T::Walker<'b>: ModifiableWalker<MyData>,
 {
     let current_dir = std::path::PathBuf::from_str("../grove/pyramid_base_test_files").unwrap();
     print!("testing {: >8}.in:", name);
@@ -402,7 +405,7 @@ where
 fn check_all_tests<T>() -> Result<(), Error>
 where
     T: SomeTree<MyData> + std::iter::FromIterator<Segment>,
-    for<'b> &'b mut T: ModifiableTreeRef<MyData>,
+    for<'b> T::Walker<'b>: ModifiableWalker<MyData>,
 {
     let current_dir = std::path::PathBuf::from_str("../grove/pyramid_base_test_files").unwrap();
     println!("Testing files from {:?}:", current_dir);
