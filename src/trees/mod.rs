@@ -46,7 +46,7 @@ impl Side {
 /// immediately in this trait.
 /// More advanced use can be achieved by using walkers, which must be implemented.
 pub trait SomeTree<D: Data>:
-    SomeEntry<D> + std::iter::FromIterator<D::Value> + IntoIterator<Item = D::Value> + Default
+    SomeEntry<D> + /* std::iter::FromIterator<D::Value> +*/ IntoIterator<Item = D::Value> + Default
 where
     for<'a> &'a mut Self: SomeTreeRef<D>,
 {

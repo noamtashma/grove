@@ -10,9 +10,10 @@ use super::walker::PersistentWalker;
 
 const NO_VALUE_ERROR: &str = "invariant violated: RecRef can't be empty";
 
-impl<D: Data> SomeTree<D> for PersistentTree<D>
+impl<D: Data, T> SomeTree<D> for PersistentTree<D, T>
 where
     D::Value: Clone,
+    T: Clone,
 {
     fn segment_summary_imm<L>(&self, locator: L) -> D::Summary
     where
@@ -37,7 +38,7 @@ where
         segment_algorithms::act_segment(self, action, locator);
     }
 
-    type IterLocator<'a, L> where D: 'a, L: locators::Locator<D> + 'a = persistent_tree::iterators::IterLocator<'a, D, L>;
+    type IterLocator<'a, L> where D: 'a, L: locators::Locator<D> + 'a, T: 'a = persistent_tree::iterators::IterLocator<'a, D, L, T>;
     fn iter_locator<'a, L: locators::Locator<D> + 'a>(
         &'a mut self,
         locator: L,
@@ -103,12 +104,13 @@ impl<D: Data> std::iter::FromIterator<D::Value> for PersistentTree<D> {
     }
 }
 
-impl<D: Data> IntoIterator for PersistentTree<D>
+impl<D: Data, T> IntoIterator for PersistentTree<D, T>
 where
     D::Value: Clone,
+    T: Clone,
 {
     type Item = D::Value;
-    type IntoIter = iterators::IntoIter<D, std::ops::RangeFull>; // iterators::IntoIter<D, std::ops::RangeFull>;
+    type IntoIter = iterators::IntoIter<D, std::ops::RangeFull, T>; // iterators::IntoIter<D, std::ops::RangeFull>;
     fn into_iter(self) -> Self::IntoIter {
         iterators::IntoIter::new(self, ..)
     }

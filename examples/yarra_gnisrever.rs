@@ -215,8 +215,10 @@ fn search_split<TR: SplittableTreeRef<RevData>>(tree: TR, index: usize) -> TR::T
     walker.split_right().unwrap()
 }
 
-fn yarra<T: ConcatenableTree<RevData>>(n: usize, k: usize) -> I
+fn yarra<T>(n: usize, k: usize) -> I
 where
+    T: ConcatenableTree<RevData>,
+    T: std::iter::FromIterator<Interval>,
     for<'b> &'b mut T: SplittableTreeRef<RevData, T = T>,
 {
     let inter = Interval {

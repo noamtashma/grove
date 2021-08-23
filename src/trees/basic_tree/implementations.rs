@@ -8,7 +8,7 @@ use recursive_reference::RecRef;
 
 const NO_VALUE_ERROR: &str = "invariant violated: RecRef can't be empty";
 
-impl<D: Data> SomeTree<D> for BasicTree<D> {
+impl<D: Data, T> SomeTree<D> for BasicTree<D, T> {
     fn segment_summary_imm<L>(&self, locator: L) -> D::Summary
     where
         L: Locator<D>,
@@ -31,7 +31,7 @@ impl<D: Data> SomeTree<D> for BasicTree<D> {
         segment_algorithms::act_segment(self, action, locator);
     }
 
-    type IterLocator<'a, L> where D: 'a, L: locators::Locator<D> + 'a = basic_tree::iterators::IterLocator<'a, D, L>;
+    type IterLocator<'a, L> where D: 'a, L: locators::Locator<D> + 'a, T: 'a = basic_tree::iterators::IterLocator<'a, D, L, T>;
     
     fn iter_locator<'a, L: locators::Locator<D> + 'a>(
         &'a mut self,
@@ -98,9 +98,9 @@ impl<D: Data> std::iter::FromIterator<D::Value> for BasicTree<D> {
     }
 }
 
-impl<D: Data> IntoIterator for BasicTree<D> {
+impl<D: Data, T> IntoIterator for BasicTree<D, T> {
     type Item = D::Value;
-    type IntoIter = iterators::IntoIter<D, std::ops::RangeFull>;
+    type IntoIter = iterators::IntoIter<D, std::ops::RangeFull, T>;
     fn into_iter(self) -> Self::IntoIter {
         iterators::IntoIter::new(self, ..)
     }
