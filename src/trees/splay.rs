@@ -286,6 +286,13 @@ impl<'a, D: Data> Drop for SplayWalker<'a, D> {
 }
 
 impl<D: Data> SomeTree<D> for SplayTree<D> {
+    type Walker<'a> where D: 'a = SplayWalker<'a, D>;
+    fn walker<'a>(&'a mut self) -> SplayWalker<'a, D> {
+        SplayWalker {
+            walker: self.basic_walker(),
+        }
+    }
+
     /// Note: calling this is inefficient
     /// and panicks if debug assertions are on.
     ///
@@ -352,16 +359,6 @@ derive_SomeEntry! {tree, (),
 }
 
 impl<'a, D: Data> SomeTreeRef<D> for &'a mut SplayTree<D> {
-    type Walker = SplayWalker<'a, D>;
-    fn walker(self: &'a mut SplayTree<D>) -> SplayWalker<'a, D> {
-        SplayWalker {
-            walker: self.basic_walker(),
-        }
-    }
-}
-
-impl<'a, D: Data> ModifiableTreeRef<D> for &'a mut SplayTree<D> {
-    type ModifiableWalker = Self::Walker;
 }
 
 impl<D: Data> std::iter::FromIterator<D::Value> for SplayTree<D> {

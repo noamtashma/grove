@@ -394,7 +394,8 @@ where
     /// the algorithm's custom data.
     pub fn delete_with_alg_data(&mut self) -> Option<(D::Value, T)>
     where
-        PersistentNode<D, T>: Clone,
+        D::Value: Clone,
+        T: Clone,
     {
         let mut node = self.take_subtree().into_node()?;
         if node.right.is_empty() {

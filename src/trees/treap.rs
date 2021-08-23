@@ -27,6 +27,14 @@ pub struct Treap<D: Data> {
 }
 
 impl<D: Data> SomeTree<D> for Treap<D> {
+    type Walker<'a> where D: 'a = TreapWalker<'a, D>;
+
+    fn walker<'a>(&'a mut self) -> Self::Walker<'a> {
+        TreapWalker {
+            walker: self.tree.walker(),
+        }
+    }
+
     fn segment_summary_imm<L>(&self, locator: L) -> D::Summary
     where
         L: locators::Locator<D>,
@@ -105,13 +113,6 @@ impl<D: Data> Default for Treap<D> {
 }
 
 impl<'a, D: Data> SomeTreeRef<D> for &'a mut Treap<D> {
-    type Walker = TreapWalker<'a, D>;
-
-    fn walker(self) -> Self::Walker {
-        TreapWalker {
-            walker: self.tree.walker(),
-        }
-    }
 }
 
 impl<'a, D: Data> ModifiableTreeRef<D> for &'a mut Treap<D> {

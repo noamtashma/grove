@@ -15,6 +15,12 @@ where
     D::Value: Clone,
     T: Clone,
 {
+    type Walker<'a> where Self: 'a = PersistentWalker<'a, D, T>;
+
+    fn walker(&mut self) -> Self::Walker<'_> {
+        PersistentWalker::new(self)
+    }
+
     fn segment_summary_imm<L>(&self, locator: L) -> D::Summary
     where
         L: Locator<D>,
@@ -127,11 +133,6 @@ impl<'a, D: Data, T: Clone> SomeTreeRef<D> for &'a mut PersistentTree<D, T>
 where
     D::Value: Clone,
 {
-    type Walker = PersistentWalker<'a, D, T>;
-
-    fn walker(self) -> Self::Walker {
-        PersistentWalker::new(self)
-    }
 }
 
 impl<'a, D: Data, T: Clone> SomeWalker<D> for PersistentWalker<'a, D, T>

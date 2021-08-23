@@ -132,6 +132,14 @@ impl<D: Data> Default for AVLTree<D> {
 }
 
 impl<D: Data> SomeTree<D> for AVLTree<D> {
+    type Walker<'a> where D: 'a = AVLWalker<'a, D>;
+
+    fn walker<'a>(&'a mut self) -> Self::Walker<'a> {
+        AVLWalker {
+            walker: self.tree.walker(),
+        }
+    }
+
     fn segment_summary_imm<L>(&self, locator: L) -> D::Summary
     where
         L: crate::Locator<D>,
@@ -201,13 +209,6 @@ impl<D: Data> SomeTree<D> for AVLTree<D> {
 }
 
 impl<'a, D: Data> SomeTreeRef<D> for &'a mut AVLTree<D> {
-    type Walker = AVLWalker<'a, D>;
-
-    fn walker(self) -> Self::Walker {
-        AVLWalker {
-            walker: self.tree.walker(),
-        }
-    }
 }
 
 impl<'a, D: Data> ModifiableTreeRef<D> for &'a mut AVLTree<D> {

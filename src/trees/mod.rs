@@ -47,9 +47,27 @@ impl Side {
 /// More advanced use can be achieved by using walkers, which must be implemented.
 pub trait SomeTree<D: Data>:
     SomeEntry<D> + /* std::iter::FromIterator<D::Value> +*/ IntoIterator<Item = D::Value> + Default
-where
-    for<'a> &'a mut Self: SomeTreeRef<D>,
 {
+    /// The walker type associated with this tree.
+    /// for example, if `Self = &'a AVLTreee<D>` then `Self::Walker = AVLWalker<'a>`.
+    /// The walker's lifetime comes from `Self`'s lifetime.
+    type Walker<'a>: SomeWalker<D> where Self: 'a;
+    
+    /// Creates a walker for the given tree.
+    fn walker<'a>(&'a mut self) -> Self::Walker<'a>;
+
+    /// Finds any node that the locator `Accept`s.
+    /// If there isn't any, it finds the empty location where that node would be instead.
+    /// Returns a walker at the wanted position.
+    fn search<'a, L>(&'a mut self, locator: L) -> Self::Walker<'a>
+    where
+        L: locators::Locator<D>,
+    {
+        let mut walker = self.walker();
+        walker.search_subtree(locator);
+        walker
+    }
+
     /// Compute the summary of a subsegment.
     /// Requires `D::Value: Clone`.
     ///
@@ -75,7 +93,7 @@ where
     /// Returns a value representing a specific subsegment of the tree. This gives a nicer
     /// Interface for tree operations: `tree.slice(3..50).act(action)` instead of
     /// `tree.act_segment(3..50, action)`. see [`slice::Slice`].
-    fn slice<L: locators::Locator<D>>(&mut self, locator: L) -> slice::Slice<D, Self, L> {
+    fn slice<'a, L: locators::Locator<D>>(&'a mut self, locator: L) -> slice::Slice<'a, D, Self, L> {
         slice::Slice::new(self, locator)
     }
 
@@ -129,29 +147,11 @@ where
         D::Summary: Eq;
 }
 
+// TODO: this trait is now obsolete. remove.
 /// This is a workaround for not having Generic Associated Types in Rust yet.
 /// Really, the type [`Self::Walker`] should have been defined in [`SomeTree`] and
 /// should have been generic in a lifetime parameter.
 pub trait SomeTreeRef<D: Data> {
-    /// The walker type associated with this tree.
-    /// for example, if `Self = &'a AVLTreee<D>` then `Self::Walker = AVLWalker<'a>`.
-    /// The walker's lifetime comes from `Self`'s lifetime.
-    type Walker: SomeWalker<D>;
-    /// Creates a walker for the given tree.
-    fn walker(self) -> Self::Walker;
-
-    /// Finds any node that the locator `Accept`s.
-    /// If there isn't any, it finds the empty location where that node would be instead.
-    /// Returns a walker at the wanted position.
-    fn search<L>(self, locator: L) -> Self::Walker
-    where
-        L: locators::Locator<D>,
-        Self: Sized,
-    {
-        let mut walker = self.walker();
-        walker.search_subtree(locator);
-        walker
-    }
 }
 
 /// The Walker trait implements walking through a tree.
@@ -355,6 +355,7 @@ pub trait SomeEntry<D: Data> {
         D::Summary: Eq;
 }
 
+// TODO: this trait is now obsolete. remove.
 /// Trait for trees that can be modified, i.e., values can be inserted and deleted.
 ///
 /// This trait is a workaround for current rust type inference limitations.
@@ -362,7 +363,7 @@ pub trait SomeEntry<D: Data> {
 /// Intuitively it should've been enough to require
 /// `T: SomeTree<D>, for<'a> &'a mut T: SomeTreeRef<D>, for<'a> <&'a mut T as SomeTreeRef<D>>::Walker: ModifiableWalker`.
 /// However, that doesn't work. Instead, use `for<'a> &'a mut T: ModifiableTreeRef<D>`.
-pub trait ModifiableTreeRef<D: Data>: SomeTreeRef<D, Walker = Self::ModifiableWalker> {
+pub trait ModifiableTreeRef<D: Data>: SomeTreeRef<D> {
     /// Inner type that ideally shouldn't be used - just use `Self::Walker`.
     type ModifiableWalker: ModifiableWalker<D>;
 }
@@ -384,8 +385,6 @@ pub trait ModifiableWalker<D: Data>: SomeWalker<D> {
 /// I wanted this to be the same trait family as SplittableWalker, but the current rustc type solver didn't let me.
 /// It's enough to only implement any one of the three methods - they're all implemented in terms of each other.
 pub trait ConcatenableTree<D: Data>: SomeTree<D>
-where
-    for<'a> &'a mut Self: SomeTreeRef<D>,
 {
     /// Concatenates the two inputs into one tree.
     fn concatenate(mut left: Self, right: Self) -> Self {
@@ -406,10 +405,12 @@ where
         *self = Self::concatenate(other, right);
     }
 }
+
+// TODO: this trait is now obsolete. remove.
 /// Trait for trees that can be split and concatenated.
 /// Require this kind of tree if you want to use reversal actions on segments of your tree.
 pub trait SplittableTreeRef<D: Data>:
-    SomeTreeRef<D, Walker = Self::SplittableWalker> + Sized
+    SomeTreeRef<D> + Sized
 {
     /// Inner type that ideally shouldn't be used - just use the original tree type.
     type T;

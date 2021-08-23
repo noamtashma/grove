@@ -190,7 +190,10 @@ impl Data for RevData {
 }
 
 // splits a segment inside the tree
-fn search_split<TR: SplittableTreeRef<RevData>>(tree: TR, index: usize) -> TR::T {
+fn search_split<'a, T: SomeTree<RevData>>(tree: &'a mut T, index: usize) -> T
+where
+    for<'b> T::Walker<'b>: SplittableWalker<RevData, T=T>,
+{
     let mut walker = tree.walker();
     // using an empty range so that we'll only end up at a node
     // if we actually need to split that node
@@ -219,8 +222,7 @@ fn yarra<T>(n: usize, k: usize) -> I
 where
     T: ConcatenableTree<RevData>,
     T: std::iter::FromIterator<Interval>,
-    for<'b> &'b mut T: SplittableTreeRef<RevData, T = T>,
-    T: std::iter::FromIterator<Interval>,
+    for<'b> T::Walker<'b>: SplittableWalker<RevData, T = T>,
 {
     let inter = Interval {
         start: 0,
