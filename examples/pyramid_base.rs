@@ -221,8 +221,10 @@ fn search_split<TR: ModifiableTreeRef<MyData>>(tree: TR, index: usize) {
 }
 
 /// solves the pyramid_base problem
-fn solve<T: SomeTree<MyData>>(m: usize, n: usize, budget: I, obstacles: Vec<Obstacle>) -> usize
+fn solve<T>(m: usize, n: usize, budget: I, obstacles: Vec<Obstacle>) -> usize
 where
+    T: SomeTree<MyData>,
+    T: std::iter::FromIterator<Segment>,
     for<'b> &'b mut T: ModifiableTreeRef<MyData>,
     T: std::iter::FromIterator<Segment>,
 {
@@ -316,8 +318,10 @@ where
 
 ///////////////////////////////////////////// input handling ////////////////////////////////////////////
 // runs the solution on a given input
-fn run_from<R: Read, T: SomeTree<MyData>>(io: R) -> usize
+fn run_from<R: Read, T>(io: R) -> usize
 where
+    T: SomeTree<MyData>,
+    T: std::iter::FromIterator<Segment>,
     for<'b> &'b mut T: ModifiableTreeRef<MyData>,
     T: std::iter::FromIterator<Segment>,
 {
@@ -363,8 +367,9 @@ where
 
 // run the solution of a specific file,
 // and print some metadata
-fn run_on_file<T: SomeTree<MyData>>(name: &str) -> Result<(), Error>
+fn run_on_file<T>(name: &str) -> Result<(), Error>
 where
+    T: SomeTree<MyData> + std::iter::FromIterator<Segment>,
     for<'b> &'b mut T: ModifiableTreeRef<MyData>,
     T: std::iter::FromIterator<Segment>,
 {
@@ -397,8 +402,9 @@ where
 
 // run the tests in the test directory.
 // you need to manually put the tests in the folder.
-fn check_all_tests<T: SomeTree<MyData>>() -> Result<(), Error>
+fn check_all_tests<T>() -> Result<(), Error>
 where
+    T: SomeTree<MyData> + std::iter::FromIterator<Segment>,
     for<'b> &'b mut T: ModifiableTreeRef<MyData>,
     T: std::iter::FromIterator<Segment>,
 {

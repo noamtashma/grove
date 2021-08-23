@@ -13,6 +13,7 @@ const NO_VALUE_ERROR: &str = "invariant violated: RecRef can't be empty";
 impl<D: Data, T: Clone> SomeTree<D> for PersistentTree<D, T>
 where
     D::Value: Clone,
+    T: Clone,
 {
     fn segment_summary_imm<L>(&self, locator: L) -> D::Summary
     where
@@ -38,6 +39,7 @@ where
     }
 
     type IterLocator<'a, L> where D: 'a, T: 'a, L: locators::Locator<D> + 'a = persistent_tree::iterators::IterLocator<'a, D, L, T>;
+    
     fn iter_locator<'a, L: locators::Locator<D> + 'a>(
         &'a mut self,
         locator: L,
@@ -112,6 +114,7 @@ where
 impl<D: Data, T: Clone> IntoIterator for PersistentTree<D, T>
 where
     D::Value: Clone,
+    T: Clone,
 {
     type Item = D::Value;
     type IntoIter = iterators::IntoIter<D, std::ops::RangeFull, T>; // iterators::IntoIter<D, std::ops::RangeFull>;
