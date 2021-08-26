@@ -224,6 +224,7 @@ fn search_split<TR: ModifiableTreeRef<MyData>>(tree: TR, index: usize) {
 fn solve<T: SomeTree<MyData>>(m: usize, n: usize, budget: I, obstacles: Vec<Obstacle>) -> usize
 where
     for<'b> &'b mut T: ModifiableTreeRef<MyData>,
+    T: std::iter::FromIterator<Segment>,
 {
     let (mut opening_edges, mut closing_edges): (Vec<Edge>, Vec<Edge>) =
         obstacles.iter().map(|x| x.edges()).unzip();
@@ -318,6 +319,7 @@ where
 fn run_from<R: Read, T: SomeTree<MyData>>(io: R) -> usize
 where
     for<'b> &'b mut T: ModifiableTreeRef<MyData>,
+    T: std::iter::FromIterator<Segment>,
 {
     let br = BufReader::new(io);
 
@@ -364,6 +366,7 @@ where
 fn run_on_file<T: SomeTree<MyData>>(name: &str) -> Result<(), Error>
 where
     for<'b> &'b mut T: ModifiableTreeRef<MyData>,
+    T: std::iter::FromIterator<Segment>,
 {
     let current_dir = std::path::PathBuf::from_str("../grove/pyramid_base_test_files").unwrap();
     print!("testing {: >8}.in:", name);
@@ -397,6 +400,7 @@ where
 fn check_all_tests<T: SomeTree<MyData>>() -> Result<(), Error>
 where
     for<'b> &'b mut T: ModifiableTreeRef<MyData>,
+    T: std::iter::FromIterator<Segment>,
 {
     let current_dir = std::path::PathBuf::from_str("../grove/pyramid_base_test_files").unwrap();
     println!("Testing files from {:?}:", current_dir);

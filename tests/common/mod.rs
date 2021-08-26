@@ -153,9 +153,9 @@ where
     D: Data<Value = i32, Action = RevAffineAction>,
     D: Clone + std::fmt::Debug + Eq, // useless bounds because the auto-generated clone instance for RoundAction requires it
     D::Summary: std::fmt::Debug + Eq + SizedSummary,
-    T1: SomeTree<D>,
+    T1: SomeTree<D> + std::iter::FromIterator<D::Value>,
     for<'a> &'a mut T1: ModifiableTreeRef<D>,
-    T2: SomeTree<D>,
+    T2: SomeTree<D> + std::iter::FromIterator<D::Value>,
     for<'a> &'a mut T2: ModifiableTreeRef<D>,
 {
     let mut rng = rand::thread_rng();
@@ -197,7 +197,7 @@ where
 
 pub fn check_delete<T>()
 where
-    T: SomeTree<StdNum>,
+    T: SomeTree<StdNum> + std::iter::FromIterator<i32>,
     for<'a> &'a mut T: ModifiableTreeRef<StdNum>,
 {
     let arr: Vec<_> = (0..500).collect();
@@ -222,7 +222,7 @@ where
 
 pub fn check_insert<T>(should_walker_stay_at_inserted_value: bool)
 where
-    T: SomeTree<StdNum>,
+    T: SomeTree<StdNum> + std::iter::FromIterator<i32>,
     for<'a> &'a mut T: ModifiableTreeRef<StdNum>,
 {
     let arr: Vec<_> = (0..500).collect();

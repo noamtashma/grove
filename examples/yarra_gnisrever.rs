@@ -218,6 +218,7 @@ fn search_split<TR: SplittableTreeRef<RevData>>(tree: TR, index: usize) -> TR::T
 fn yarra<T: ConcatenableTree<RevData>>(n: usize, k: usize) -> I
 where
     for<'b> &'b mut T: SplittableTreeRef<RevData, T = T>,
+    T: std::iter::FromIterator<Interval>,
 {
     let inter = Interval {
         start: 0,
