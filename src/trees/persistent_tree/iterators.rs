@@ -1,7 +1,10 @@
 use super::*;
 use locators::LocResult;
 
-enum Fragment<'a, D: Data, T = ()> {
+enum Fragment<'a, D: Data, T: Clone = ()>
+where
+    D::Value: Clone,
+{
     Value(&'a mut D::Value),
     Node(&'a mut PersistentNode<D, T>),
 }
@@ -34,7 +37,10 @@ enum Fragment<'a, D: Data, T = ()> {
 ///
 /// Therefore, this type isn't exposed - it can't be used productively.
 /// Instead, this type is wrapped inside the `IterLocator` type, which is exported.
-struct IterLocatorMut<'a, D: Data, L, T = ()> {
+struct IterLocatorMut<'a, D: Data, L, T:Clone = ()>
+where
+    D::Value: Clone,
+{
     left: D::Summary,
     // a stack of the fragments, and for every fragment,
     // the summary of everything to its right
@@ -42,9 +48,9 @@ struct IterLocatorMut<'a, D: Data, L, T = ()> {
     locator: L,
 }
 
-impl<'a, D: Data, L, T> IterLocatorMut<'a, D, L, T>
+impl<'a, D: Data, L, T: Clone> IterLocatorMut<'a, D, L, T>
 where
-    PersistentNode<D, T>: Clone,
+    D::Value: Clone,
 {
     pub fn new(tree: &'a mut PersistentTree<D, T>, locator: L) -> Self {
         let mut res = IterLocatorMut {
@@ -65,9 +71,9 @@ where
     }
 }
 
-impl<'a, D: Data, L: Locator<D>, T> Iterator for IterLocatorMut<'a, D, L, T>
+impl<'a, D: Data, L: Locator<D>, T: Clone> Iterator for IterLocatorMut<'a, D, L, T>
 where
-    PersistentNode<D, T>: Clone,
+    D::Value: Clone,
 {
     type Item = &'a mut D::Value;
 
@@ -145,15 +151,18 @@ where
 ///
 /// If you use interior mutability to update the values inside the tree, and these changes affect the summaries,
 /// the tree may behave incorrectly.
-pub struct IterLocator<'a, D: Data, L, T = ()> {
+pub struct IterLocator<'a, D: Data, L, T: Clone = ()>
+where
+    D::Value: Clone,
+{
     // TODO: make a new implementation for this iterator
     // so PersistentNode<D, T>: Clone is not needed
     mut_iter: IterLocatorMut<'a, D, L, T>,
 }
 
-impl<'a, D: Data, L: Locator<D>, T> IterLocator<'a, D, L, T>
+impl<'a, D: Data, L: Locator<D>, T: Clone> IterLocator<'a, D, L, T>
 where
-    PersistentNode<D, T>: Clone,
+    D::Value: Clone,
 {
     /// Creates a new immutable iterator for a segment of the given tree.
     pub fn new(tree: &'a mut PersistentTree<D, T>, locator: L) -> Self {
@@ -163,9 +172,9 @@ where
     }
 }
 
-impl<'a, D: Data, L: Locator<D>, T> Iterator for IterLocator<'a, D, L, T>
+impl<'a, D: Data, L: Locator<D>, T: Clone> Iterator for IterLocator<'a, D, L, T>
 where
-    PersistentNode<D, T>: Clone,
+    D::Value: Clone,
 {
     type Item = &'a D::Value;
 
@@ -184,12 +193,18 @@ where
 // to not clone the values.
 
 /// Owning fragment
-enum OFragment<D: Data, T = ()> {
+enum OFragment<D: Data, T: Clone = ()>
+where
+    D::Value: Clone,
+{
     Value(D::Value),
     Node(Rc<PersistentNode<D, T>>),
 }
 /// Owning iterator iterating over a segment of the tree.
-pub struct IntoIter<D: Data, L, T = ()> {
+pub struct IntoIter<D: Data, L, T: Clone = ()>
+where
+    D::Value: Clone,
+{
     left: D::Summary,
     // a stack of the fragments, and for every fragment,
     // the summary of everything to its right
@@ -197,7 +212,10 @@ pub struct IntoIter<D: Data, L, T = ()> {
     locator: L,
 }
 
-impl<D: Data, L, T> IntoIter<D, L, T> {
+impl<D: Data, L, T: Clone> IntoIter<D, L, T>
+where
+    D::Value: Clone,
+{
     /// Creates a new owning iterator for a segment of the given tree.
     pub fn new(tree: PersistentTree<D, T>, locator: L) -> Self {
         let mut res = IntoIter {

@@ -3,7 +3,10 @@ use crate::*;
 
 /// A BasicWalker version that is immutable, and can only go down.
 #[derive(Copy)]
-pub struct ImmDownBasicWalker<'a, D: Data, T = ()> {
+pub struct ImmDownBasicWalker<'a, D: Data, T: Clone = ()>
+where
+    D::Value: Clone,
+{
     tree: &'a PersistentTree<D, T>,
 
     // to be applied to everything in `tree`.
@@ -20,13 +23,19 @@ pub struct ImmDownBasicWalker<'a, D: Data, T = ()> {
 
 /// This is needed because the automatic implementation also requires
 /// `D: Clone` and `T: Clone`.
-impl<'a, D: Data, T> Clone for ImmDownBasicWalker<'a, D, T> {
+impl<'a, D: Data, T: Clone> Clone for ImmDownBasicWalker<'a, D, T>
+where
+    D::Value: Clone,
+{
     fn clone(&self) -> Self {
         ImmDownBasicWalker { ..*self }
     }
 }
 
-impl<'a, D: Data, T> ImmDownBasicWalker<'a, D, T> {
+impl<'a, D: Data, T: Clone> ImmDownBasicWalker<'a, D, T>
+where
+    D::Value: Clone,
+{
     pub fn new(tree: &'a PersistentTree<D, T>) -> Self {
         ImmDownBasicWalker {
             tree,

@@ -62,7 +62,10 @@ impl<D: Data> Frame<D> {
 /// go up and down the tree. Without the `RecRef`, the walker would have to duplicate its whole path
 /// even when the current tree isn't sharing its nodes.
 #[derive(destructure)]
-pub struct PersistentWalker<'a, D: Data, T = ()> {
+pub struct PersistentWalker<'a, D: Data, T: Clone = ()>
+where
+    D::Value: Clone,
+{
     /// The telescope, holding references to all the subtrees from the root to the
     /// current position.
     pub(super) rec_ref: RecRef<'a, PersistentTree<D, T>>,
@@ -79,7 +82,10 @@ pub struct PersistentWalker<'a, D: Data, T = ()> {
     pub(super) is_left: Vec<Side>,
 }
 
-impl<'a, D: Data, T> PersistentWalker<'a, D, T> {
+impl<'a, D: Data, T: Clone> PersistentWalker<'a, D, T>
+where
+    D::Value: Clone,
+{
     /// Creates a new walker that walks on the given tree.
     pub fn new(tree: &'a mut PersistentTree<D, T>) -> PersistentWalker<'a, D, T>
     where
@@ -435,7 +441,10 @@ impl<'a, D: Data, T> PersistentWalker<'a, D, T> {
 
 /// This implementation exists in order to rebuild the nodes
 /// when the walker gets dropped
-impl<'a, D: Data, T> Drop for PersistentWalker<'a, D, T> {
+impl<'a, D: Data, T: Clone> Drop for PersistentWalker<'a, D, T>
+where
+    D::Value: Clone,
+{
     fn drop(&mut self) {
         self.go_to_root();
     }

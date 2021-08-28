@@ -50,7 +50,10 @@ pub use walker::*;
 /// A basic tree. might be empty.
 /// The `T` parameter is for algorithm-specific bookeeping data.
 /// For example, red-black trees store a color in each node.
-pub enum PersistentTree<D: ?Sized + Data, T = ()> {
+pub enum PersistentTree<D: ?Sized + Data, T: Clone = ()>
+where
+    D::Value: Clone,
+{
     /// An empty tree
     Empty,
     /// A non empty tree, with a root node
@@ -58,7 +61,10 @@ pub enum PersistentTree<D: ?Sized + Data, T = ()> {
 }
 use PersistentTree::*;
 
-impl<D: Data, T> PersistentTree<D, T> {
+impl<D: Data, T: Clone> PersistentTree<D, T>
+where
+    D::Value: Clone,
+{
     /// Useful for the algorithms on persistent trees that need to
     /// gain ownership of parts of the tree.
     pub fn take(&mut self) -> PersistentTree<D, T> {
@@ -159,7 +165,10 @@ impl<D: Data, T> PersistentTree<D, T> {
 /// Cloning persistent trees take `O(1)` time.
 /// From this point forward they will behave as separate trees to any user,
 /// And will try to share as much data as possible between them.
-impl<D: ?Sized + Data, T> Clone for PersistentTree<D, T> {
+impl<D: ?Sized + Data, T: Clone> Clone for PersistentTree<D, T>
+where
+    D::Value: Clone,
+{
     fn clone(&self) -> Self {
         match self {
             Empty => Empty,
@@ -168,9 +177,9 @@ impl<D: ?Sized + Data, T> Clone for PersistentTree<D, T> {
     }
 }
 
-impl<D: Data, T> BasicTreeTrait<D, T> for PersistentTree<D, T>
+impl<D: Data, T: Clone> BasicTreeTrait<D, T> for PersistentTree<D, T>
 where
-    PersistentNode<D, T>: Clone,
+    D::Value: Clone,
 {
     type Node = PersistentNode<D, T>;
 
@@ -257,7 +266,10 @@ where
 /// A persistent node. can be viewed as a non-empty persistent tree: it always has at least one value.
 /// The `T` parameter is for algorithm-specific bookeeping data.
 /// For example, red-black trees store a color in each node.
-pub struct PersistentNode<D: ?Sized + Data, T = ()> {
+pub struct PersistentNode<D: ?Sized + Data, T: Clone = ()>
+where
+    D::Value: Clone,
+{
     action: D::Action,
     subtree_summary: D::Summary,
     pub(crate) node_value: D::Value,
@@ -285,7 +297,10 @@ where
     }
 }
 
-impl<D: ?Sized + Data> PersistentNode<D> {
+impl<D: ?Sized + Data> PersistentNode<D>
+where
+    D::Value: Clone,
+{
     /// Creates a node with a single value.
     pub fn new(value: D::Value) -> PersistentNode<D> {
         let subtree_summary = value.to_summary();
@@ -302,7 +317,10 @@ impl<D: ?Sized + Data> PersistentNode<D> {
 
 
 
-impl<D: Data, T> PersistentNode<D, T> {
+impl<D: Data, T: Clone> PersistentNode<D, T>
+where
+    D::Value: Clone,
+{
     // methods that are in comments here are duplicate methods that already exist in traits
     // but need a version that works without the `PersistentNode<D, T>: Clone` constrait.
 
@@ -384,9 +402,9 @@ impl<D: Data, T> PersistentNode<D, T> {
     // }
 }
 
-impl<D: Data, T> BasicNodeTrait<D, T> for PersistentNode<D, T>
+impl<D: Data, T: Clone> BasicNodeTrait<D, T> for PersistentNode<D, T>
 where
-    PersistentNode<D, T>: Clone,
+    D::Value: Clone,
 {
     /// Creates a node with a single value, and the algorithm specific data.
     fn new_alg(value: D::Value, alg_data: T) -> PersistentNode<D, T> {
