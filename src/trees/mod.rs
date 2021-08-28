@@ -18,6 +18,7 @@ mod basic_tree_trait;
 pub use basic_tree_trait::*;
 pub mod slice;
 pub mod splay;
+pub mod splay_new;
 pub mod treap;
 
 use crate::data::*;
