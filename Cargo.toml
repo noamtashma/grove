@@ -16,14 +16,10 @@ derive_destructure = "1.0.0"
 void = "1.0"
 rand = "0.8"
 recursive_reference = {version = "0.*", path = "../recursive_reference" }
-futures = {version = "*", optional = true}
-async-recursion = {version = "0.3", optional = true}
 
 [dev-dependencies]
 itertools = ">= 0.8"
 text_io = "0.1"
-tokio = "1.8"
-tokio-test = "0.4"
 
 
 [lib]
@@ -31,6 +27,4 @@ name = "grove"
 path = "src/lib.rs"
 
 [features]
-async_union = ["futures", "async-recursion"]
 bench = []
-default = ["async_union"]
