@@ -133,6 +133,7 @@ Notes: In order to run pyramid_base, you will need to download the pyramid base 
 [`data`]: https://docs.rs/grove/*/grove/data/index.html
 
 [`trees`]: https://docs.rs/grove/*/grove/trees/index.html
+[`example_data`]: https://docs.rs/grove/*/grove/data/example_data/index.html
 [`example_data::Unit`]: https://docs.rs/grove/*/grove/data/example_data/struct.Unit.html
 [`Slice`]: https://docs.rs/grove/*/grove/trees/slice/struct.Slice.html
 [`locators`]: https://docs.rs/grove/*/grove/locators/index.html
