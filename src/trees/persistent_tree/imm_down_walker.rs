@@ -22,7 +22,7 @@ where
 }
 
 /// This is needed because the automatic implementation also requires
-/// `D: Clone` and `T: Clone`.
+/// `D: Clone`.
 impl<'a, D: Data, T: Clone> Clone for ImmDownBasicWalker<'a, D, T>
 where
     D::Value: Clone,
@@ -36,6 +36,7 @@ impl<'a, D: Data, T: Clone> ImmDownBasicWalker<'a, D, T>
 where
     D::Value: Clone,
 {
+    /// Creates a new persistent tree
     pub fn new(tree: &'a PersistentTree<D, T>) -> Self {
         ImmDownBasicWalker {
             tree,
@@ -122,6 +123,7 @@ where
         )
     }
 
+    /// Returns the summary of everything to the left of the current position
     pub fn left_summary(&self) -> D::Summary {
         if let Some(node) = self.tree.node() {
             let left = if self.current_action.to_reverse() {
@@ -135,6 +137,7 @@ where
         }
     }
 
+    /// Returns the summary of everything to the right of the current position
     pub fn right_summary(&self) -> D::Summary {
         if let Some(node) = self.tree.node() {
             let right = if self.current_action.to_reverse() {
@@ -148,6 +151,7 @@ where
         }
     }
 
+    /// Query the locator about the current position
     pub fn query_locator<L: Locator<D>>(&self, locator: &L) -> Option<locators::LocResult>
     where
         D::Value: Clone,

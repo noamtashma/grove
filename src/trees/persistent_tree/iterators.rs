@@ -155,8 +155,6 @@ pub struct IterLocator<'a, D: Data, L, T: Clone = ()>
 where
     D::Value: Clone,
 {
-    // TODO: make a new implementation for this iterator
-    // so PersistentNode<D, T>: Clone is not needed
     mut_iter: IterLocatorMut<'a, D, L, T>,
 }
 

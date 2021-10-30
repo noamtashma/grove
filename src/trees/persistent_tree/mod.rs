@@ -1,6 +1,3 @@
-// TODO: finalize docs and remove
-#![allow(missing_docs)]
-
 //! The persistent tree module.
 //! This module implements persistent unbalanced trees.
 //!
@@ -86,16 +83,16 @@ where
         Root(rc)
     }
 
-    /// Remakes the summary that is stored in this node, based on its sons.
-    /// This is necessary when the sons might have changed.
-    /// For example, after inserting a new node, all of the nodes from it to the root
-    /// must be rebuilt, in order for the summaries accumulated over the whole
-    /// subtree to be accurate.
-    ///
     /// Rebuild a node only if this `Rc` holds unique ownership of this node,
     /// i.e, if there isn't any other `Rc` pointing to it.
     /// Otherwise returns `None`.
     /// `rebuild_unique` on an empty tree returns `Some(())`.
+    /// 
+    /// Rebuilding means remaking the summary that is stored in this node, based on its sons.
+    /// This is necessary when the sons might have changed.
+    /// For example, after inserting a new node, all of the nodes from it to the root
+    /// must be rebuilt, in order for the summaries accumulated over the whole
+    /// subtree to be accurate.
     fn rebuild_unique(&mut self) -> Option<()> {
         if let Root(node) = self {
             Rc::get_mut(node)?.rebuild();
@@ -103,7 +100,7 @@ where
         Some(())
     }
     
-    /// Returns The inner node with its box. This is exposed in order
+    /// Returns The inner node with its `Rc`. This is exposed in order
     /// to allow easier coding while preventing from moving values of `PersistentNode`,
     /// because `PersistentNode` is bigger than a single pointer.
     pub fn node_rc(&mut self) -> Option<&mut Rc<PersistentNode<D, T>>> {
@@ -113,7 +110,7 @@ where
         }
     }
 
-    /// Returns The inner node with its box. This is exposed in order
+    /// Returns The inner node with its `Rc`. This is exposed in order
     /// to allow easier coding while preventing from moving values of `PersistentNode`,
     /// because `PersistentNode` is bigger than a single pointer.
     pub fn into_node_rc(self) -> Option<Rc<PersistentNode<D, T>>> {
@@ -122,37 +119,13 @@ where
             Root(node) => Some(node),
         }
     }
-
-    /// Returns The inner node.
-    /// Copy of trait method that doesn't require `PersistentNode<D, T>: Clone`.
-    pub fn node(&self) -> Option<&PersistentNode<D, T>> {
-        match self {
-            Empty => None,
-            Root(node) => Some(node),
-        }
-    }
-
-    /// Constructs a new non-empty tree from a node.
-    /// Copy of trait method that doesn't require `PersistentNode<D, T>: Clone`.
-    pub fn from_node(node: PersistentNode<D, T>) -> Self {
-        Root(Rc::new(node))
-    }
-
-    /// Returns the action that is currently stored at the root.
-    /// This action is to be applied to all of the tree's values.
-    /// Returns `default()` if the tree is empty, and the node's action otherwise.
-    /// Copy of trait method that doesn't require `PersistentNode<D, T>: Clone`.
-    pub fn action(&self) -> D::Action {
-        match self.node() {
-            Some(node) => node.action,
-            None => Default::default(),
-        }
-    }
 }
 
 /// Cloning persistent trees take `O(1)` time.
 /// From this point forward they will behave as separate trees to any user,
 /// And will try to share as much data as possible between them.
+/// 
+/// This `impl` is needed because the auto impl has a `D: Clone` bound.
 impl<D: ?Sized + Data, T: Clone> Clone for PersistentTree<D, T>
 where
     D::Value: Clone,
@@ -309,9 +282,6 @@ impl<D: Data, T: Clone> PersistentNode<D, T>
 where
     D::Value: Clone,
 {
-    // methods that are in comments here are duplicate methods that already exist in traits
-    // but need a version that works without the `PersistentNode<D, T>: Clone` constrait.
-
     /// Creates a node with a single value, and the algorithm specific data.
     pub fn new_alg(value: D::Value, alg_data: T) -> PersistentNode<D, T> {
         let subtree_summary = value.to_summary();
@@ -324,70 +294,6 @@ where
             alg_data,
         }
     }
-
-    // /// Returns the algorithm-specific data
-    // pub fn alg_data(&self) -> &T {
-    //     &self.alg_data
-    // }
-
-    // pub fn action(&self) -> &D::Action {
-    //     &self.action
-    // }
-
-    /// Returns the summary of all values in this node's subtree.
-    /// Same as [`SomeEntry::subtree_summary`].
-    pub fn subtree_summary(&self) -> D::Summary {
-        self.action.act(self.subtree_summary)
-    }
-
-    // /// Returns a summary for the value in this node specifically,
-    // /// and not the subtree.
-    // pub fn node_summary(&self) -> D::Summary {
-    //     let summary = self.node_value.to_summary();
-    //     self.action.act(summary)
-    // }
-
-    // /// Returns the value stored in this node specifically.
-    // /// Assumes that the node has been accessed. Panics otherwise.
-    // pub fn node_value_clean(&self) -> &D::Value {
-    //     assert!(self.action.is_identity());
-    //     &self.node_value
-    // }
-
-    /// Remakes the data that is stored in this node, based on its sons.
-    /// This is necessary when the data in the sons might have changed.
-    /// For example, after inserting a new node, all of the nodes from it to the root
-    /// must be rebuilt, in order for the segment values accumulated over the whole
-    /// subtree to be accurate.
-    ///
-    /// Copy of trait method that doesn't require `PersistentNode<D, T>: Clone`.
-    pub fn rebuild(&mut self) {
-        assert!(self.action.is_identity());
-        let temp = self.node_value.to_summary();
-        self.subtree_summary = self.left.subtree_summary() + temp + self.right.subtree_summary();
-    }
-
-    // // TODO: replace `.iter_locator(..)` with `.iter()` when it works.
-    // /// This function applies the given action to its whole subtree.
-    // /// Same as [`SomeEntry::act_subtree`], but for [`PersistentNode<D>`].
-    // ///
-    // /// This function leaves the [`self.action`] field "dirty" - after calling
-    // /// this you might need to call `access`, to push the action to this node's sons.
-    // ///```
-    // /// use grove::{*, persistent_tree::*};
-    // /// use grove::example_data::{StdNum, RevAffineAction};
-    // ///
-    // /// let mut tree: PersistentTree<StdNum> = (1..=8).collect();
-    // /// let node: &mut PersistentNode<StdNum> = tree.node_mut().unwrap();
-    // /// node.act(RevAffineAction {to_reverse: false, mul: -1, add: 5});
-    // /// # tree.assert_correctness();
-    // ///
-    // /// assert_eq!(tree.iter_locator(..).cloned().collect::<Vec<_>>(), (-3..=4).rev().collect::<Vec<_>>());
-    // /// # tree.assert_correctness();
-    // ///```
-    // pub fn act(&mut self, action: D::Action) {
-    //     self.action = action + self.action;
-    // }
 }
 
 impl<D: Data, T: Clone> BasicNodeTrait<D, T> for PersistentNode<D, T>
@@ -521,8 +427,6 @@ where
     }
 
     #[cfg(debug_assertions)]
-    /// TODO: Currently broken because `BasicNode` isn't `PersistentNode`.
-    ///
     /// Used for debugging. Prints a representation of the tree, like so:
     /// `< < * * > * >`
     /// Each pair of triangle brackets is a node, and `*` denotes empty trees.

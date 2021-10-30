@@ -26,8 +26,7 @@ where
         L: Locator<D>,
         D::Value: Clone,
     {
-        todo!();
-        //segment_algorithms::segment_summary_imm(self, locator)
+        segment_algorithms::segment_summary_imm_persistent(self, locator)
     }
 
     fn segment_summary<L>(&mut self, locator: L) -> D::Summary
