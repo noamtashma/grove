@@ -14,8 +14,7 @@ use super::*;
 /// The trait is accompanied by the [`BasicNodeTrait`] which applies to the nodes of the tree.
 /// It is also accompanied by an implementation of `SomeTreeRef<D>` which provides a walker
 /// for the tree.
-pub trait BasicTreeTrait<D: Data, T>: SomeTree<D> + Default where
-    for<'a> &'a mut Self: SomeTreeRef<D>,
+pub trait BasicTreeTrait<D: Data, T>: SomeTree<D> + Default
 {
     /// The type of a node.
     ///

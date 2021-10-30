@@ -129,12 +129,6 @@ where
     }
 }
 
-impl<'a, D: Data, T: Clone> SomeTreeRef<D> for &'a mut PersistentTree<D, T>
-where
-    D::Value: Clone,
-{
-}
-
 impl<'a, D: Data, T: Clone> SomeWalker<D> for PersistentWalker<'a, D, T>
 where
     D::Value: Clone,
@@ -352,13 +346,6 @@ where
     {
         self.inner().assert_correctness_locally();
     }
-}
-
-impl<'a, D: Data> ModifiableTreeRef<D> for &'a mut PersistentTree<D>
-where
-    D::Value: Clone,
-{
-    type ModifiableWalker = PersistentWalker<'a, D>;
 }
 
 impl<'a, D: Data> ModifiableWalker<D> for PersistentWalker<'a, D>

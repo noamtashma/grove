@@ -112,13 +112,6 @@ impl<D: Data> Default for Treap<D> {
     }
 }
 
-impl<'a, D: Data> SomeTreeRef<D> for &'a mut Treap<D> {
-}
-
-impl<'a, D: Data> ModifiableTreeRef<D> for &'a mut Treap<D> {
-    type ModifiableWalker = TreapWalker<'a, D>;
-}
-
 derive_SomeEntry! {tree, T,
     impl<D: Data> SomeEntry<D> for Treap<D> {
         fn assert_correctness_locally(&self)
@@ -591,11 +584,6 @@ impl<D: Data> ConcatenableTree<D> for Treap<D> {
         // the walker is responsible for going up the tree
         // and rebuilding all the nodes
     }
-}
-
-impl<'a, D: Data> SplittableTreeRef<D> for &'a mut Treap<D> {
-    type T = Treap<D>;
-    type SplittableWalker = TreapWalker<'a, D>;
 }
 
 impl<'a, D: Data> SplittableWalker<D> for TreapWalker<'a, D> {

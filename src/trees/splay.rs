@@ -358,9 +358,6 @@ derive_SomeEntry! {tree, (),
     }
 }
 
-impl<'a, D: Data> SomeTreeRef<D> for &'a mut SplayTree<D> {
-}
-
 impl<D: Data> std::iter::FromIterator<D::Value> for SplayTree<D> {
     fn from_iter<T: IntoIterator<Item = D::Value>>(iter: T) -> Self {
         SplayTree {
@@ -550,12 +547,6 @@ impl<D: Data> ConcatenableTree<D> for SplayTree<D> {
         node.right = other.into_inner();
         node.rebuild();
     }
-}
-
-impl<'a, D: Data> SplittableTreeRef<D> for &'a mut SplayTree<D> {
-    type T = SplayTree<D>;
-
-    type SplittableWalker = SplayWalker<'a, D>;
 }
 
 impl<'a, D: Data> SplittableWalker<D> for SplayWalker<'a, D> {

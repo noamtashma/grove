@@ -100,8 +100,6 @@ pub trait SomeTree<D: Data>:
     /// The return type of [`SomeTree::IterLocator`].
     type IterLocator<'a, L: locators::Locator<D> + 'a>: Iterator<Item = &'a D::Value> + 'a
         where Self: 'a, D::Value: 'a;
-    // /// This is here just so that the signature for iter_locator can be written out. Don't use this.
-    // type TreeData;
 
     /// Iterating on values.
     /// This iterator assumes you won't change the values using interior mutability. If you change the values,
@@ -145,13 +143,6 @@ pub trait SomeTree<D: Data>:
     fn assert_correctness(&self)
     where
         D::Summary: Eq;
-}
-
-// TODO: this trait is now obsolete. remove.
-/// This is a workaround for not having Generic Associated Types in Rust yet.
-/// Really, the type [`Self::Walker`] should have been defined in [`SomeTree`] and
-/// should have been generic in a lifetime parameter.
-pub trait SomeTreeRef<D: Data> {
 }
 
 /// The Walker trait implements walking through a tree.
@@ -355,19 +346,6 @@ pub trait SomeEntry<D: Data> {
         D::Summary: Eq;
 }
 
-// TODO: this trait is now obsolete. remove.
-/// Trait for trees that can be modified, i.e., values can be inserted and deleted.
-///
-/// This trait is a workaround for current rust type inference limitations.
-/// It allows to write generic code for a tree type that has a modifiable walker.
-/// Intuitively it should've been enough to require
-/// `T: SomeTree<D>, for<'a> &'a mut T: SomeTreeRef<D>, for<'a> <&'a mut T as SomeTreeRef<D>>::Walker: ModifiableWalker`.
-/// However, that doesn't work. Instead, use `for<'a> &'a mut T: ModifiableTreeRef<D>`.
-pub trait ModifiableTreeRef<D: Data>: SomeTreeRef<D> {
-    /// Inner type that ideally shouldn't be used - just use `Self::Walker`.
-    type ModifiableWalker: ModifiableWalker<D>;
-}
-
 /// This is a trait for walkers that allow inserting and deleting values.
 pub trait ModifiableWalker<D: Data>: SomeWalker<D> {
     /// Inserts the value into the tree at the current empty position.
@@ -404,18 +382,6 @@ pub trait ConcatenableTree<D: Data>: SomeTree<D>
         let right = std::mem::take(self);
         *self = Self::concatenate(other, right);
     }
-}
-
-// TODO: this trait is now obsolete. remove.
-/// Trait for trees that can be split and concatenated.
-/// Require this kind of tree if you want to use reversal actions on segments of your tree.
-pub trait SplittableTreeRef<D: Data>:
-    SomeTreeRef<D> + Sized
-{
-    /// Inner type that ideally shouldn't be used - just use the original tree type.
-    type T;
-    /// Inner type that ideally shouldn't be used - just use `Self::Walker`.
-    type SplittableWalker: SplittableWalker<D, T = Self::T>;
 }
 
 /// Walkers that can split a tree into two.

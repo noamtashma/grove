@@ -208,19 +208,6 @@ impl<D: Data> SomeTree<D> for AVLTree<D> {
     }
 }
 
-impl<'a, D: Data> SomeTreeRef<D> for &'a mut AVLTree<D> {
-}
-
-impl<'a, D: Data> ModifiableTreeRef<D> for &'a mut AVLTree<D> {
-    type ModifiableWalker = AVLWalker<'a, D>;
-}
-
-impl<'a, D: Data> SplittableTreeRef<D> for &'a mut AVLTree<D> {
-    type T = AVLTree<D>;
-
-    type SplittableWalker = AVLWalker<'a, D>;
-}
-
 derive_SomeEntry! {tree, T,
     impl<D: Data> SomeEntry<D> for AVLTree<D> {
         fn assert_correctness_locally(&self)

@@ -112,9 +112,6 @@ impl<D: Data, T> IntoIterator for BasicTree<D, T> {
     }
 }
 
-impl<'a, D: Data, T> SomeTreeRef<D> for &'a mut BasicTree<D, T> {
-}
-
 impl<'a, D: Data, T> SomeWalker<D> for BasicWalker<'a, D, T> {
     fn go_left(&mut self) -> Result<(), ()> {
         let mut frame = self.vals.last().expect(NO_VALUE_ERROR).clone();
@@ -322,10 +319,6 @@ impl<'a, D: Data, T> SomeEntry<D> for BasicWalker<'a, D, T> {
     {
         self.inner().assert_correctness_locally();
     }
-}
-
-impl<'a, D: Data> ModifiableTreeRef<D> for &'a mut BasicTree<D> {
-    type ModifiableWalker = BasicWalker<'a, D>;
 }
 
 impl<'a, D: Data> ModifiableWalker<D> for BasicWalker<'a, D> {
