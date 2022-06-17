@@ -27,12 +27,27 @@ impl<'a, D: Data, T> Clone for ImmDownBasicWalker<'a, D, T> {
 }
 
 impl<'a, D: Data, T> ImmDownBasicWalker<'a, D, T> {
+    /// Creates a new immutable walker
     pub fn new(tree: &'a BasicTree<D, T>) -> Self {
         ImmDownBasicWalker {
             tree,
             current_action: tree.action(),
             far_left_summary: Default::default(),
             far_right_summary: Default::default(),
+        }
+    }
+
+    /// Creates a new immutable walker, along with the tree's context
+    pub fn new_with_context(
+        tree: &'a BasicTree<D, T>,
+        far_left_summary: D::Summary,
+        far_right_summary: D::Summary,
+    ) -> Self {
+        ImmDownBasicWalker {
+            tree,
+            current_action: tree.action(),
+            far_left_summary,
+            far_right_summary,
         }
     }
 
@@ -137,6 +152,10 @@ impl<'a, D: Data, T> ImmDownBasicWalker<'a, D, T> {
         } else {
             self.far_right_summary
         }
+    }
+
+    pub fn alg_data(&self) -> Option<&T> {
+        self.tree.alg_data()
     }
 
     pub fn query_locator<L: Locator<D>>(&self, locator: &L) -> Option<locators::LocResult>

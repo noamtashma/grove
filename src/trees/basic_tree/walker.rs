@@ -116,6 +116,24 @@ impl<'a, D: Data, T> BasicWalker<'a, D, T> {
         self.is_left.last().cloned()
     }
 
+    /// Returns the right son of the current node.
+    /// Returns `None` if currently at an empty node.
+    pub fn right(&self) -> Option<&BasicTree<D, T>> {
+        match self.inner() {
+            Empty => None,
+            Root(node) => Some(&node.right),
+        }
+    }
+
+    /// Returns the left son of the current node.
+    /// Returns `None` if currently at an empty node.
+    pub fn left(&self) -> Option<&BasicTree<D, T>> {
+        match self.inner() {
+            Empty => None,
+            Root(node) => Some(&node.left),
+        }
+    }
+
     /*
     /// Not public since the walker should maintain the invariant that the current position
     /// is always clean. Ergo, for internal use.
@@ -133,6 +151,15 @@ impl<'a, D: Data, T> BasicWalker<'a, D, T> {
     /// Gives access to the current position.
     pub fn inner(&self) -> &BasicTree<D, T> {
         &*self.rec_ref
+    }
+
+    /// Creates an immutable walker from this point
+    pub(crate) fn as_imm_walker(&self) -> ImmDownBasicWalker<D, T> {
+        ImmDownBasicWalker::new_with_context(
+            self.inner(),
+            self.far_left_summary(),
+            self.far_right_summary(),
+        )
     }
 
     pub(in super::super) fn inner_mut(&mut self) -> &mut BasicTree<D, T> {

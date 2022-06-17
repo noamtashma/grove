@@ -2,7 +2,7 @@
 name = "grove"
 version = "0.1.0"
 authors = ["Noam Ta Shma noam.tashma@gmail.com"]
-edition = "2018"
+edition = "2021"
 keywords = ["interval", "segment", "tree", "BST"]
 categories = ["data-structures", "algorithms"]
 repository = "https://github.com/noamtashma/grove"
