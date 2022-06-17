@@ -3,12 +3,13 @@ pub mod bench;
 
 use example_data::{RevAffineAction, StdNum};
 use grove::*;
+use proptest::{self, strategy::Strategy};
 use rand::{self, Rng};
 use std::ops::Range;
 
 /// Something to perform in one round of tests
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
-enum RoundAction<D: Data> {
+pub enum RoundAction<D: Data> {
     Act {
         range: Range<usize>,
         action: D::Action,
@@ -23,6 +24,70 @@ enum RoundAction<D: Data> {
     Delete {
         index: usize,
     },
+}
+
+// impl<D: Data + std::fmt::Debug> proptest::arbitrary::Arbitrary for RoundAction<D>
+// where
+//     D::Action: std::fmt::Debug,
+//     D::Value: std::fmt::Debug,
+// {
+//     type Parameters = usize; // length
+
+//     fn arbitrary_with(args: Self::Parameters) -> Self::Strategy {
+//         (0..args).prop_map(|x| RoundAction::Delete { index: x })
+//     }
+
+//     type Strategy = proptest::strategy::Map<Range<usize>, fn(usize) -> RoundAction<D>>;
+// }
+
+pub fn round_action_strategy<D: Data>(
+    len: usize,
+    data_strat: impl Strategy<Value = D::Value> + 'static,
+    action_strat: impl Strategy<Value = D::Action> + 'static,
+) -> impl Strategy<Value = RoundAction<D>>
+where
+    D: std::fmt::Debug,
+    D::Action: std::fmt::Debug,
+    D::Value: std::fmt::Debug,
+{
+    let range_strat =
+        (0..len, 0..len).prop_filter_map("illogical range (start > end)", |(start, end)| {
+            if start <= end {
+                Some(start..end)
+            } else {
+                None
+            }
+        });
+    // Delete
+    (0..len)
+        .prop_map(|ix| RoundAction::Delete { index: ix })
+        .boxed()
+        .prop_union(
+            // Insert
+            (0..=len, data_strat)
+                .prop_map(|(ix, val)| RoundAction::Insert {
+                    index: ix,
+                    value: val,
+                })
+                .boxed(),
+        )
+        // Act
+        .or((range_strat.clone(), action_strat)
+            .prop_map(|(range, action)| RoundAction::Act { range, action })
+            .boxed())
+        // Query
+        .or(range_strat
+            .prop_map(|range| RoundAction::Query { range })
+            .boxed())
+}
+
+pub fn RevAffineAction_strategy() -> impl Strategy<Value = example_data::RevAffineAction> + 'static
+{
+    (proptest::bool::ANY, -2..2, -100..100).prop_map(|(to_reverse, mul, add)| RevAffineAction {
+        to_reverse,
+        mul,
+        add,
+    })
 }
 
 /// The result after one round of querying
@@ -91,7 +156,12 @@ where
     }
 }
 
-fn run_round<D, T>(round_action: RoundAction<D>, tree: &mut T, len: usize, mutable_query: bool) -> RoundResult<D>
+fn run_round<D, T>(
+    round_action: RoundAction<D>,
+    tree: &mut T,
+    len: usize,
+    mutable_query: bool,
+) -> RoundResult<D>
 where
     D: Data<Value = i32, Action = RevAffineAction>,
     D::Summary: std::fmt::Debug + Eq + SizedSummary,
@@ -188,6 +258,54 @@ where
         tree1.assert_correctness();
         tree2.assert_correctness();
     }
+}
+
+pub fn check_consistency_proptest<D, T1, T2>(
+    actions: Vec<RoundAction<D>>,
+) -> Result<(), proptest::prelude::TestCaseError>
+where
+    D: Data<Value = i32, Action = RevAffineAction>,
+    D: Clone + std::fmt::Debug + Eq, // useless bounds because the auto-generated clone instance for RoundAction requires it
+    D::Summary: std::fmt::Debug + Eq + SizedSummary,
+    T1: SomeTree<D>,
+    for<'a> &'a mut T1: ModifiableTreeRef<D>,
+    T2: SomeTree<D>,
+    for<'a> &'a mut T2: ModifiableTreeRef<D>,
+{
+    let mut len: usize = INITIAL_SIZE;
+
+    let range = 0..(len as _);
+    let mut tree1: T1 = range.clone().collect();
+    let mut tree2: T2 = range.collect();
+
+    for round_action in actions {
+        let res1 = run_round(round_action.clone(), &mut tree1, len, true);
+        let res2 = run_round(round_action.clone(), &mut tree2, len, false);
+        proptest::prop_assert_eq!(res1, res2);
+        // update length
+        match round_action {
+            RoundAction::Delete { .. } => {
+                if len > 0 {
+                    len -= 1;
+                }
+            }
+            RoundAction::Insert { .. } => {
+                len += 1;
+            }
+            _ => {}
+        }
+
+        let s1 = tree1.subtree_summary();
+        let s2 = tree2.subtree_summary();
+        proptest::prop_assert_eq!(s1, s2);
+        proptest::prop_assert_eq!(s1.size(), len);
+        // This check takes `O(n)` time. However, since the trees aren't so big in this test
+        // (200 starting size + order of magnitude of the variance is about 100)
+        // the check doesn't take too long.
+        tree1.assert_correctness();
+        tree2.assert_correctness();
+    }
+    Ok(())
 }
 
 pub fn check_delete<T>()

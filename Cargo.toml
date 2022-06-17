@@ -20,7 +20,7 @@ recursive_reference = {version = "0.*", path = "../recursive_reference" }
 [dev-dependencies]
 itertools = ">= 0.8"
 text_io = "0.1"
-
+proptest = "1"
 
 [lib]
 name = "grove"
