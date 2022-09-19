@@ -19,58 +19,9 @@ fn splay_and_treap_consistency() {
     check_consistency::<StdNum, SplayTree<_>, Treap<_>>(NUM_ROUNDS);
 }
 
-proptest::proptest! {
-    #[test]
-    fn splay_and_treap_consistency_proptest(array in proptest::collection::vec(round_action_strategy(150, -100..100, RevAffineAction_strategy() ), 100)) {
-        match check_consistency_proptest::<StdNum, SplayTree<_>, Treap<_>>(array) {
-            Ok(_) => (),
-            Err(_) => panic!(),
-        }
-    }
-}
-
 #[test]
 fn splay_and_avl_consistency() {
     check_consistency::<StdNum, SplayTree<_>, AVLTree<_>>(NUM_ROUNDS);
-}
-
-proptest::proptest! {
-    // #![proptest_config(proptest::prelude::ProptestConfig {
-    //     cases: 50, .. proptest::prelude::ProptestConfig::default()
-    //   })]
-    #[test]
-    fn splay_and_avl_consistency_proptest(array in proptest::collection::vec(round_action_strategy(150, -100..100, RevAffineAction_strategy() ), 1..70)) {
-        match check_consistency_proptest::<StdNum, SplayTree<_>, AVLTree<_>>(array) {
-            Ok(_) => (),
-            Err(_) => panic!(),
-        }
-    }
-}
-
-#[test]
-fn splay_and_avl_consistency_specific() {
-    let array = vec![
-        RoundAction::Act {
-            range: 0..56,
-            action: RevAffineAction {
-                to_reverse: false,
-                mul: 0,
-                add: 0,
-            },
-        },
-        RoundAction::Act {
-            range: 1..1,
-            action: RevAffineAction {
-                to_reverse: true,
-                mul: 0,
-                add: 0,
-            },
-        },
-    ];
-    match check_consistency_proptest::<StdNum, SplayTree<_>, AVLTree<_>>(array) {
-        Ok(_) => (),
-        Err(_) => panic!(),
-    }
 }
 
 #[test]

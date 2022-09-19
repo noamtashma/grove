@@ -3,7 +3,7 @@ pub mod bench;
 
 use example_data::{RevAffineAction, StdNum};
 use grove::*;
-use proptest::{self, strategy::Strategy};
+use proptest;
 use rand::{self, Rng};
 use std::ops::Range;
 
@@ -24,70 +24,6 @@ pub enum RoundAction<D: Data> {
     Delete {
         index: usize,
     },
-}
-
-// impl<D: Data + std::fmt::Debug> proptest::arbitrary::Arbitrary for RoundAction<D>
-// where
-//     D::Action: std::fmt::Debug,
-//     D::Value: std::fmt::Debug,
-// {
-//     type Parameters = usize; // length
-
-//     fn arbitrary_with(args: Self::Parameters) -> Self::Strategy {
-//         (0..args).prop_map(|x| RoundAction::Delete { index: x })
-//     }
-
-//     type Strategy = proptest::strategy::Map<Range<usize>, fn(usize) -> RoundAction<D>>;
-// }
-
-pub fn round_action_strategy<D: Data>(
-    len: usize,
-    data_strat: impl Strategy<Value = D::Value> + 'static,
-    action_strat: impl Strategy<Value = D::Action> + 'static,
-) -> impl Strategy<Value = RoundAction<D>>
-where
-    D: std::fmt::Debug,
-    D::Action: std::fmt::Debug,
-    D::Value: std::fmt::Debug,
-{
-    let range_strat =
-        (0..len, 0..len).prop_filter_map("illogical range (start > end)", |(start, end)| {
-            if start <= end {
-                Some(start..end)
-            } else {
-                None
-            }
-        });
-    // Delete
-    (0..len)
-        .prop_map(|ix| RoundAction::Delete { index: ix })
-        .boxed()
-        .prop_union(
-            // Insert
-            (0..=len, data_strat)
-                .prop_map(|(ix, val)| RoundAction::Insert {
-                    index: ix,
-                    value: val,
-                })
-                .boxed(),
-        )
-        // Act
-        .or((range_strat.clone(), action_strat)
-            .prop_map(|(range, action)| RoundAction::Act { range, action })
-            .boxed())
-        // Query
-        .or(range_strat
-            .prop_map(|range| RoundAction::Query { range })
-            .boxed())
-}
-
-pub fn RevAffineAction_strategy() -> impl Strategy<Value = example_data::RevAffineAction> + 'static
-{
-    (proptest::bool::ANY, -2..2, -100..100).prop_map(|(to_reverse, mul, add)| RevAffineAction {
-        to_reverse,
-        mul,
-        add,
-    })
 }
 
 /// The result after one round of querying
@@ -184,7 +120,17 @@ where
             } else {
                 tree.segment_summary_imm(&range)
             };
-            assert_eq!(sum.size(), range.len());
+            // The range might have a span reaching beyond the size of the tree.
+            // e.g, if the tree is of length 3, then a range of 2..5 would actually
+            // be equivalent to 2..3.
+            let tree_len = tree.subtree_summary().size();
+            // calculate the actual length of the part covered by the range
+            let len = if tree_len >= range.start {
+                usize::min(range.end, tree_len) - range.start
+            } else {
+                0
+            };
+            assert_eq!(sum.size(), len);
             Summary(sum)
         }
         // insert a value
@@ -197,8 +143,13 @@ where
         Delete { index } if len > 0 => {
             let val_op = tree.slice(index..=index).delete();
             match val_op {
-                None => panic!(), // didn't actually delete a value
+                None => {
+                    // didn't actually delete a value
+                    assert!(tree.subtree_summary().size() <= index);
+                    Empty
+                }
                 Some(val) => {
+                    assert!(tree.subtree_summary().size() >= index);
                     /* len -= 1; */
                     Value(val)
                 }
@@ -261,7 +212,8 @@ where
 }
 
 pub fn check_consistency_proptest<D, T1, T2>(
-    actions: Vec<RoundAction<D>>,
+    initial: &[D::Value],
+    actions: &[RoundAction<D>],
 ) -> Result<(), proptest::prelude::TestCaseError>
 where
     D: Data<Value = i32, Action = RevAffineAction>,
@@ -272,11 +224,9 @@ where
     T2: SomeTree<D>,
     for<'a> &'a mut T2: ModifiableTreeRef<D>,
 {
-    let mut len: usize = INITIAL_SIZE;
-
-    let range = 0..(len as _);
-    let mut tree1: T1 = range.clone().collect();
-    let mut tree2: T2 = range.collect();
+    let mut len: usize = initial.len();
+    let mut tree1: T1 = initial.iter().cloned().collect();
+    let mut tree2: T2 = initial.iter().cloned().collect();
 
     for round_action in actions {
         let res1 = run_round(round_action.clone(), &mut tree1, len, true);
@@ -284,8 +234,10 @@ where
         proptest::prop_assert_eq!(res1, res2);
         // update length
         match round_action {
-            RoundAction::Delete { .. } => {
-                if len > 0 {
+            RoundAction::Delete { index } => {
+                if len > 0 && index < &len
+                /* otherwise no deletion happened */
+                {
                     len -= 1;
                 }
             }

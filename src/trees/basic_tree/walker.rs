@@ -331,8 +331,11 @@ impl<'a, D: Data, T> BasicWalker<'a, D, T> {
 
     /// If the current position is empty, puts the given value there instead.
     /// Intended to help writing tree algorithms.
-    pub(in super::super) fn put_subtree(&mut self, new: BasicTree<D, T>) -> Option<()> {
+    /// Accesses the node, since walker satisfy the invariant that the current
+    /// node must always have a trivial action.
+    pub(in super::super) fn put_subtree(&mut self, mut new: BasicTree<D, T>) -> Option<()> {
         if self.rec_ref.is_empty() {
+            new.access();
             *self.rec_ref = new;
             Some(())
         } else {
