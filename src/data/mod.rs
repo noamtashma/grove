@@ -186,3 +186,16 @@ pub trait ToSummary<S> {
     /// Creates the summary of a single value.
     fn to_summary(&self) -> S;
 }
+
+// TODO: Figure out the next few traits, that are mostly for fenwick trees.
+// Should they be moved to the fenwick tree module?
+
+/// This trait is used by fenwick trees.
+/// Whoever implements this trait is expected to obey the group laws, with `+` being addition
+/// and `-x` being the inverse of `x`, and `default()` being the group's unit.
+///
+/// The group doesn't have to be commutative even though this uses additive notation.
+pub trait Group: Copy + Default + Add<Output = Self> + std::ops::Neg<Output = Self> {}
+
+/// This trait marks that the addition of `self` values is commutative.
+pub trait CommutativeSummary: Copy + Default + Add<Output = Self> {}
